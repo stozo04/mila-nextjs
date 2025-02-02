@@ -1,6 +1,6 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# Dependencies
 /node_modules
 /.pnp
 .pnp.*
@@ -10,32 +10,40 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# Testing
 /coverage
 
-# next.js
-/.next/
+# Next.js Build Files
+/.next/ 
 /out/
 
-# production
+# Production Builds
 /build
 
-# misc
+# Misc
 .DS_Store
 *.pem
 
-# debug
+# Lockfiles (Optional: If you're working solo)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Debug Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# Environment Variables (DO NOT COMMIT Supabase Keys)
+.env
+.env.local
+.env.*.local
 
-# vercel
+# Vercel Deployment Files
 .vercel
+.vercel_build_output
 
-# typescript
+# TypeScript Cache
 *.tsbuildinfo
 next-env.d.ts
