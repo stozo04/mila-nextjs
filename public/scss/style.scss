@@ -1,0 +1,30 @@
+/*============================================ 
+# Template Name: Protfolily
+# Version: 1.0
+# Date: 10-07-2024
+# Author: 
+# Author URI: 
+# Description: Portfolify-Bootstrap 5 Personal React NextJS Portfolio Template"
+============================================*/
+
+/*============================================ 
+======== Table of Css Content =========
+# Typography
+# Normalize 
+# Global style
+# Header Area
+# Banner Area
+# Section Area
+============================================*/
+
+// Bootstrap
+@import "bootstrap.scss";
+// Scss main
+@import "main/_variable";
+@import "main/_mixins";
+@import "main/_typography";
+@import "main/_global";
+
+// Scss Pages
+@import "pages/_navbar";
+@import "pages/section.scss";
