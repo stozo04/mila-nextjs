@@ -7,28 +7,27 @@ const NavMenu = () => {
   return (
     <nav className="navbar navbar-expand-lg bg-body-tertiary">
       <div className="container-fluid d-flex justify-content-between align-items-center">
-        <Image src={milaBrand} alt="user" className="navbar-brand" />
+      <Link href="/">
+        <Image src={milaBrand} alt="Mila Gates" className="navbar-brand" />
+      </Link>
         <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
           <span className="navbar-toggler-icon"></span>
         </button>
         <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
           <ul className="navbar-nav d-flex">
             <li className="nav-item">
-              <a className="nav-link active" aria-current="page" href="#">Home</a>
-            </li>
-            <li className="nav-item">
               <Link href="/sonograms" className="nav-link">
-                Sonograms
+                SONOGRAMS
               </Link>
             </li>
             <li className="nav-item">
               <Link href="/gender-reveal" className="nav-link">
-                Gender Reveal
+                GENDER REVEAL
               </Link>
             </li>
             <li className="nav-item">
               <Link href="/blogs/blog-list" className="nav-link">
-                Blogs
+                BLOGS
               </Link>
             </li>
             <li className="nav-item dropdown">

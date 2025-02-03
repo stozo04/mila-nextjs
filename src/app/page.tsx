@@ -1,54 +1,57 @@
 "use client";
-
-import Footer from "@/components/Shared/Footer/Footer";
-import NavMenu from "@/components/Shared/TopNav/page";
 import Image from "next/image";
+import { StaticImageData } from "next/image";
+
+// Import all images at once
+const images: StaticImageData[] = [
+  require("@/../public/images/landing-page/1.jpg"),
+  require("@/../public/images/landing-page/2.jpg"),
+  require("@/../public/images/landing-page/3.jpg"),
+  require("@/../public/images/landing-page/4.jpg"),
+  require("@/../public/images/landing-page/5.jpg"),
+  require("@/../public/images/landing-page/6.jpg"),
+  require("@/../public/images/landing-page/7.jpg"),
+  require("@/../public/images/landing-page/8.jpg"),
+  require("@/../public/images/landing-page/9.jpg"),
+  require("@/../public/images/landing-page/10.jpg"),
+  require("@/../public/images/landing-page/11.jpg"),
+  require("@/../public/images/landing-page/12.jpg"),
+  require("@/../public/images/landing-page/13.jpg"),
+  require("@/../public/images/landing-page/14.jpg")
+  // Add all other image paths here
+];
 
 export default function Home() {
   return (
-    <div className="d-flex flex-column vh-100 overflow-hidden">
-      <NavMenu />
-      <main className="flex-grow-1 overflow-hidden position-relative">
-        <div className="h-100 overflow-hidden position-relative">
-          <div id="carouselExampleAutoplaying" className="carousel slide h-100" data-bs-ride="carousel">
-            <div className="carousel-inner h-100">
-              <div className="carousel-item active h-100">
-                <Image 
-                  src="https://picsum.photos/id/10/800/400" 
-                  alt="Random Unsplash Image" 
-                  fill 
-                  className="d-block object-fit-cover" 
-                />
-              </div>
-              <div className="carousel-item h-100">
-                <Image 
-                  src="https://picsum.photos/id/12/800/400" 
-                  alt="Random Lorem Picsum Image" 
-                  fill 
-                  className="d-block object-fit-cover" 
-                />
-              </div>
-              <div className="carousel-item h-100">
-                <Image 
-                  src="https://picsum.photos/id/16/800/400" 
-                  alt="Random Kitten Image" 
-                  fill 
-                  className="d-block object-fit-cover" 
-                />
-              </div>
-            </div>
-            <button className="carousel-control-prev" type="button" data-bs-target="#carouselExampleAutoplaying" data-bs-slide="prev">
-              <span className="carousel-control-prev-icon" aria-hidden="true"></span>
-              <span className="visually-hidden">Previous</span>
-            </button>
-            <button className="carousel-control-next" type="button" data-bs-target="#carouselExampleAutoplaying" data-bs-slide="next">
-              <span className="carousel-control-next-icon" aria-hidden="true"></span>
-              <span className="visually-hidden">Next</span>
-            </button>
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
+<div id="carouselExampleAutoplaying" className="carousel slide" data-bs-ride="carousel">
+  <div className="carousel-inner">
+    {images.map((image, index) => (
+      <div 
+        key={index} 
+        className={`carousel-item  ${index === 0 ? 'active' : ''}`}
+        style={{ height: "86vh" }}
+
+      >
+        <Image 
+          src={image} 
+          alt="Mila Gates" 
+          fill 
+          className="d-block object-fit-cover"
+ 
+        />
+      </div>
+    ))}
+  </div>
+  <button className="carousel-control-prev" type="button" data-bs-target="#carouselExampleAutoplaying" data-bs-slide="prev">
+    <span className="carousel-control-prev-icon" aria-hidden="true"></span>
+    <span className="visually-hidden">Previous</span>
+  </button>
+  <button className="carousel-control-next" type="button" data-bs-target="#carouselExampleAutoplaying" data-bs-slide="next">
+    <span className="carousel-control-next-icon" aria-hidden="true"></span>
+    <span className="visually-hidden">Next</span>
+  </button>
+</div>
+
   );
 }
+
