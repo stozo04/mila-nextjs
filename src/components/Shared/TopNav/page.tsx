@@ -17,17 +17,17 @@ const NavMenu = () => {
           <ul className="navbar-nav d-flex">
             <li className="nav-item">
               <Link href="/sonograms" className="nav-link">
-                SONOGRAMS
+                Sonograms
               </Link>
             </li>
             <li className="nav-item">
               <Link href="/gender-reveal" className="nav-link">
-                GENDER REVEAL
+                Gender Reveal
               </Link>
             </li>
             <li className="nav-item">
               <Link href="/blogs/blog-list" className="nav-link">
-                BLOGS
+                Blogs
               </Link>
             </li>
             <li className="nav-item dropdown">
