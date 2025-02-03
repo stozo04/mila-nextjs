@@ -6,39 +6,31 @@ import milaBrand from "@/../public/images/icon-3.png";
 const NavMenu = () => {
   return (
     <nav className="navbar navbar-expand-lg bg-body-tertiary">
-      <div className="container-fluid">
-        <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNavDropdown"
-          aria-controls="navbarNavDropdown"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
+      <div className="container-fluid d-flex justify-content-between align-items-center">
+        <Image src={milaBrand} alt="user" className="navbar-brand" />
+        <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
           <span className="navbar-toggler-icon"></span>
         </button>
-        <div className="collapse navbar-collapse" id="navbarNavDropdown">
-        <Image src={milaBrand} alt="user" className="navbar-brand" />
-          {/* <Link href="/" className="navbar-brand">
-            Your Brand
-          </Link> */}
-          <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-            {/* Sonograms */}
+        <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
+          <ul className="navbar-nav d-flex">
             <li className="nav-item">
-              <Link href="/sonograms/sonogram-list" className="nav-link">
+              <a className="nav-link active" aria-current="page" href="#">Home</a>
+            </li>
+            <li className="nav-item">
+              <Link href="/sonograms" className="nav-link">
                 Sonograms
               </Link>
             </li>
-
-            {/* Gender Reveal */}
             <li className="nav-item">
               <Link href="/gender-reveal" className="nav-link">
                 Gender Reveal
               </Link>
             </li>
-
-            {/* Baby Shower Dropdown */}
+            <li className="nav-item">
+              <Link href="/blogs/blog-list" className="nav-link">
+                Blogs
+              </Link>
+            </li>
             <li className="nav-item dropdown">
               <a
                 className="nav-link dropdown-toggle"
@@ -62,8 +54,6 @@ const NavMenu = () => {
                 </li>
               </ul>
             </li>
-
-            {/* My Journey Dropdown */}
             <li className="nav-item dropdown">
               <a
                 className="nav-link dropdown-toggle"
@@ -93,16 +83,8 @@ const NavMenu = () => {
               </ul>
             </li>
 
-            {/* Blogs */}
             <li className="nav-item">
-              <Link href="/blogs/blog-list" className="nav-link">
-                Blogs
-              </Link>
-            </li>
-
-            {/* About Me (Active) */}
-            <li className="nav-item">
-              <Link href="/about/genealogy" className="nav-link active">
+              <Link href="/about/genealogy" className="nav-link">
                 About Me
               </Link>
             </li>
