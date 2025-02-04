@@ -8,6 +8,7 @@ export async function updateSession(request: NextRequest) {
   if (publicRoutes.includes(request.nextUrl.pathname)) {
     return NextResponse.next()
   }
+  
   let supabaseResponse = NextResponse.next({
     request,
   })

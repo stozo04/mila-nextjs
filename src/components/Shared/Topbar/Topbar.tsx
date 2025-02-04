@@ -1,7 +1,4 @@
-import ThemeButton from "@/components/DarkMode/ThemeButton/ThemeButton";
 import Link from "next/link";
-import { AiOutlineDashboard } from "react-icons/ai";
-import { PiShoppingCart } from "react-icons/pi";
 
 const Topbar = () => {
   return (
@@ -62,7 +59,7 @@ const Topbar = () => {
 
       <div className="d-flex gap-3 align-items-center">
         <div className="side-icon bg1-color">
-          <ThemeButton />
+          {/* Gates AI BUTTON */}
         </div>
       </div>
     </div>
