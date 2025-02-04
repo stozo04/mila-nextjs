@@ -21,3 +21,39 @@ $spacers: (
 @import "../../node_modules/bootstrap/scss/bootstrap";
 
 // Then add additional custom code here
+/* styles.css */
+.btn-primary {
+  background-color: #fe9a9b; 
+  border-color: #fe9a9b;
+}
+
+.btn-primary:hover {
+  background-color: rgba(254, 154, 155, 0.8); /* Transparent version */
+  border-color: rgba(254, 154, 155, 0.8);
+}
+
+
+.btn-secondary {
+  background-color: #60b1f0;
+  border-color: #60b1f0;
+  color: #ffffff; /* White text for contrast */
+}
+
+.btn-secondary:hover {
+  background-color: rgba(96, 177, 240, 0.8); /* Transparent version */
+  border-color: rgba(96, 177, 240, 0.8);
+}
+
+
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  color: #fe9a9b; /* White text */
+}
+
+.nav-link:hover,
+.nav-link:focus {
+  color: #fe9a9b; /* White text */
+}
+
+
