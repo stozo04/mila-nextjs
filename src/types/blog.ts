@@ -5,7 +5,7 @@ export type Blog = {
   content: string;
   date: string;
   featured_image: string; // Single image for blog list
-  images?: string[]; // Multiple images for blog details
+  detail_image: string; // Single image for blog details
 }
 
 // Interface for Blog List Component
@@ -20,5 +20,5 @@ export interface BlogListItemProps {
 // Interface for Blog Details Component
 export interface BlogDetailProps extends BlogListItemProps {
   content: string;
-  images?: string[];
+  detail_image: string;
 }

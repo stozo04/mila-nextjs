@@ -623,3 +623,16 @@
     margin: 0 auto;
   }
 }
+
+.blog-content, 
+.blog-header,
+.blog-footer {
+  padding: 0 10%;
+}
+
+.blog-content {
+  p {
+    margin-bottom: 1.5rem;
+    line-height: 1.8;
+  }
+}
