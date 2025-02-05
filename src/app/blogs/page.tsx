@@ -10,23 +10,29 @@ import { Blog } from "@/types/blog";
 const BlogsPage = () => {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [visibleCount, setVisibleCount] = useState(3);
-  const [years, setYears] = useState<string[]>([]);
-  const [selectedYear, setSelectedYear] = useState<string>("All");
+  const [tags, setTags] = useState<string[]>([]);
+  const [selectedTag, setSelectedTag] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchBlogs();
-  }, [visibleCount, selectedYear]);
+  }, [visibleCount, selectedTag, searchQuery]);
 
   const fetchBlogs = async () => {
     let query = supabase
       .from("blogs")
       .select("*")
-      .order("date", { ascending: false })
-      .limit(visibleCount);
+      .order("date", { ascending: false });
 
-    if (selectedYear !== "All") {
-      query = query.eq("date", `${selectedYear}`);
+    if (selectedTag !== "All") {
+      query = query.eq("tag", selectedTag);
     }
+
+    if (searchQuery) {
+      query = query.ilike("title", `%${searchQuery}%`);
+    }
+
+    query = query.limit(visibleCount);
 
     const { data, error } = await query;
 
@@ -36,49 +42,59 @@ const BlogsPage = () => {
       console.error("Error fetching blogs:", error);
     } else {
       setBlogs(data || []);
-      extractYears(data || []);
+      extractTags(data || []);
     }
   };
 
-  const extractYears = (blogsData: Blog[]) => {
-    const yearsSet = new Set<string>();
+  const extractTags = (blogsData: Blog[]) => {
+    const tagsSet = new Set<string>();
     blogsData.forEach((blog) => {
-      const year = new Date(blog.date).getFullYear().toString();
-      yearsSet.add(year);
+      if (blog.tag) {
+        tagsSet.add(blog.tag);
+      }
     });
-    setYears(["All", ...Array.from(yearsSet)]);
+    setTags(["All", ...Array.from(tagsSet)]);
   };
 
   const handleShowMore = () => {
     setVisibleCount((prev) => prev + 3);
   };
 
-  const handleFilterChange = (year: string) => {
-    setSelectedYear(year);
+  const handleFilterChange = (tag: string) => {
+    setSelectedTag(tag);
     setVisibleCount(3); // Reset visible count when filtering
   };
 
   return (
     <div className="container mt-5">
-      <h1 className="mb-4">Blogs</h1>
-
-      {/* Filter by Year */}
-      <div className="mb-4">
-        <label htmlFor="yearFilter" className="form-label">
-          Filter by Year:
-        </label>
-        <select
-          id="yearFilter"
-          className="form-select w-25"
-          value={selectedYear}
-          onChange={(e) => handleFilterChange(e.target.value)}
-        >
-          {years.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        {/* Tag Filter Pills */}
+        <div className="d-flex gap-2">
+          {tags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => handleFilterChange(tag)}
+              className={`btn rounded-pill px-3 ${
+                selectedTag === tag 
+                ? 'btn-primary' 
+                : 'btn-outline-primary'
+              }`}
+            >
+              {tag} {tag === 'All' ? `(${blogs.length})` : `(${blogs.filter(blog => blog.tag === tag).length})`}
+            </button>
           ))}
-        </select>
+        </div>
+
+        {/* Search Input */}
+        <div className="col-md-3">
+          <input
+            type="search"
+            className="form-control rounded-pill"
+            placeholder="Search by title"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Blogs List */}

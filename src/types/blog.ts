@@ -4,6 +4,7 @@ export type Blog = {
   slug: string;
   content: string;
   date: string;
+  tag: string;
   featured_image: string; // Single image for blog list
   detail_image: string; // Single image for blog details
 }

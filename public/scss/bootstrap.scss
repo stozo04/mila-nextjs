@@ -29,7 +29,16 @@
   border-color: rgba(96, 177, 240, 0.8);
 }
 
+.btn-outline-primary {
+  color: #fe9a9b;
+  border-color: #fe9a9b;
+}
 
+.btn-outline-primary:hover {
+  background-color: rgba(254, 154, 155, 0.8);
+  border-color: rgba(254, 154, 155, 0.8);
+  color: #ffffff;
+}
 
 .dropdown-item:hover,
 .dropdown-item:focus {
@@ -43,5 +52,19 @@
 
 .card {
   box-shadow: 0 4px 12px rgba(254, 154, 155, 0.8);
+}
+
+.form-control.rounded-pill {
+  border-color: #fe9a9b;
+  
+  &:focus {
+    border-color: #fe9a9b;
+    box-shadow: 0 0 0 0.2rem rgba(254, 154, 155, 0.25);
+  }
+}
+
+// Optional: Add hover effect
+.form-control.rounded-pill:hover {
+  border-color: rgba(254, 154, 155, 0.8);
 }
 
