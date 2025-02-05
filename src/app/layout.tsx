@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Suspense fallback={<Loading />}>
               <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
                 <NavMenu />
-                <div className="d-flex flex-column flex-grow-1 overflow-hidden">
+                <div className="d-flex flex-column flex-grow-1">
                   {children}
                 </div>
                 <Footer />

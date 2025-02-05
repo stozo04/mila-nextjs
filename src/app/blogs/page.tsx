@@ -21,7 +21,7 @@ const BlogsPage = () => {
     let query = supabase
       .from("blogs")
       .select("*")
-      .order("blog_date", { ascending: false })
+      .order("date", { ascending: false })
       .limit(visibleCount);
 
     if (selectedYear !== "All") {
@@ -43,7 +43,7 @@ const BlogsPage = () => {
   const extractYears = (blogsData: Blog[]) => {
     const yearsSet = new Set<string>();
     blogsData.forEach((blog) => {
-      const year = new Date(blog.blog_date).getFullYear().toString();
+      const year = new Date(blog.date).getFullYear().toString();
       yearsSet.add(year);
     });
     setYears(["All", ...Array.from(yearsSet)]);
@@ -86,18 +86,18 @@ const BlogsPage = () => {
         {blogs.map((blog) => (
           <div key={blog.id} className="col-md-4 mb-4">
             <div className="card h-100">
-              {/* <Image
-                src={blog.image_url}
+              <Image
+                src={blog.featured_image}
                 alt={blog.title}
                 width={400}
                 height={250}
                 className="card-img-top"
                 style={{ objectFit: "cover" }}
-              /> */}
+              />
               <div className="card-body d-flex flex-column">
                 <h5 className="card-title">{blog.title}</h5>
                 <p className="card-text text-muted">
-                  {new Date(blog.blog_date).toLocaleDateString("en-US", {
+                  {new Date(blog.date).toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "long",
                     day: "numeric",
