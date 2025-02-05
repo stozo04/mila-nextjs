@@ -21,7 +21,7 @@ const BlogsPage = () => {
     let query = supabase
       .from("blogs")
       .select("*")
-      .order("date", { ascending: false })
+      .order("blog_date", { ascending: false })
       .limit(visibleCount);
 
     if (selectedYear !== "All") {
@@ -29,6 +29,8 @@ const BlogsPage = () => {
     }
 
     const { data, error } = await query;
+
+    console.log('Blogs from Supabase:', data);
 
     if (error) {
       console.error("Error fetching blogs:", error);
@@ -41,7 +43,7 @@ const BlogsPage = () => {
   const extractYears = (blogsData: Blog[]) => {
     const yearsSet = new Set<string>();
     blogsData.forEach((blog) => {
-      const year = new Date(blog.date).getFullYear().toString();
+      const year = new Date(blog.blog_date).getFullYear().toString();
       yearsSet.add(year);
     });
     setYears(["All", ...Array.from(yearsSet)]);
@@ -84,24 +86,24 @@ const BlogsPage = () => {
         {blogs.map((blog) => (
           <div key={blog.id} className="col-md-4 mb-4">
             <div className="card h-100">
-              <Image
+              {/* <Image
                 src={blog.image_url}
                 alt={blog.title}
                 width={400}
                 height={250}
                 className="card-img-top"
                 style={{ objectFit: "cover" }}
-              />
+              /> */}
               <div className="card-body d-flex flex-column">
                 <h5 className="card-title">{blog.title}</h5>
                 <p className="card-text text-muted">
-                  {new Date(blog.date).toLocaleDateString("en-US", {
+                  {new Date(blog.blog_date).toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "long",
                     day: "numeric",
                   })}
                 </p>
-                <Link href={`/blog/${blog.slug}`} className="mt-auto btn btn-primary">
+                <Link href={`/blogs/${blog.slug}`} className="mt-auto btn btn-primary">
                   Read More
                 </Link>
               </div>

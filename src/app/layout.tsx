@@ -16,7 +16,7 @@ const cormorantUpright = Cormorant_Upright({
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en"> {/* Removed suppressHydrationWarning */}
+    <html lang="en">
       <head>
         <title>Mila Rose Gates</title>
       </head>

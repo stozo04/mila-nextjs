@@ -38,14 +38,14 @@ if (!params) {
           day: "numeric",
         })}
       </p>
-      <Image
+      {/* <Image
         src={data.image_url}
         alt={data.title}
         width={800}
         height={500}
         className="mb-4"
         style={{ objectFit: "cover" }}
-      />
+      /> */}
       <div className="blog-content">
         <Markdown>{data.content}</Markdown>
       </div>
