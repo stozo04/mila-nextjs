@@ -1,4 +1,3 @@
-// src/app/sonograms/[id]/page.tsx (Server Component)
 import SonogramDetailPage from "./SonogramDetail";
 
 type SonogramDetailPageProps = {

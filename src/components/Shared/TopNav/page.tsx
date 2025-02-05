@@ -26,7 +26,7 @@ const NavMenu = () => {
               </Link>
             </li>
             <li className="nav-item">
-              <Link href="/blogs/blog-list" className="nav-link">
+              <Link href="/blogs" className="nav-link">
                 Blogs
               </Link>
             </li>
