@@ -15,7 +15,7 @@ export default function HoustonPage() {
             <div className="row mt-4">
                 <div className="col-12">
                     <Gallery 
-                        folder="houston" 
+                        folder="baby-shower/houston" 
                         limit={3} 
                         key="houston-gallery"
                     />

@@ -13,7 +13,7 @@ export default function DallasPage() {
         <div className="row mt-4">
             <div className="col-12">
                 <Gallery 
-                    folder="dallas" 
+                    folder="baby-shower/dallas" 
                     limit={3} 
                     key="dallas-gallery"
                     />

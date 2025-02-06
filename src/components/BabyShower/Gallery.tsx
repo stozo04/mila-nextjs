@@ -11,7 +11,7 @@ type GalleryProps = {
     limit?: number;
 };
 
-const CDNURL = "https://pawkklvezvrmtpqbztwb.supabase.co/storage/v1/object/public/mila_storage_bucket/baby-shower/";
+const CDNURL = "https://pawkklvezvrmtpqbztwb.supabase.co/storage/v1/object/public/mila_storage_bucket/";
 
 const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3 }) => {
     const [images, setImages] = useState<FileObject[]>([]);
@@ -26,7 +26,7 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3 }) => {
             const { data, error } = await supabase
                 .storage
                 .from('mila_storage_bucket')
-                .list(`baby-shower/${folder}`, {
+                .list(`${folder}`, {
                     limit: limit,
                     offset: offset,
                     sortBy: { column: 'name', order: 'asc' }
@@ -78,7 +78,7 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3 }) => {
                             }>
                                 <Image
                                     src={CDNURL + folder + '/' + image.name}
-                                    alt={`Baby Shower - ${image.name}`}
+                                    alt={`${image.name}`}
                                     width={400}
                                     height={300}
                                     className="card-img-top"
@@ -150,7 +150,7 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3 }) => {
                                 ></button>
                                 <Image
                                     src={selectedImage}
-                                    alt="Baby Shower Preview"
+                                    alt="Preview"
                                     width={800}
                                     height={600}
                                     className="img-fluid rounded"
