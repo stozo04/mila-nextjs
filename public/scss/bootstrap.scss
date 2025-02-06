@@ -17,16 +17,11 @@
   border-color: rgba(254, 154, 155, 0.8);
 }
 
-
-.btn-secondary {
-  background-color: #60b1f0;
-  border-color: #60b1f0;
-  color: #ffffff; /* White text for contrast */
-}
-
-.btn-secondary:hover {
-  background-color: rgba(96, 177, 240, 0.8); /* Transparent version */
-  border-color: rgba(96, 177, 240, 0.8);
+.btn-primary:active,
+.btn-primary:focus {
+  background-color: #fe9a9b !important;
+  border-color: #fe9a9b !important;
+  box-shadow: 0 0 0 0.2rem rgba(254, 154, 155, 0.25) !important;
 }
 
 .btn-outline-primary {
@@ -35,6 +30,24 @@
 }
 
 .btn-outline-primary:hover {
+  background-color: rgba(254, 154, 155, 0.8);
+  border-color: rgba(254, 154, 155, 0.8);
+  color: #ffffff;
+}
+
+.btn-outline-primary:active,
+.btn-outline-primary:focus {
+  background-color: #fe9a9b !important;
+  border-color: #fe9a9b !important;
+  box-shadow: 0 0 0 0.2rem rgba(254, 154, 155, 0.25) !important;
+}
+
+.btn-outline-secondary {
+  color: #fe9a9b;
+  border-color: #fe9a9b;
+}
+
+.btn-outline-secondary:hover {
   background-color: rgba(254, 154, 155, 0.8);
   border-color: rgba(254, 154, 155, 0.8);
   color: #ffffff;

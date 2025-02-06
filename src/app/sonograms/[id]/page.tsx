@@ -4,7 +4,7 @@ type SonogramDetailPageProps = {
   params: Promise<{ id: string }> | undefined;
 };
 
-export default async function ProductDetailsPage({ params }: SonogramDetailPageProps) {
+export default async function SonogramDetailsPage({ params }: SonogramDetailPageProps) {
   if (!params) {
     // Handle the case where params is undefined
     // For example, you could return a 404 page or redirect to a different route

@@ -1,21 +1,3 @@
-/*============================================ 
-# Template Name: Protfolily
-# Version: 1.0
-# Date: 10-07-2024
-# Author: 
-# Author URI: 
-# Description: Portfolify-Bootstrap 5 Personal React NextJS Portfolio Template"
-============================================*/
-
-/*============================================ 
-======== Table of Css Content =========
-# Typography
-# Normalize 
-# Global style
-# Header Area
-# Banner Area
-# Section Area
-============================================*/
 
 // Bootstrap
 @import "bootstrap.scss";
@@ -28,3 +10,37 @@
 // Scss Pages
 @import "pages/_navbar";
 @import "pages/section.scss";
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: white;
+}
+
+.loading-text {
+  display: flex;
+  gap: 8px;
+  
+  span {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #fe9a9b;
+    animation: bounce 0.8s infinite;
+    
+    &:nth-child(1) { animation-delay: 0s; }    // M
+    &:nth-child(2) { animation-delay: 0.2s; }  // i
+    &:nth-child(3) { animation-delay: 0.4s; }  // l
+    &:nth-child(4) { animation-delay: 0.6s; }  // a
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}

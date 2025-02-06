@@ -37,7 +37,7 @@ const sonograms = [
 export default function SonogramsPage() {
 
   return (
-    <div className="container mt-5">
+    <div className="container mt-4 mb-4">
       <div className="row">
         <div className="col-12">
           <h1 className="mb-4">Welcome to the world, Mila!</h1>

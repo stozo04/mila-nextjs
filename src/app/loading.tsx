@@ -1,13 +1,17 @@
+"use client";
+
 const Loading = () => {
-    return (
-      <div className="d-flex align-items-center justify-content-center vh-100">
-        {/* <h2 className="p1-color">Loding...</h2> */}
-        <div className="pl">
-          <div className="pl__text">Loading…</div>
-        </div>
+  return (
+    <div className="loading-container">
+      <div className="loading-text">
+        <span>M</span>
+        <span>i</span>
+        <span>l</span>
+        <span>a</span>
       </div>
-    );
-  };
-  
-  export default Loading;
+    </div>
+  );
+};
+
+export default Loading;
   

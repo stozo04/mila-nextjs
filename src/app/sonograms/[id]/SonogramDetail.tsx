@@ -41,9 +41,6 @@ const sonograms = [
     }
 ];
 
-
-
-
 const SonogramDetailPage = ({ sonoId }) => {
     const sonogram = sonograms.find(s => s.id === sonoId); // 🔹 Use `.find()` instead of `[id]`
 
@@ -64,7 +61,7 @@ const SonogramDetailPage = ({ sonoId }) => {
      `/images/sonograms/sonogram-${sonoId}/${filename}`
  )
     return (
-        <div className="container mt-5">
+        <div className="container mt-4 mb-4">
             <div className="row">
                 <div className="col-12">
                     <article className="portfolio">
@@ -129,7 +126,7 @@ const SonogramDetailPage = ({ sonoId }) => {
                                 {sonoId !== '1' && ( // Show "Previous" if not the first sonogram
                                     <Link
                                         href={`/sonograms/${parseInt(sonoId) - 1}`}
-                                        className="btn btn-secondary" // Use a different style for "Previous"
+                                        className="btn btn-outline-primary"
                                     >
                                         Previous
                                     </Link>
@@ -138,7 +135,7 @@ const SonogramDetailPage = ({ sonoId }) => {
                                     {sonoId !== '5' && ( // Show "Next" if not the last sonogram
                                         <Link
                                             href={`/sonograms/${parseInt(sonoId) + 1}`}
-                                            className="btn btn-primary"
+                                            className="btn btn-outline-primary"
                                         >
                                             Next
                                         </Link>
