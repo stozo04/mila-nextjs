@@ -47,3 +47,17 @@ export const myFirstYearCards: JourneyCard[] = [
   { title: "Eleven Month Old", message: "Christian Easter", slug: "eleven-months", date: "March 30 - April 30, 2024" },
   { title: "Twelve Month Old", message: "One Year Old", slug: "twelve-months", date: "April 30 - May 30, 2024" },
 ].reverse();
+
+
+
+export const myOneYearCards: JourneyCard[] = [
+  { title: "1 Year 1 Month (13 Months)", message: "Celebrating 1 Year In Flordia", slug: "one-year-one-month",  date: "May 30 - June 4, 2024"},
+  { title: "One Year Photos", message: "Professional Photos", slug: "one-year-photos", date: "July 2024" },
+  { title: "1 Year 2 Months (14 Months)", message: "Whooping Cough", slug: "one-year-two-months", date: "June 30 - July 30, 2024" },
+  { title: "1 Year 3 Months (15 Months)", message: "Walking", slug: "one-year-three-months", date: "July 30 - August 30, 2024" },
+  { title: "1 Year 4 Months (16 Months)", message: "Talking", slug: "one-year-four-months", date: "August 30 - September 30, 2024" },
+  { title: "1 Year 5 Months (17 Months)", message: "Fall 🍁", slug: "one-year-five-months", date: "September 30 - October 30, 2024" },
+  { title: "1 Year 6 Months (18 Months)", message: "Thanksgiving 🦃", slug: "one-year-six-months", date: "October 30 - November 30, 2024" },
+  { title: "1 Year 7 Months (19 Months)", message: "Christmas ☃️", slug: "one-year-seven-months", date: "November 30 - December 30, 2024" },
+  { title: "1 Year 8 Months (20 Months)", message: "Russian Christmas & New Year ✨", slug: "one-year-eight-months", date: "December 30 - January 30, 2025" },
+].reverse();
