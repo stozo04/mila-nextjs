@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
-import Loading from "@/app/loading";
 import { supabase } from "@/lib/supabase";
 import { FileObject } from "@supabase/storage-js";
 

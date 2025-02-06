@@ -10,7 +10,7 @@ const Header: React.FC<HeaderProps> = ({ title, date }) => {
     <div className="heading-block">
       <div className="clearfix">
         <span style={{ float: "left" }}>
-          <h4>{title} Baby Shower</h4>
+          <h4>{title}</h4>
         </span>
         <span style={{ float: "right" }}>
           <h4 className="text-muted">{date}</h4>
