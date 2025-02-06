@@ -107,32 +107,61 @@ const GenderRevealPage = () => {
 
         {/* Image Preview Modal */}
         {selectedImage && (
-          <div 
-            className="modal fade show d-block" 
-            style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-            onClick={() => setSelectedImage(null)}
-          >
-            <div className="modal-dialog modal-dialog-centered modal-lg">
-              <div className="modal-content">
-                <div className="modal-body p-0">
-                  <button 
-                    type="button" 
-                    className="btn-close position-absolute top-0 end-0 m-2" 
+            <div
+                    className="modal fade show d-block"
+                    style={{
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        backdropFilter: 'blur(5px)',
+                        transition: 'all 0.3s ease-in-out'
+                    }}
                     onClick={() => setSelectedImage(null)}
-                    style={{ backgroundColor: 'white', zIndex: 1 }}
-                  ></button>
-                  <Image
-                    src={selectedImage}
-                    alt="Gender Reveal Preview"
-                    width={800}
-                    height={600}
-                    className="img-fluid"
-                    style={{ width: '100%', height: 'auto', objectFit: 'contain' }}
-                  />
+                >
+                    <div 
+                        className="modal-dialog modal-dialog-centered modal-lg"
+                        style={{
+                            transform: 'scale(1)',
+                            opacity: 1,
+                            animation: 'modalPop 0.3s ease-out'
+                        }}
+                    >
+                        <div className="modal-content border-0 shadow-lg">
+                            <div className="modal-body p-0 position-relative">
+                                <button
+                                    type="button"
+                                    className="btn-close position-absolute top-0 end-0 m-3 p-2"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedImage(null);
+                                    }}
+                                    style={{
+                                        backgroundColor: 'white',
+                                        borderRadius: '50%',
+                                        padding: '0.5rem',
+                                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                                        zIndex: 1,
+                                        opacity: 0.8,
+                                        transition: 'opacity 0.2s ease'
+                                    }}
+                                    onMouseOver={(e) => e.currentTarget.style.opacity = '1'}
+                                    onMouseOut={(e) => e.currentTarget.style.opacity = '0.8'}
+                                ></button>
+                                <Image
+                                    src={selectedImage}
+                                    alt="Gender Reveal Preview"
+                                    width={800}
+                                    height={600}
+                                    className="img-fluid rounded"
+                                    style={{
+                                        width: '100%',
+                                        height: 'auto',
+                                        objectFit: 'contain',
+                                        maxHeight: '80vh'
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
-            </div>
-          </div>
         )}
       </div>
     </Suspense>
