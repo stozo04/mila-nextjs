@@ -31,7 +31,7 @@ export interface JourneyCard {
   date: string;
 }
 
-export const journeyCards: JourneyCard[] = [
+export const myFirstYearCards: JourneyCard[] = [
   { title: "My First Week", message: "Finally Home!", slug: "birthday-week",  date: "May 30 - June 4, 2023"},
   { title: "One Month Old", message: "Growing so fast!", slug: "one-month", date: "May 30 - June 30, 2023" },
   { title: "Two Month Old", message: "Learning and Growing!", slug: "two-months", date: "June 30 - July 30, 2023" },

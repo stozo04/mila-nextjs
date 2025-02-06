@@ -2,14 +2,14 @@
 import Header from "@/components/BabyShower/Header";
 import Gallery from "@/components/BabyShower/Gallery";
 import { useParams } from "next/navigation";
-import { journeyCards } from "@/types/blog";
+import { myFirstYearCards } from "@/types/blog";
 
 export default function MyFirstYearPage() {
     const params = useParams();
     const currentSlug = params.slug as string;
     
     // Find the matching card data
-    const cardData = journeyCards.find(card => card.slug === currentSlug);
+    const cardData = myFirstYearCards.find(card => card.slug === currentSlug);
 
     if (!cardData) {
         return <div>Page not found</div>;

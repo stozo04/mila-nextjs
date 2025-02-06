@@ -1,14 +1,14 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { journeyCards } from "@/types";
+import { myFirstYearCards } from "@/types";
 
 export default function FirstYearPage() {
   const [visibleCards, setVisibleCards] = useState(3);
   const router = useRouter();
 
   const loadMore = () => {
-    setVisibleCards(prev => Math.min(prev + 3, journeyCards.length));
+    setVisibleCards(prev => Math.min(prev + 3, myFirstYearCards.length));
   };
 
   return (
@@ -21,7 +21,7 @@ export default function FirstYearPage() {
       </div>
 
       <div className="row g-4">
-        {journeyCards.slice(0, visibleCards).map((card, index) => (
+        {myFirstYearCards.slice(0, visibleCards).map((card, index) => (
           <div key={card.slug} className="col-md-6 col-lg-4">
             <div className="card h-100">
               <div className="card-body">
@@ -41,7 +41,7 @@ export default function FirstYearPage() {
         ))}
       </div>
 
-      {visibleCards < journeyCards.length && (
+      {visibleCards < myFirstYearCards.length && (
         <div className="row mt-4">
           <div className="col-12 text-center">
             <button onClick={loadMore} className="btn btn-outline-primary rounded-pill px-4" onMouseUp={(e) => e.currentTarget.blur()}>
