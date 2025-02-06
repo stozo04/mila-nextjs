@@ -42,6 +42,14 @@
   box-shadow: 0 0 0 0.2rem rgba(254, 154, 155, 0.25) !important;
 }
 
+// Add disabled state styling
+.btn-outline-primary:disabled,
+.btn-outline-primary.disabled {
+  color: rgba(254, 154, 155, 0.8);
+  border-color: rgba(254, 154, 155, 0.8);
+  background-color: transparent;
+}
+
 .btn-outline-secondary {
   color: #fe9a9b;
   border-color: #fe9a9b;
@@ -79,5 +87,17 @@
 // Optional: Add hover effect
 .form-control.rounded-pill:hover {
   border-color: rgba(254, 154, 155, 0.8);
+}
+
+// Add this to customize the spinner
+.spinner-border {
+  color: #fe9a9b;
+}
+
+
+// Optional: Add this if you want the spinner to have a slight transparency when disabled
+button:disabled .spinner-border,
+button:disabled .spinner-border-sm {
+  color: rgba(254, 154, 155, 0.8);
 }
 

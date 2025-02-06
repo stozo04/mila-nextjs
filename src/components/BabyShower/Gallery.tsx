@@ -40,7 +40,7 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3 }) => {
                 if (data.length < limit) {
                     setHasMore(false);
                 }
-                setImages(prevImages => [...prevImages, ...data]);
+                setImages(prevImages => offset > 0 ? [...prevImages, ...data] : data);
             }
         } catch (error) {
             console.error('Error fetching images:', error);
@@ -50,9 +50,15 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3 }) => {
     };
 
     useEffect(() => {
+        setImages([]);
+        setOffset(0);
+        setHasMore(true);
+    }, [folder, limit]);
+
+    useEffect(() => {
         fetchImages();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [offset, folder]);
+    }, [offset, folder, limit]);
 
     const handleViewMore = () => {
         setOffset(prevOffset => prevOffset + limit);
