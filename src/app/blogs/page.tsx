@@ -13,12 +13,40 @@ const BlogsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(3);
   const [tags, setTags] = useState<string[]>([]);
+  const [tagCounts, setTagCounts] = useState<Record<string, number>>({});
   const [selectedTag, setSelectedTag] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchBlogs();
   }, [visibleCount, selectedTag, searchQuery]);
+
+  useEffect(() => {
+    fetchAllTags();
+  }, []);
+
+  const fetchAllTags = async () => {
+    const { data: tagsData, error } = await supabase
+      .from("blogs")
+      .select('tag')
+      .not('tag', 'is', null);
+
+    if (error) {
+      console.error("Error fetching tags:", error);
+      return;
+    }
+
+    // Get unique tags and their counts
+    const tagCountMap: Record<string, number> = {};
+    tagsData.forEach((blog) => {
+      if (blog.tag) {
+        tagCountMap[blog.tag] = (tagCountMap[blog.tag] || 0) + 1;
+      }
+    });
+
+    setTags(["All", ...Object.keys(tagCountMap)]);
+    setTagCounts(tagCountMap);
+  };
 
   const fetchBlogs = async () => {
     setIsLoading(true);    
@@ -46,20 +74,9 @@ const BlogsPage = () => {
       console.error("Error fetching blogs:", error);
     } else {
       setBlogs(data || []);
-      extractTags(data || []);
     }
     
     setIsLoading(false);
-  };
-
-  const extractTags = (blogsData: Blog[]) => {
-    const tagsSet = new Set<string>();
-    blogsData.forEach((blog) => {
-      if (blog.tag) {
-        tagsSet.add(blog.tag);
-      }
-    });
-    setTags(["All", ...Array.from(tagsSet)]);
   };
 
   const handleShowMore = () => {
@@ -90,7 +107,7 @@ const BlogsPage = () => {
                     : 'btn-outline-primary'
                   }`}
                 >
-                  {tag} {tag === 'All' ? `(${blogs.length})` : `(${blogs.filter(blog => blog.tag === tag).length})`}
+                  {tag} {tag === 'All' ? `(${tagCounts['All'] || 0})` : `(${tagCounts[tag] || 0})`}
                 </button>
               ))}
             </div>
@@ -141,10 +158,14 @@ const BlogsPage = () => {
           {/* Show More Button */}
           {blogs.length >= visibleCount && (
             <div className="text-center mt-4">
-              <button className="btn btn-secondary" onClick={handleShowMore}>
-                Show More
-              </button>
-            </div>
+            <button 
+              className="btn btn-outline-primary rounded-pill px-4"
+              onClick={handleShowMore}
+              onMouseUp={(e) => e.currentTarget.blur()}
+            >
+              View More
+            </button>
+          </div>
           )}
         </>
       )}
