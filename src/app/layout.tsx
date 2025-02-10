@@ -1,7 +1,7 @@
 "use client";
 import "./globals.css";
 import "@/../public/scss/style.scss";
-import { Cormorant_Upright, Dancing_Script } from 'next/font/google';
+import { Cormorant_Upright } from 'next/font/google';
 import Bootstrap from "@/components/Bootstrap/Bootstrap";
 import { Suspense } from "react";
 import Loading from "./loading";
@@ -9,6 +9,7 @@ import GoogleAnalytics from "@/components/Shared/Google/googleAnalytics";
 import NavMenu from "@/components/Shared/TopNav/page";
 import Footer from "@/components/Shared/Footer/Footer";
 import { Analytics } from "@vercel/analytics/react"
+import OpenAIChatBot from "@/components/Shared/Chatbot/OpenAIChatBot";
 
 const cormorantUpright = Cormorant_Upright({
   subsets: ['latin'], // Or other subsets as needed
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <NavMenu />
                 <div className="d-flex flex-column flex-grow-1">
                   {children}
+                  <OpenAIChatBot />
                   <Analytics />
                 </div>
                 <Footer />
