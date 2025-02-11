@@ -19,6 +19,31 @@
   background-color: white;
 }
 
+/* Styles for the button */
+button.btn.btn-primary.rounded-circle.p-3.shadow {
+  position: fixed; /* Ensures the button is positioned relative to the viewport */
+  bottom: 1rem; /* Positions the button 1rem from the bottom of the viewport */
+  right: 1rem; /* Positions the button 1rem from the right of the viewport */
+  left: auto; /* Removes any conflicting left positioning */
+  top: auto; /* Removes any conflicting top positioning */
+  width: 60px; /* Sets the width of the button to 60px */
+  height: 60px; /* Sets the height of the button to 60px */
+  padding: 10px; /* Reduces the padding to 10px */
+  font-size: 14px; /* Reduces the font size to 14px */
+}
+
+/* Styles for the button's parent */
+.position-fixed.bottom-0.end-0.mb-4.me-4 {
+  width: auto; /* Allows the parent to adjust its width to fit the button */
+  height: auto; /* Allows the parent to adjust its height to fit the button */
+  left: auto; /* Removes any conflicting left positioning */
+  top: auto; /* Removes any conflicting top positioning */
+}
+
+.bg-primary {
+  background-color: #fe9a9b !important;
+}
+
 .loading-text {
   display: flex;
   gap: 8px;

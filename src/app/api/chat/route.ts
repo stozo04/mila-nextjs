@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   try {
     const { question } = await request.json();
     const thread = await openai.beta.threads.create();
@@ -33,8 +33,12 @@ export async function POST(request) {
       run.id
     );
 
-    while (runStatus.status !== 'completed') {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    // Add timeout and retry configuration
+    const maxRetries = 10; // 10 retries = up to 3 minutes with 3-second intervals
+    let retryCount = 0;
+
+    while (runStatus.status !== 'completed' && retryCount < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, 3000)); // Increased to 3 seconds
       runStatus = await openai.beta.threads.runs.retrieve(
         thread.id,
         run.id
@@ -43,6 +47,12 @@ export async function POST(request) {
       if (runStatus.status === 'failed') {
         throw new Error('Run failed');
       }
+
+      retryCount++;
+    }
+
+    if (retryCount >= maxRetries) {
+      throw new Error('Request timed out after 3 minutes');
     }
 
     // Get the messages
