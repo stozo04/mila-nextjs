@@ -1,7 +1,7 @@
 "use client";
 import Link from 'next/link';
 import Image from "next/image";
-import milaBrand from "@/../public/images/icon-3.png";
+import milaBrand from "@/../public/images/icon-3-transparent.png";
 
 const NavMenu = () => {
   return (
