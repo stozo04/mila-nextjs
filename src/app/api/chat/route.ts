@@ -1,20 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { createClient } from '@supabase/supabase-js';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+// Get the current date as a string in your desired format.
+const currentDate = new Date().toLocaleDateString('en-US', {
+  timeZone: 'UTC', // or your desired time zone
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+});
+
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // Using service role key for server-side operations
+);
 
 export async function POST(request: NextRequest) {
   try {
     const { question } = await request.json();
+    
+    // Store the question in Supabase
+    const { error: insertError } = await supabase
+      .from('chat_questions')
+      .insert([
+        { 
+          question,
+          created_at: new Date().toISOString(),
+        }
+      ]);
+
+    if (insertError) {
+      console.error('Error storing question:', insertError);
+      // Continue with the chat even if storing fails
+    }
+
     const thread = await openai.beta.threads.create();
+
+    // Combine the current date with the user's question.
+    const questionWithDate = `Assume today's date is ${currentDate}. ${question}`;
 
     const message = await openai.beta.threads.messages.create(
       thread.id,
       {
         role: "user",
-        content: question
+        content: questionWithDate
       }
     );
 
