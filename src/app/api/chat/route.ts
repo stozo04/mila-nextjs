@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
       console.error("Error storing question:", insertError);
       // Continue with the chat even if storing fails
     }
+    
     if (getAnswer && threadId && runId) {
       // If getAnswer is true, we are fetching the final answer based on existing thread and run IDs
       const messages = await openai.beta.threads.messages.list(threadId);
@@ -61,21 +62,6 @@ export async function POST(request: NextRequest) {
           { error: "Missing question" },
           { status: 400 }
         );
-      }
-
-      // Store the question in Supabase
-      const { error: insertError } = await supabase
-        .from("chat_questions")
-        .insert([
-          {
-            question,
-            created_at: new Date().toISOString(),
-          },
-        ]);
-
-      if (insertError) {
-        console.error("Error storing question:", insertError);
-        // Continue with the chat even if storing fails
       }
 
       const thread = await openai.beta.threads.create();
