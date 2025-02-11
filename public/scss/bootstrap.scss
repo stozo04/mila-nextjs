@@ -107,3 +107,26 @@ button:disabled .spinner-border-sm {
   border-color: rgba(254, 154, 155, 0.8) !important;
 }
 
+// Custom scrollbar styling
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #fe9a9b #f8f9fa;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f8f9fa;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #fe9a9b;
+    border-radius: 4px;
+
+    &:hover {
+      background-color: rgba(254, 154, 155, 0.8);
+    }
+  }
+}
+
