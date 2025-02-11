@@ -101,3 +101,9 @@ button:disabled .spinner-border-sm {
   color: rgba(254, 154, 155, 0.8);
 }
 
+.btn-primary:disabled,
+.btn-primary.disabled {
+  background-color: rgba(254, 154, 155, 0.8) !important;
+  border-color: rgba(254, 154, 155, 0.8) !important;
+}
+

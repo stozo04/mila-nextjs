@@ -117,7 +117,7 @@ export default function OpenAIChatBot() {
         <div className="position-fixed bottom-0 end-0 mb-4 me-4">
           <div className="card shadow" style={{ width: '300px' }}>
             <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Chat</h5>
+              <h5 className="mb-0">Chat with me</h5>
               <button
                 onClick={() => setIsOpen(false)}
                 className="btn btn-link text-white p-0 border-0"
@@ -129,7 +129,7 @@ export default function OpenAIChatBot() {
             <div className="card-body d-flex flex-column" style={{ height: '400px' }}>
               <div className="flex-grow-1 overflow-auto mb-3">
                 {messages.length === 0 ? (
-                  <p className="text-muted">Start a conversation...</p>
+                  <p className="text-muted">What would you like to know about me...</p>
                 ) : (
                   <>
                     {messages.map((msg, index) => (

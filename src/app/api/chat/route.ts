@@ -5,6 +5,10 @@ import { createClient } from '@supabase/supabase-js';
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+const TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+const POLL_INTERVAL_MS = 3000;
+const START_TIME = Date.now();
+
 // Get the current date as a string in your desired format.
 const currentDate = new Date().toLocaleDateString('en-US', {
   timeZone: 'UTC', // or your desired time zone
@@ -67,28 +71,21 @@ export async function POST(request: NextRequest) {
       run.id
     );
 
-    // Add timeout and retry configuration
-    const maxRetries = 10; // 10 retries = up to 3 minutes with 3-second intervals
-    let retryCount = 0;
-
-    while (runStatus.status !== 'completed' && retryCount < maxRetries) {
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Increased to 3 seconds
-      runStatus = await openai.beta.threads.runs.retrieve(
-        thread.id,
-        run.id
-      );
-
+    while (runStatus.status !== 'completed') {
+      // Check if timeout has been exceeded
+      if (Date.now() - START_TIME > TIMEOUT_MS) {
+        console.error('Request timed out after 3 minutes');
+        throw new Error('Request timed out after 3 minutes');
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+      runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+      console.log('Run status: ', runStatus);
       if (runStatus.status === 'failed') {
         throw new Error('Run failed');
       }
-
-      retryCount++;
     }
-
-    if (retryCount >= maxRetries) {
-      throw new Error('Request timed out after 3 minutes');
-    }
-
+    
     // Get the messages
     const messages = await openai.beta.threads.messages.list(
       thread.id
