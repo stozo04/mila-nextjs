@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import parse from 'html-react-parser';
-import Loading from "../../loading";
+import Loading from '@/app/loading';
 import { Blog } from "@/types/blog";
 
 

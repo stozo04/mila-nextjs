@@ -3,16 +3,16 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
 // List of public routes that don't require authentication
-  const publicRoutes = ['/', '/about', '/blogs', '/projects', '/skills', '/daily-log', '/logs']
+  const publicRoutes = ['/']
   
   if (publicRoutes.includes(request.nextUrl.pathname)) {
     return NextResponse.next()
   }
-  
+ 
   let supabaseResponse = NextResponse.next({
     request,
   })
-
+  
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

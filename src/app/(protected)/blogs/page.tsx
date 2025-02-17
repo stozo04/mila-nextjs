@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { Blog } from "@/types/blog";
-import Loading from "../loading";
+import Loading from '@/app/loading';
 
 
 const BlogsPage = () => {
