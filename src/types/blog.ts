@@ -60,4 +60,5 @@ export const myOneYearCards: JourneyCard[] = [
   { title: "1 Year 6 Months (18 Months)", message: "Thanksgiving 🦃", slug: "one-year-six-months", date: "October 30 - November 30, 2024" },
   { title: "1 Year 7 Months (19 Months)", message: "Christmas ☃️", slug: "one-year-seven-months", date: "November 30 - December 30, 2024" },
   { title: "1 Year 8 Months (20 Months)", message: "Russian Christmas & New Year ✨", slug: "one-year-eight-months", date: "December 30 - January 30, 2025" },
+  { title: "1 Year 9 Months (21 Months)", message: "Learning and Talking", slug: "one-year-nine-months", date: "January 30 - Feburary 28, 2025" },
 ].reverse();
