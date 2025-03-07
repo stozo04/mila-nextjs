@@ -1,19 +1,29 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getJourneyCards } from "@/lib/supabase/journey";
+import { getJourneyCards, JourneyType } from "@/lib/supabase/journey";
 import { JourneyCard } from "@/types/blog";
+import { createBrowserClient } from '@supabase/ssr';
+import CreateJourneyCardModal from "@/components/Journey/CreateJourneyCardModal";
 
 export default function OneYearPage() {
   const [visibleCards, setVisibleCards] = useState(3);
   const [cards, setCards] = useState<JourneyCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const router = useRouter();
+
+  // Initialize the Supabase client
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   useEffect(() => {
     async function fetchCards() {
       try {
-        const journeyCards = await getJourneyCards('one_year');
+        const journeyCards = await getJourneyCards(JourneyType.ONE_YEAR);
         setCards(journeyCards);
       } catch (error) {
         console.error('Error fetching journey cards:', error);
@@ -25,8 +35,33 @@ export default function OneYearPage() {
     fetchCards();
   }, []);
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = '/login';
+        return;
+      }
+      // Check if user's email is in the allowed list
+      const allowedEmail = process.env.NEXT_PUBLIC_ALLOWED_EMAIL;
+      const allowedEmails = allowedEmail?.split(',').map(email => email.trim()) || [];
+      
+      if (!allowedEmail || !allowedEmails.includes(user.email || '')) {
+        window.location.href = '/unauthorized';
+        return;
+      }
+
+      setUser(user);
+    };
+    fetchUser();
+  }, []);
+
   const loadMore = () => {
     setVisibleCards(prev => Math.min(prev + 3, cards.length));
+  };
+
+  const handleCardCreated = (newCard: JourneyCard) => {
+    setCards([...cards, newCard]);
   };
 
   if (isLoading) {
@@ -47,8 +82,23 @@ export default function OneYearPage() {
         <div className="col-12 text-center">
           <h1 className="display-4 mb-3">Life as a One Year Old</h1>
           <p className="lead">Warning: Content may contain excessive cuteness</p>
+          {user?.email === process.env.NEXT_PUBLIC_ALLOWED_EMAIL && (
+            <button
+              className="btn btn-success rounded-pill mt-3"
+              onClick={() => setShowCreateModal(true)}
+            >
+              Create Journey Card
+            </button>
+          )}
         </div>
       </div>
+
+      <CreateJourneyCardModal
+        show={showCreateModal}
+        onHide={() => setShowCreateModal(false)}
+        onCardCreated={handleCardCreated}
+        journeyType={JourneyType.ONE_YEAR}
+      />
 
       <div className="row g-4">
         {cards.slice(0, visibleCards).map((card) => (

@@ -7,7 +7,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-export type JourneyType = 'first_year' | 'one_year' | 'two_year' // extend as needed
+export const enum JourneyType {
+  FIRST_YEAR = 'first_year',
+  ONE_YEAR = 'one_year',
+  TWO_YEAR = 'two_year'
+}
 
 export interface JourneyCardDB extends JourneyCard {
   id: number

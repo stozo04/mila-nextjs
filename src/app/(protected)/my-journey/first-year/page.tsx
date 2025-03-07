@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getJourneyCards } from "@/lib/supabase/journey";
+import { getJourneyCards, JourneyType } from "@/lib/supabase/journey";
 import { JourneyCard } from "@/types/blog";
 
 export default function FirstYearPage() {
@@ -13,7 +13,7 @@ export default function FirstYearPage() {
   useEffect(() => {
     async function fetchCards() {
       try {
-        const journeyCards = await getJourneyCards('first_year');
+        const journeyCards = await getJourneyCards(JourneyType.FIRST_YEAR);
         setCards(journeyCards);
       } catch (error) {
         console.error('Error fetching journey cards:', error);

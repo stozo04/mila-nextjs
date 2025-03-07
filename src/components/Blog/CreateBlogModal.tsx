@@ -60,6 +60,7 @@ const CreateBlogModal = ({ show, onHide, onBlogCreated }: CreateBlogModalProps) 
             <Form.Control
               type="text"
               value={newBlog.title}
+              placeholder="e.g., 1 Year 5 Months Letter"
               onChange={(e) => setNewBlog({ ...newBlog, title: e.target.value })}
             />
           </Form.Group>
@@ -68,6 +69,7 @@ const CreateBlogModal = ({ show, onHide, onBlogCreated }: CreateBlogModalProps) 
             <Form.Control
               type="text"
               value={newBlog.slug}
+              placeholder="e.g., one-year-five-months"
               onChange={(e) => setNewBlog({ ...newBlog, slug: e.target.value })}
             />
           </Form.Group>
@@ -101,6 +103,7 @@ const CreateBlogModal = ({ show, onHide, onBlogCreated }: CreateBlogModalProps) 
             <Form.Control
               type="text"
               value={newBlog.tag}
+              placeholder="e.g., 2025"
               onChange={(e) => setNewBlog({ ...newBlog, tag: e.target.value })}
             />
           </Form.Group>
