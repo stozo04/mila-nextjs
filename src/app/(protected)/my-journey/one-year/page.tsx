@@ -1,15 +1,45 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { myOneYearCards } from "@/types";
+import { getJourneyCards } from "@/lib/supabase/journey";
+import { JourneyCard } from "@/types/blog";
 
-export default function FirstYearPage() {
+export default function OneYearPage() {
   const [visibleCards, setVisibleCards] = useState(3);
+  const [cards, setCards] = useState<JourneyCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
+  useEffect(() => {
+    async function fetchCards() {
+      try {
+        const journeyCards = await getJourneyCards('one_year');
+        setCards(journeyCards);
+      } catch (error) {
+        console.error('Error fetching journey cards:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchCards();
+  }, []);
+
   const loadMore = () => {
-    setVisibleCards(prev => Math.min(prev + 3, myOneYearCards.length));
+    setVisibleCards(prev => Math.min(prev + 3, cards.length));
   };
+
+  if (isLoading) {
+    return (
+      <div className="container py-5">
+        <div className="text-center">
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container py-5">
@@ -21,7 +51,7 @@ export default function FirstYearPage() {
       </div>
 
       <div className="row g-4">
-        {myOneYearCards.slice(0, visibleCards).map((card, index) => (
+        {cards.slice(0, visibleCards).map((card) => (
           <div key={card.slug} className="col-md-6 col-lg-4">
             <div className="card h-100">
               <div className="card-body">
@@ -41,7 +71,7 @@ export default function FirstYearPage() {
         ))}
       </div>
 
-      {visibleCards < myOneYearCards.length && (
+      {visibleCards < cards.length && (
         <div className="row mt-4">
           <div className="col-12 text-center">
             <button onClick={loadMore} className="btn btn-outline-primary rounded-pill px-4" onMouseUp={(e) => e.currentTarget.blur()}>
