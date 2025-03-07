@@ -6,7 +6,7 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { Blog } from "@/types/blog";
 import Loading from '@/app/loading';
-
+import CreateBlogModal from "@/components/Blog/CreateBlogModal";
 
 const BlogsPage = () => {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -16,6 +16,7 @@ const BlogsPage = () => {
   const [tagCounts, setTagCounts] = useState<Record<string, number>>({});
   const [selectedTag, setSelectedTag] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     fetchBlogs();
@@ -88,6 +89,11 @@ const BlogsPage = () => {
     setVisibleCount(3); // Reset visible count when filtering
   };
 
+  const handleBlogCreated = (newBlog: Blog) => {
+    setBlogs([newBlog, ...blogs]);
+    fetchAllTags(); // Refresh tags in case a new tag was added
+  };
+
   return (
     <div className="container mt-5">
       {isLoading ? (
@@ -95,8 +101,16 @@ const BlogsPage = () => {
       ) : (
         <>
           <div className="d-flex justify-content-between align-items-center mb-4">
-            {/* Tag Filter Pills */}
-            <div className="d-flex gap-2">
+            <div className="d-flex gap-2 align-items-center">
+              {/* Create Blog Button */}
+              <button
+                className="btn btn-success rounded-pill me-3"
+                onClick={() => setShowCreateModal(true)}
+              >
+                Create Blog
+              </button>
+              
+              {/* Tag Filter Pills */}
               {tags.map((tag) => (
                 <button
                   key={tag}
@@ -123,6 +137,13 @@ const BlogsPage = () => {
               />
             </div>
           </div>
+
+          {/* Create Blog Modal */}
+          <CreateBlogModal
+            show={showCreateModal}
+            onHide={() => setShowCreateModal(false)}
+            onBlogCreated={handleBlogCreated}
+          />
 
           {/* Blogs List */}
           <div className="row">
@@ -158,14 +179,14 @@ const BlogsPage = () => {
           {/* Show More Button */}
           {blogs.length >= visibleCount && (
             <div className="text-center mt-4">
-            <button 
-              className="btn btn-outline-primary rounded-pill px-4"
-              onClick={handleShowMore}
-              onMouseUp={(e) => e.currentTarget.blur()}
-            >
-              View More
-            </button>
-          </div>
+              <button 
+                className="btn btn-outline-primary rounded-pill px-4"
+                onClick={handleShowMore}
+                onMouseUp={(e) => e.currentTarget.blur()}
+              >
+                View More
+              </button>
+            </div>
           )}
         </>
       )}
