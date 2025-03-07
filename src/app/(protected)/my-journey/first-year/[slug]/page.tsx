@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Header from "@/components/BabyShower/Header";
 import Gallery from "@/components/BabyShower/Gallery";
 import { useParams } from "next/navigation";
-import { getJourneyCards } from "@/lib/supabase/journey";
+import { getJourneyCards, JourneyType } from "@/lib/supabase/journey";
 import type { JourneyCard } from "@/types/blog";
 
 export default function FirstYearDetailPage() {
@@ -16,7 +16,7 @@ export default function FirstYearDetailPage() {
     useEffect(() => {
         async function fetchCard() {
             try {
-                const cards = await getJourneyCards('first_year');
+                const cards = await getJourneyCards(JourneyType.FIRST_YEAR);
                 const card = cards.find(card => card.slug === currentSlug);
                 if (card) {
                     setCardData(card);
