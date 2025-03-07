@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { supabase } from "@/lib/supabase";
+import { createBrowserClient } from '@supabase/ssr';
 import { Blog } from "@/types/blog";
 import Loading from '@/app/loading';
 import CreateBlogModal from "@/components/Blog/CreateBlogModal";
@@ -17,6 +17,13 @@ const BlogsPage = () => {
   const [selectedTag, setSelectedTag] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  // Initialize the Supabase client
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   useEffect(() => {
     fetchBlogs();
@@ -24,6 +31,28 @@ const BlogsPage = () => {
 
   useEffect(() => {
     fetchAllTags();
+    // Get the current user's session
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log("user", user);
+      if (!user) {
+        // Redirect to login if no user is found
+        window.location.href = '/login';
+        return;
+      }
+      // Check if user's email is in the allowed list
+      const allowedEmail = process.env.NEXT_PUBLIC_ALLOWED_EMAIL;
+      const allowedEmails = allowedEmail?.split(',').map(email => email.trim()) || [];
+      
+      if (!allowedEmail || !allowedEmails.includes(user.email || '')) {
+        // Redirect to unauthorized page if email is not allowed
+        window.location.href = '/unauthorized';
+        return;
+      }
+
+      setUser(user);
+    };
+    fetchUser();
   }, []);
 
   const fetchAllTags = async () => {
@@ -102,13 +131,15 @@ const BlogsPage = () => {
         <>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div className="d-flex gap-2 align-items-center">
-              {/* Create Blog Button */}
-              <button
-                className="btn btn-success rounded-pill me-3"
-                onClick={() => setShowCreateModal(true)}
-              >
-                Create Blog
-              </button>
+              {/* Create Blog Button - Only show for specific user */}
+              {user?.email === process.env.NEXT_PUBLIC_ALLOWED_EMAIL && (
+                <button
+                  className="btn btn-success rounded-pill me-3"
+                  onClick={() => setShowCreateModal(true)}
+                >
+                  Create Blog
+                </button>
+              )}
               
               {/* Tag Filter Pills */}
               {tags.map((tag) => (
