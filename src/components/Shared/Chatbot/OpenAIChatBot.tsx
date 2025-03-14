@@ -48,6 +48,25 @@ export default function OpenAIChatBot() {
     const [runId, setRunId] = useState<string | null>(null);
     const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
+    // Helper function to transform message
+    const transformMessage = (input: string): string => {
+        // First replace pronouns with Mila
+        let transformed = input.replace(/\b(you|your|yours|yourself)\b/gi, (match) => {
+            const replacements: { [key: string]: string } = {
+                'you': 'Mila',
+                'your': "Mila's",
+                'yours': "Mila's",
+                'yourself': 'herself'
+            };
+            return replacements[match.toLowerCase()] || match;
+        });
+
+        // Then fix grammar - replace "are" with "is" when it follows Mila
+        transformed = transformed.replace(/\bMila are\b/gi, 'Mila is');
+        
+        return transformed;
+    };
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }
@@ -182,12 +201,13 @@ export default function OpenAIChatBot() {
         setRunId(null);
 
         try {
+            const transformedMessage = transformMessage(message.trim());
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ question: message.trim() }),
+                body: JSON.stringify({ question: transformedMessage }),
             });
 
             if (!response.ok && response.status !== 202) { // Check for 202 Accepted status
