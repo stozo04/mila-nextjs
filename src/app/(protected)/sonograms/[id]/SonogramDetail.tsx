@@ -1,75 +1,101 @@
+"use client";
+
 import Link from "next/link";
 import Image from 'next/image';
-import fs from 'fs'
-import path from 'path'
 
-const sonograms = [
+interface SonogramImage {
+  id: string;
+  title: string;
+  date: string;
+  description: string;
+  age: string;
+  images: string[];
+}
+
+interface SonogramDetailProps {
+  sonoId: string;
+}
+
+const sonograms: SonogramImage[] = [
     {
         id: '1',
         title: 'Sonogram 1',
         date: 'November 23, 2022',
         description: 'Today is the first time my parents got to meet me!',
-        age: '4 weeks'
+        age: '4 weeks',
+        images: [
+            '/images/sonograms/sonogram-1/1.jpg',
+            '/images/sonograms/sonogram-1/2.jpg',
+            '/images/sonograms/sonogram-1/3.jpg'
+        ]
     },
     {
         id: '2',
         title: 'Sonogram 2',
         date: 'December 27, 2022',
-        description: 'I had a great Christmas. I got to meet my dad’s side of the family!',
-        age: '17 weeks'
+        description: 'I had a great Christmas. I got to meet my dad\'s side of the family!',
+        age: '17 weeks',
+        images: [
+            '/images/sonograms/sonogram-2/1.jpg',
+            '/images/sonograms/sonogram-2/2.jpg',
+            '/images/sonograms/sonogram-2/3.jpg'
+        ]
     },
     {
         id: '3',
         title: 'Sonogram 3',
         date: 'January 10, 2023',
         description: 'I got all my toes and fingers counted today!!',
-        age: '19 weeks'
+        age: '19 weeks',
+        images: [
+            '/images/sonograms/sonogram-3/1.jpg',
+            '/images/sonograms/sonogram-3/2.jpg',
+            '/images/sonograms/sonogram-3/3.jpg'
+        ]
     },
     {
         id: '4',
         title: 'Sonogram 4',
         date: 'March 15, 2023',
         description: 'I am growing so fast! I am 2 lbs 8 oz. I got to do my first selfie!!',
-        age: '28 weeks'
+        age: '28 weeks',
+        images: [
+            '/images/sonograms/sonogram-4/1.jpg',
+            '/images/sonograms/sonogram-4/2.jpg',
+            '/images/sonograms/sonogram-4/3.jpg'
+        ]
     },
     {
         id: '5',
         title: 'Sonogram 5',
         date: 'April 10, 2023',
         description: 'I am almost here! I am 5 lbs 10 oz.',
-        age: '36 weeks'
+        age: '36 weeks',
+        images: [
+            '/images/sonograms/sonogram-5/1.jpg',
+            '/images/sonograms/sonogram-5/2.jpg',
+            '/images/sonograms/sonogram-5/3.jpg'
+        ]
     }
 ];
 
-const SonogramDetailPage = ({ sonoId }) => {
-    const sonogram = sonograms.find(s => s.id === sonoId); // 🔹 Use `.find()` instead of `[id]`
+const SonogramDetailPage = ({ sonoId }: SonogramDetailProps) => {
+    const sonogram = sonograms.find(s => s.id === sonoId);
 
     if (!sonogram) {
         return <div className="container mt-5">Sonogram not found</div>;
     }
 
-     // Get images from public folder
- const imageDirectory = path.join(process.cwd(), 'public', 'images', 'sonograms', `sonogram-${sonoId}`)
- const imageFilenames = fs.readdirSync(imageDirectory)
-     .filter(file =>
-         file.endsWith('.jpg') ||
-         file.endsWith('.png') ||
-         file.endsWith('.jpeg')
-     )
-     .sort((a, b) => a.localeCompare(b))
- const images = imageFilenames.map(filename =>
-     `/images/sonograms/sonogram-${sonoId}/${filename}`
- )
     return (
         <div className="container mt-4 mb-4">
             <div className="row">
                 <div className="col-12">
                     <article className="portfolio">
-                        <div className="row"> {/* Added a row for horizontal layout */}
-                            <div className="col-md-9"> {/* Image column (75% on medium and larger screens) */}
+                        <div className="row">
+                            <div className="col-md-9">
                                 <div id="imageCarousel" className="carousel slide" data-bs-ride="carousel">
                                     <div className="carousel-inner">
-                                        {images.map((img, index) => (
+                                        {sonogram.images.map((img, index) => (
                                             <div
                                                 key={index}
                                                 className={`carousel-item ${index === 0 ? 'active' : ''}`}
@@ -85,7 +111,6 @@ const SonogramDetailPage = ({ sonoId }) => {
                                             </div>
                                         ))}
                                     </div>
-                                    {/* Carousel controls remain within the image column */}
                                     <button
                                         className="carousel-control-prev"
                                         type="button"
@@ -106,8 +131,8 @@ const SonogramDetailPage = ({ sonoId }) => {
                                     </button>
                                 </div>
                             </div>
-                            <div className="col-md-3"> {/* Content column (25% on medium and larger screens) */}
-                                <header className="entry-header mt-4 mt-md-0"> {/* Adjust top margin on medium screens */}
+                            <div className="col-md-3">
+                                <header className="entry-header mt-4 mt-md-0">
                                     <h2 className="entry-title">{sonogram.title}</h2>
                                     <div className="text-muted mb-3">{sonogram.date}</div>
                                     <div className="entry-meta">
@@ -122,33 +147,33 @@ const SonogramDetailPage = ({ sonoId }) => {
                                     </div>
                                 </header>
  
-                            <div className="d-flex justify-content-between mt-4">
-                                {sonoId !== '1' && ( // Show "Previous" if not the first sonogram
-                                    <Link
-                                        href={`/sonograms/${parseInt(sonoId) - 1}`}
-                                        className="btn btn-outline-primary"
-                                    >
-                                        Previous
-                                    </Link>
-                                )}
-                                <div> {/* Added a container for the "Next" button */}
-                                    {sonoId !== '5' && ( // Show "Next" if not the last sonogram
+                                <div className="d-flex justify-content-between mt-4">
+                                    {sonoId !== '1' && (
                                         <Link
-                                            href={`/sonograms/${parseInt(sonoId) + 1}`}
+                                            href={`/sonograms/${parseInt(sonoId) - 1}`}
                                             className="btn btn-outline-primary"
                                         >
-                                            Next
+                                            Previous
                                         </Link>
                                     )}
+                                    <div>
+                                        {sonoId !== '5' && (
+                                            <Link
+                                                href={`/sonograms/${parseInt(sonoId) + 1}`}
+                                                className="btn btn-outline-primary"
+                                            >
+                                                Next
+                                            </Link>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                
-                            </div>
-                        </div> {/* End of the row */}
+                        </div>
                     </article>
                 </div>
             </div>
         </div>
     );
 }
+
 export default SonogramDetailPage;
