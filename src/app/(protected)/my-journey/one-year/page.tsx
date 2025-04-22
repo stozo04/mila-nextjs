@@ -44,7 +44,7 @@ export default function OneYearPage() {
       }
       // Check if user's email is in the allowed list
       const allowedEmail = process.env.NEXT_PUBLIC_ALLOWED_EMAIL;
-      const allowedEmails = allowedEmail?.split(',').map(email => email.trim()) || [];
+      const allowedEmails = allowedEmail?.split(';').map(email => email.trim()) || [];
       
       if (!allowedEmail || !allowedEmails.includes(user.email || '')) {
         window.location.href = '/unauthorized';
