@@ -27,33 +27,14 @@ const BlogsPage = () => {
 
   useEffect(() => {
     fetchBlogs();
-  }, [visibleCount, selectedTag, searchQuery]);
-
-  useEffect(() => {
     fetchAllTags();
     // Get the current user's session
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      console.log("user", user);
-      if (!user) {
-        // Redirect to login if no user is found
-        window.location.href = '/login';
-        return;
-      }
-      // Check if user's email is in the allowed list
-      const allowedEmail = process.env.NEXT_PUBLIC_ALLOWED_EMAIL;
-      const allowedEmails = allowedEmail?.split(';').map(email => email.trim()) || [];
-      
-      if (!allowedEmail || !allowedEmails.includes(user.email || '')) {
-        // Redirect to unauthorized page if email is not allowed
-        window.location.href = '/unauthorized';
-        return;
-      }
-
       setUser(user);
     };
     fetchUser();
-  }, []);
+  }, [visibleCount, selectedTag, searchQuery]);
 
   const fetchAllTags = async () => {
     const { data: tagsData, error } = await supabase
