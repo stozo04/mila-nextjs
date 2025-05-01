@@ -38,19 +38,6 @@ export default function OneYearPage() {
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        window.location.href = '/login';
-        return;
-      }
-      // Check if user's email is in the allowed list
-      const allowedEmail = process.env.NEXT_PUBLIC_ALLOWED_EMAIL;
-      const allowedEmails = allowedEmail?.split(';').map(email => email.trim()) || [];
-      
-      if (!allowedEmail || !allowedEmails.includes(user.email || '')) {
-        window.location.href = '/unauthorized';
-        return;
-      }
-
       setUser(user);
     };
     fetchUser();
@@ -82,7 +69,7 @@ export default function OneYearPage() {
         <div className="col-12 text-center">
           <h1 className="display-4 mb-3">Life as a One Year Old</h1>
           <p className="lead">Warning: Content may contain excessive cuteness</p>
-          {user?.email === process.env.NEXT_PUBLIC_ALLOWED_EMAIL && (
+          {user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
             <button
               className="btn btn-success rounded-pill mt-3"
               onClick={() => setShowCreateModal(true)}

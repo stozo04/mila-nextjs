@@ -113,7 +113,7 @@ const BlogsPage = () => {
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div className="d-flex gap-2 align-items-center">
               {/* Create Blog Button - Only show for specific user */}
-              {user?.email === process.env.NEXT_PUBLIC_ALLOWED_EMAIL && (
+              {user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
                 <button
                   className="btn btn-success rounded-pill me-3"
                   onClick={() => setShowCreateModal(true)}
