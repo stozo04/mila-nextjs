@@ -92,9 +92,56 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
             <button
               onClick={handleListen}
               disabled={isAudioLoading}
-              className="btn btn-link"
+              className="listen-button"
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: '#4a5568',
+                fontSize: '0.95rem',
+                fontWeight: 500,
+                backgroundColor: isAudioLoading ? '#f3f4f6' : '#f8fafc',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+              }}
+              onMouseOver={(e) => {
+                if (!isAudioLoading) {
+                  e.currentTarget.style.backgroundColor = '#f1f5f9';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (!isAudioLoading) {
+                  e.currentTarget.style.backgroundColor = '#f8fafc';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }
+              }}
             >
-              {isAudioLoading ? 'Loading...' : '✨ Listen'}
+              {isAudioLoading ? (
+                <>
+                  <div className="loading-spinner" style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid #e2e8f0',
+                    borderTop: '2px solid #4a5568',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 5.14V19.14L19 12.14L8 5.14Z" fill="currentColor"/>
+                  </svg>
+                  Listen
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -102,12 +149,21 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
 
       {/* Audio player (once loaded) */}
       {audioUrl && (
-        <audio
-          ref={audioRef}
-          src={audioUrl}
-          controls
-          className="w-100 mb-4"
-        />
+        <div className="modern-audio-player" style={{
+          maxWidth: '600px',
+          margin: '0 auto 2rem',
+          padding: '1rem',
+          borderRadius: '12px',
+          backgroundColor: '#f8fafc',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+        }}>
+          <audio
+            ref={audioRef}
+            src={audioUrl}
+            controls
+            className="custom-audio-player"
+          />
+        </div>
       )}
 
       {/* Blog content */}
@@ -189,6 +245,30 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
           </div>
         </div>
       )}
+
+      {/* Add keyframes for loading spinner and audio player styles */}
+      <style jsx global>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .custom-audio-player {
+          width: 100%;
+          height: 40px;
+          border-radius: 8px;
+          background-color: transparent;
+        }
+
+        .custom-audio-player::-webkit-media-controls-panel {
+          background-color: transparent;
+        }
+
+        .custom-audio-player::-webkit-media-controls-current-time-display,
+        .custom-audio-player::-webkit-media-controls-time-remaining-display {
+          color: #4a5568;
+        }
+      `}</style>
     </div>
   );
 };
