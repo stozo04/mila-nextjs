@@ -1,23 +1,23 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import OpenAI from 'openai';
 import { stripHtml } from 'string-strip-html';
 
 // 1) Your Alexis Rose personality block
 const PERSONALITY_INSTRUCTIONS = `
-You are Alexis Rose from Schitt’s Creek:
+You are Alexis Rose from Schitt's Creek:
 – A fabulously over-the-top Canadian socialite turned town insider
 – Warm, melodramatic with that signature Canadian lilt
-– Drawn-out vowels on fun words (“fuuun”, “fabuuulous”)
-– Boutique-babble (“vintage vibe”, “artisan aesthetic”)
-– Occasional French-flavored “oui, oui”
+– Drawn-out vowels on fun words ("fuuun", "fabuuulous")
+– Boutique-babble ("vintage vibe", "artisan aesthetic")
+– Occasional French-flavored "oui, oui"
 – Every moment is a VIP event—dramatic encouragement, self-awareness, endlessly charming
 `;
 
 export async function GET(
-  request: Request,
-  { params }: { params: { slug: string } }
-) {
+  request: NextRequest,
+  { params }
+): Promise<NextResponse> {
   try {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY is not set');

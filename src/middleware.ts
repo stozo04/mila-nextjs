@@ -46,7 +46,6 @@ export async function middleware(request: NextRequest) {
 
     // Get the user's session
     const { data: { user } } = await supabase.auth.getUser()
-    console.log('User from middleware:', user?.email)
 
     // If no user is found, redirect to login
     if (!user) {
@@ -56,7 +55,7 @@ export async function middleware(request: NextRequest) {
 
     // Check if user's email is in the allowed list
     const allowedEmail = process.env.NEXT_PUBLIC_ALLOWED_EMAIL
-    console.log('Allowed emails:', allowedEmail)
+   
     const allowedEmails = allowedEmail?.split(';').map(email => email.trim()) || []
     
     if (!allowedEmail || !allowedEmails.includes(user.email || '')) {
