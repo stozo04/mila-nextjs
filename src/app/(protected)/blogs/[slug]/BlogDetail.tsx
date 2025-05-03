@@ -85,10 +85,10 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
     <div className="container mt-5">
       {/* Header with Listen control */}
       <div className="text-center mb-4">
-        <div className="d-flex justify-content-between align-items-center" style={{ padding: '0 10%' }}>
-          <h4>My Precious Mila,</h4>
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3" style={{ padding: '0 5%' }}>
+          <h4 className="mb-2 mb-md-0">My Precious Mila,</h4>
           <div className="d-flex align-items-center gap-3">
-            <strong>{formatDate(blog.date)}</strong>
+            <strong className="d-none d-md-inline">{formatDate(blog.date)}</strong>
             <button
               onClick={handleListen}
               disabled={isAudioLoading}
@@ -108,6 +108,7 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
                 fontWeight: 500,
                 backgroundColor: isAudioLoading ? '#f3f4f6' : '#f8fafc',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                whiteSpace: 'nowrap'
               }}
               onMouseOver={(e) => {
                 if (!isAudioLoading) {
