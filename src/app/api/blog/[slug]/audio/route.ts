@@ -60,7 +60,7 @@ async function saveAudioToCache(slug: string, buffer: Buffer) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }
 ): Promise<NextResponse> {
   try {
 
