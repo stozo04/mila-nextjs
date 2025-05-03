@@ -63,11 +63,12 @@ export async function GET(
   { params }: { params: { slug: string } }
 ): Promise<NextResponse> {
   try {
+
     if (!process.env.OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY is not set');
     }
     
-    const { slug } = params;
+    const { slug } = await params;
     
     // First, check if we have this audio cached
     const cachedAudio = await getAudioFromCache(slug);
