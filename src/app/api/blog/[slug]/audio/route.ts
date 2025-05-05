@@ -1,3 +1,5 @@
+
+export const runtime = 'edge'
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import OpenAI from 'openai';
@@ -123,7 +125,8 @@ export async function GET(
       return new NextResponse(buffer, {
         headers: {
           'Content-Type': 'audio/mpeg',
-          'Content-Length': buffer.length.toString()
+          'Content-Length': buffer.length.toString(),
+          'Access-Control-Allow-Origin': '*'  
         }
       });
     } else {
@@ -144,7 +147,8 @@ export async function GET(
       return new NextResponse(buffer, {
         headers: {
           'Content-Type': 'audio/mpeg',
-          'Content-Length': buffer.length.toString()
+          'Content-Length': buffer.length.toString(),
+          'Access-Control-Allow-Origin': '*'  
         }
       });
     }
