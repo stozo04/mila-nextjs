@@ -1,4 +1,14 @@
 
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    }
+  });
+}
 export const runtime = 'edge'
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
@@ -39,16 +49,16 @@ async function getAudioFromCache(slug: string) {
 }
 
 // Function to save audio to cache
-async function saveAudioToCache(slug: string, buffer: Buffer) {
+async function saveAudioToCache(slug: string, buffer: string) {
   try {
     // Convert buffer to base64 string for storage
-    const base64Audio = buffer.toString('base64');
+
     
     const { error } = await supabase
       .from('blog_audio')
       .upsert({ 
         slug, 
-        audio_data: base64Audio,
+        audio_data: buffer,
         created_at: new Date().toISOString()
       });
     
@@ -101,35 +111,35 @@ export async function GET(
     
     // Check if text is short enough for direct processing
     // GPT-4o-mini-tts has a character limit, so we'll use a safe threshold
-    const MAX_TEXT_LENGTH = 4000; // Characters (not tokens)
+    // const MAX_TEXT_LENGTH = 4000; // Characters (not tokens)
     
-    if (cleanText.length > MAX_TEXT_LENGTH) {
-      // For longer content, we'll truncate to avoid timeout
-      // This is a temporary solution until we implement a proper background job
-      const truncatedText = cleanText.substring(0, MAX_TEXT_LENGTH) + 
-        "... [Content truncated due to length. Please visit the blog to read the full content.]";
+    // if (cleanText.length > MAX_TEXT_LENGTH) {
+    //   // For longer content, we'll truncate to avoid timeout
+    //   // This is a temporary solution until we implement a proper background job
+    //   const truncatedText = cleanText.substring(0, MAX_TEXT_LENGTH) + 
+    //     "... [Content truncated due to length. Please visit the blog to read the full content.]";
         
-      const mp3 = await openai.audio.speech.create({
-        model: 'gpt-4o-mini-tts',
-        voice: 'nova',
-        input: truncatedText,
-        instructions: PERSONALITY_INSTRUCTIONS.trim(),
-        response_format: 'mp3'
-      });
+    //   const mp3 = await openai.audio.speech.create({
+    //     model: 'gpt-4o-mini-tts',
+    //     voice: 'nova',
+    //     input: truncatedText,
+    //     instructions: PERSONALITY_INSTRUCTIONS.trim(),
+    //     response_format: 'mp3'
+    //   });
       
-      const buffer = Buffer.from(await mp3.arrayBuffer());
+    //   const buffer = Buffer.from(await mp3.arrayBuffer());
       
-      // Cache the result for future requests
-      await saveAudioToCache(slug, buffer);
+    //   // Cache the result for future requests
+    //   await saveAudioToCache(slug, buffer);
       
-      return new NextResponse(buffer, {
-        headers: {
-          'Content-Type': 'audio/mpeg',
-          'Content-Length': buffer.length.toString(),
-          'Access-Control-Allow-Origin': '*'  
-        }
-      });
-    } else {
+    //   return new NextResponse(buffer, {
+    //     headers: {
+    //       'Content-Type': 'audio/mpeg',
+    //       'Content-Length': buffer.length.toString(),
+    //       'Access-Control-Allow-Origin': '*'  
+    //     }
+    //   });
+    // } else {
       // Regular processing for shorter content
       const mp3 = await openai.audio.speech.create({
         model: 'gpt-4o-mini-tts',
@@ -139,19 +149,19 @@ export async function GET(
         response_format: 'mp3'
       });
       
-      const buffer = Buffer.from(await mp3.arrayBuffer());
+      const buffer = await mp3.arrayBuffer();
       
       // Cache the result for future requests
-      await saveAudioToCache(slug, buffer);
+      await saveAudioToCache(slug, String(buffer.byteLength));
       
       return new NextResponse(buffer, {
         headers: {
           'Content-Type': 'audio/mpeg',
-          'Content-Length': buffer.length.toString(),
+          'Content-Length': String(buffer.byteLength),
           'Access-Control-Allow-Origin': '*'  
         }
       });
-    }
+    //}
   } catch (err) {
     console.error('Error generating audio:', err);
     return new NextResponse('Error generating audio', { status: 500 });
