@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-import OpenAI from 'openai';
-import { stripHtml } from 'string-strip-html';
+// src/app/api/blog/[slug]/audio/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
+import OpenAI from "openai";
+import { stripHtml } from "string-strip-html";
+import { PassThrough } from "stream";
 
 // Alexis Rose personality block
 const PERSONALITY_INSTRUCTIONS = `
@@ -14,48 +16,26 @@ You are Alexis Rose from Schitt's Creek:
 – Every moment is a VIP event—dramatic encouragement, self-awareness, endlessly charming
 `;
 
-// Function to check if we have this audio cached
-async function getAudioFromCache(slug: string) {
-  try {
-    const { data, error } = await supabase
-      .from('blog_audio')
-      .select('audio_data')
-      .eq('slug', slug)
-      .single();
-    
-    if (error || !data || !data.audio_data) {
-      return null;
-    }
-    
-    // Convert base64 string back to buffer
-    const buffer = Buffer.from(data.audio_data, 'base64');
-    return buffer;
-  } catch (err) {
-    console.error('Error checking audio cache:', err);
-    return null;
-  }
+// Check for a cached audio blob
+async function getAudioFromCache(slug: string): Promise<Buffer | null> {
+  const { data, error } = await supabase
+    .from("blog_audio")
+    .select("audio_data")
+    .eq("slug", slug)
+    .single();
+  if (error || !data?.audio_data) return null;
+  return Buffer.from(data.audio_data, "base64");
 }
 
-// Function to save audio to cache
+// Save a newly generated audio blob
 async function saveAudioToCache(slug: string, buffer: Buffer) {
-  try {
-    // Convert buffer to base64 string for storage
-    const base64Audio = buffer.toString('base64');
-    
-    const { error } = await supabase
-      .from('blog_audio')
-      .upsert({ 
-        slug, 
-        audio_data: base64Audio,
-        created_at: new Date().toISOString()
-      });
-    
-    if (error) {
-      console.error('Error saving audio to cache:', error);
-    }
-  } catch (err) {
-    console.error('Error in saveAudioToCache:', err);
-  }
+  const base64Audio = buffer.toString("base64");
+  const { error } = await supabase.from("blog_audio").upsert({
+    slug,
+    audio_data: base64Audio,
+    created_at: new Date().toISOString(),
+  });
+  if (error) console.error("Error saving audio cache:", error);
 }
 
 export async function GET(
@@ -63,93 +43,82 @@ export async function GET(
   { params }
 ): Promise<NextResponse> {
   try {
-
     if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not set');
+      throw new Error("OPENAI_API_KEY is not set");
     }
-    
     const { slug } = await params;
-    
-    // First, check if we have this audio cached
-    const cachedAudio = await getAudioFromCache(slug);
-    if (cachedAudio) {
-      console.log(`Serving cached audio for ${slug}`);
-      return new NextResponse(cachedAudio, {
-        headers: {
-          'Content-Type': 'audio/mpeg',
-          'Content-Length': cachedAudio.length.toString()
-        }
-      });
+    if (!slug) {
+      return new NextResponse("Missing slug", { status: 400 });
     }
-    
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // Fetch & clean your blog text
-    const { data: blog, error } = await supabase
-      .from('blogs')
-      .select('content')
-      .eq('slug', slug)
+    // 1) Return cached audio if present
+    const cached = await getAudioFromCache(slug);
+
+    if (cached) {
+      return new NextResponse(cached, {
+        headers: {
+          "Content-Type": "audio/mpeg",
+          "Content-Length": cached.length.toString(),
+        },
+      });
+    }
+
+    // 2) Fetch blog text & clean HTML
+    const { data: blog, error: blogErr } = await supabase
+      .from("blogs")
+      .select("content")
+      .eq("slug", slug)
       .single();
-      
-    if (error || !blog) {
-      return new NextResponse('Blog not found', { status: 404 });
+    if (blogErr || !blog?.content) {
+      return new NextResponse("Blog not found", { status: 404 });
     }
-    
-    const cleanText = stripHtml(blog.content).result.trim();
-    
-    // Check if text is short enough for direct processing
-    // GPT-4o-mini-tts has a character limit, so we'll use a safe threshold
-    const MAX_TEXT_LENGTH = 4000; // Characters (not tokens)
-    
-    if (cleanText.length > MAX_TEXT_LENGTH) {
-      // For longer content, we'll truncate to avoid timeout
-      // This is a temporary solution until we implement a proper background job
-      const truncatedText = cleanText.substring(0, MAX_TEXT_LENGTH) + 
-        "... [Content truncated due to length. Please visit the blog to read the full content.]";
-        
-      const mp3 = await openai.audio.speech.create({
-        model: 'gpt-4o-mini-tts',
-        voice: 'nova',
-        input: truncatedText,
-        instructions: PERSONALITY_INSTRUCTIONS.trim(),
-        response_format: 'mp3'
-      });
-      
-      const buffer = Buffer.from(await mp3.arrayBuffer());
-      
-      // Cache the result for future requests
-      await saveAudioToCache(slug, buffer);
-      
-      return new NextResponse(buffer, {
-        headers: {
-          'Content-Type': 'audio/mpeg',
-          'Content-Length': buffer.length.toString()
-        }
-      });
-    } else {
-      // Regular processing for shorter content
-      const mp3 = await openai.audio.speech.create({
-        model: 'gpt-4o-mini-tts',
-        voice: 'nova',
-        input: cleanText,
-        instructions: PERSONALITY_INSTRUCTIONS.trim(),
-        response_format: 'mp3'
-      });
-      
-      const buffer = Buffer.from(await mp3.arrayBuffer());
-      
-      // Cache the result for future requests
-      await saveAudioToCache(slug, buffer);
-      
-      return new NextResponse(buffer, {
-        headers: {
-          'Content-Type': 'audio/mpeg',
-          'Content-Length': buffer.length.toString()
-        }
-      });
+    const clean = stripHtml(blog.content).result.replace(/\s+/g, " ").trim();
+
+    // 3) Truncate if too long
+    const MAX = 4000;
+    const inputText =
+      clean.length > MAX
+        ? clean.slice(0, MAX) + "… [truncated; read on the site]"
+        : clean;
+
+    // 4) Call OpenAI TTS (returns a Node ReadableStream in .body)
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const aiRes = await openai.audio.speech.create({
+      model: "gpt-4o-mini-tts",
+      voice: "nova",
+      input: inputText,
+      instructions: PERSONALITY_INSTRUCTIONS.trim(),
+      response_format: "mp3",
+    });
+
+    if (!aiRes.body || typeof (aiRes.body as any).pipe !== "function") {
+      throw new Error("No streamable body from OpenAI");
     }
+
+    // 5) Create a PassThrough to both forward chunks and buffer for caching
+    const pass = new PassThrough();
+    const chunks: Buffer[] = [];
+
+    pass.on("data", (chunk: Buffer) => {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+    pass.on("end", async () => {
+      const full = Buffer.concat(chunks);
+      await saveAudioToCache(slug, full);
+    });
+
+    // 6) Pipe the OpenAI stream into our PassThrough
+    (aiRes.body as unknown as NodeJS.ReadableStream).pipe(pass);
+
+    // 7) Return the PassThrough as the response body (chunked)
+    return new NextResponse(pass as unknown as BodyInit, {
+      headers: {
+        "Content-Type": "audio/mpeg",
+        // omit Content-Length for chunked transfer
+      },
+    });
   } catch (err) {
-    console.error('Error generating audio:', err);
-    return new NextResponse('Error generating audio', { status: 500 });
+    console.error("Error in TTS route:", err);
+    return new NextResponse("Error generating audio", { status: 500 });
   }
 }

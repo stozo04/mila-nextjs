@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Components",
+  "description": "Schema for various component properties in the application",
+  "definitions": {
+    "HeaderProps": {
+      "type": "object",
+      "required": ["title", "date"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title for the header"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date to display in the header"
+        }
+      }
+    },
+    "GalleryProps": {
+      "type": "object",
+      "required": ["folder"],
+      "properties": {
+        "folder": {
+          "type": "string",
+          "description": "Name of the folder containing gallery images (e.g., 'houston' or 'dallas')"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Optional limit on the number of images to display"
+        }
+      }
+    },
+    "CreateBlogModalProps": {
+      "type": "object",
+      "required": ["show", "onHide", "onBlogCreated"],
+      "properties": {
+        "show": {
+          "type": "boolean",
+          "description": "Whether the modal is visible"
+        },
+        "onHide": {
+          "type": "string",
+          "description": "Function to call when the modal should be hidden"
+        },
+        "onBlogCreated": {
+          "type": "string",
+          "description": "Function to call when a new blog is created"
+        }
+      }
+    },
+    "CreateJourneyCardModalProps": {
+      "type": "object",
+      "required": ["show", "onHide", "onCardCreated", "journeyType"],
+      "properties": {
+        "show": {
+          "type": "boolean",
+          "description": "Whether the modal is visible"
+        },
+        "onHide": {
+          "type": "string",
+          "description": "Function to call when the modal should be hidden"
+        },
+        "onCardCreated": {
+          "type": "string",
+          "description": "Function to call when a new journey card is created"
+        },
+        "journeyType": {
+          "$ref": "./journey.schema.json#/definitions/JourneyType",
+          "description": "Type of journey for the new card"
+        }
+      }
+    }
+  }
+} 

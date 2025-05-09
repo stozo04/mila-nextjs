@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Chat",
+  "description": "Schema for chat messages and related structures in the application",
+  "definitions": {
+    "Message": {
+      "type": "object",
+      "required": ["type", "content"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["user", "bot"],
+          "description": "Type of message sender"
+        },
+        "content": {
+          "type": "string",
+          "description": "Content of the message"
+        }
+      }
+    },
+    "ChatQuestion": {
+      "type": "object",
+      "required": ["question", "created_at"],
+      "properties": {
+        "question": {
+          "type": "string",
+          "description": "The question asked by the user"
+        },
+        "created_at": {
+          "type": "string",
+          "description": "Date when the question was asked"
+        }
+      }
+    },
+    "ChatResponse": {
+      "type": "object",
+      "oneOf": [
+        {
+          "properties": {
+            "threadId": {
+              "type": "string",
+              "description": "OpenAI thread ID"
+            },
+            "runId": {
+              "type": "string",
+              "description": "OpenAI run ID"
+            }
+          },
+          "required": ["threadId", "runId"]
+        },
+        {
+          "properties": {
+            "answer": {
+              "type": "string",
+              "description": "The assistant's response"
+            }
+          },
+          "required": ["answer"]
+        },
+        {
+          "properties": {
+            "error": {
+              "type": "string",
+              "description": "Error message"
+            },
+            "details": {
+              "type": "string",
+              "description": "Detailed error information"
+            }
+          },
+          "required": ["error"]
+        }
+      ]
+    }
+  }
+} 

@@ -1,0 +1,219 @@
+openapi: 3.0.0
+info:
+  title: Mila NextJS OpenAI Integration API
+  description: |
+    API specification for Mila NextJS's OpenAI integrations, including chat functionality 
+    and text-to-speech capabilities for blog posts.
+  version: '1.0.0'
+  contact:
+    name: Steven Gates
+    url: https://www.stevengates.io
+
+servers:
+  - url: https://www.milagates.com
+    variables:
+      domain:
+        default: localhost:3000
+        description: Local dev
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase JWT token from auth.getSession()
+
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - question
+      properties:
+        question:
+          type: string
+          description: The user's question to the chatbot
+        threadId:
+          type: string
+          description: Optional thread ID for continuing a conversation
+        runId:
+          type: string
+          description: Optional run ID for retrieving a specific response
+        getAnswer:
+          type: boolean
+          description: Whether to retrieve the final answer from a completed run
+
+    ChatResponse:
+      type: object
+      oneOf:
+        - properties:
+            threadId:
+              type: string
+              description: ID of the created thread
+            runId:
+              type: string
+              description: ID of the created run
+          required:
+            - threadId
+            - runId
+        - properties:
+            answer:
+              type: string
+              description: The assistant's response
+          required:
+            - answer
+        - properties:
+            error:
+              type: string
+              description: Error message if something went wrong
+            details:
+              type: string
+              description: Additional error details
+          required:
+            - error
+
+    ChatStatusRequest:
+      type: object
+      required:
+        - threadId
+        - runId
+      properties:
+        threadId:
+          type: string
+          description: The thread ID to check status for
+        runId:
+          type: string
+          description: The run ID to check status for
+
+    ChatStatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+          description: Current status of the chat completion
+        error:
+          type: string
+          description: Error message if status check failed
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        details:
+          type: string
+          description: Additional error details
+
+paths:
+  /api/chat:
+    post:
+      summary: Create or continue a chat conversation
+      description: |
+        Initiates a new chat conversation or continues an existing one using OpenAI's
+        assistant API. Supports both starting new threads and retrieving responses
+        from existing ones.
+      operationId: chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Successful response with chat answer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '202':
+          description: Chat request accepted, processing started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/poll-chat-status:
+    post:
+      summary: Check the status of a chat completion
+      description: |
+        Polls the status of an ongoing chat completion to determine if it's ready
+        for retrieval.
+      operationId: pollChatStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatStatusRequest'
+      responses:
+        '200':
+          description: Successfully retrieved status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatStatusResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/blog/{slug}/audio:
+    get:
+      summary: Get TTS audio for a blog post
+      description: |
+        Retrieves or generates Text-to-Speech audio for a blog post. Uses caching
+        to avoid regenerating the same audio multiple times.
+      operationId: getBlogAudio
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The blog post's slug
+      responses:
+        '200':
+          description: Audio file stream
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Blog post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+security:
+  - BearerAuth: []

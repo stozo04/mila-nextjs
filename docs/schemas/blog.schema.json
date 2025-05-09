@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Blog",
+  "description": "Schema for blog posts in the application",
+  "type": "object",
+  "required": ["id", "title", "slug", "content", "date", "tag", "featured_image", "detail_image"],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "description": "Unique identifier for the blog post"
+    },
+    "title": {
+      "type": "string",
+      "description": "Title of the blog post"
+    },
+    "slug": {
+      "type": "string",
+      "description": "URL-friendly version of the title"
+    },
+    "content": {
+      "type": "string",
+      "description": "Main content of the blog post"
+    },
+    "date": {
+      "type": "string",
+      "description": "Publication date of the blog post"
+    },
+    "tag": {
+      "type": "string",
+      "description": "Category or tag for the blog post"
+    },
+    "featured_image": {
+      "type": "string",
+      "description": "URL of the image used in blog list view"
+    },
+    "detail_image": {
+      "type": "string",
+      "description": "URL of the image used in blog detail view"
+    }
+  }
+} 
