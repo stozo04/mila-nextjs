@@ -71,8 +71,11 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
       // Play once URL is set
       setTimeout(() => audioRef.current?.play(), 0);
     } catch (err) {
-      console.error(err);
-      alert("Sorry, unable to fetch audio.");
+      console.error('Audio fetch error:', err);
+      const errorMessage = err instanceof Error 
+        ? `Error: ${err.name} - ${err.message}`
+        : 'An unknown error occurred';
+      alert(`Sorry, unable to fetch audio. ${errorMessage}`);
     } finally {
       setIsAudioLoading(false);
     }
