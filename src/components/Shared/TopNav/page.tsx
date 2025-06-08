@@ -109,6 +109,11 @@ const NavMenu = () => {
                     One Year
                   </Link>
                 </li>
+                <li>
+                  <Link href="/my-journey/second-year" className="dropdown-item">
+                    Two Year
+                  </Link>
+                </li>
               </ul>
             </li>
             <li className="nav-item">
