@@ -53,15 +53,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    // Check if user's email is in the allowed list
-    const allowedEmail = process.env.NEXT_PUBLIC_ALLOWED_EMAIL
-   
-    const allowedEmails = allowedEmail?.split(';').map(email => email.trim()) || []
-    
-    if (!allowedEmail || !allowedEmails.includes(user.email || '')) {
-      console.log('User not authorized, redirecting to unauthorized')
-      return NextResponse.redirect(new URL('/unauthorized', request.url))
-    }
+    // Email allowlist check removed - any authenticated user can access protected routes
   }
 
   return response

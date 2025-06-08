@@ -1,6 +1,6 @@
-# Mila Next JS • Architecture Guide
+# Mila Next JS • Architecture Guide
 
-> _Single‑source‑of‑truth for how the pieces of **Mila Next JS** fit together and why
+> _Single‑source‑of‑truth for how the pieces of **Mila Next JS** fit together and why
 > they were chosen._
 
 ---
@@ -9,11 +9,11 @@
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| **Frontend** | **Next.js 15** (App Router) • **React 19** | Server/Client components, edge streaming |
+| **Frontend** | **Next.js 15** (App Router) • **React 19** | Server/Client components, edge streaming |
 | **Backend‑for‑Frontend** | **Next.js Route Handlers** | Auth, Graph coordination, OpenAI proxy |
-| **Core Data** | **Supabase** (Postgres + Auth + Storage) | Content, milestones, media, access control |
+| **Core Data** | **Supabase** (Postgres + Auth + Storage) | Content, milestones, media, access control |
 | **AI Services** | **OpenAI Assistants & TTS** | Chat bot & blog audio |
-| **Observability** | Vercel Analytics • Google GA4 | Usage and performance metrics |
+| **Observability** | Vercel Analytics • Google GA4 | Usage and performance metrics |
 
 ```mermaid
 graph LR
@@ -39,16 +39,16 @@ src/
 └─ utils/               # Client + server utilities
 ```
 
-*Route groups* leverage Next 15 conventions for clean RBAC:
+*Route groups* leverage Next 15 conventions for clean RBAC:
 
 ```
-/src/app/(protected)/blog/…      – Requires Supabase session
+/src/app/(protected)/blog/…      – Requires Google OAuth
 /src/app/(public)/about          – Always public
 ```
 
 ---
 
-## 3. Database Model (Supabase)
+## 3. Database Model (Supabase)
 
 ``` mermaid
 erDiagram
@@ -67,7 +67,7 @@ erDiagram
 
 | Table | Highlight |
 |-------|-----------|
-| **blogs** | Rich‑text post; owner = `created_by` |
+| **blogs** | Rich‑text post; owner = `created_by` |
 | **blog_audio** | pk=`slug`, binary mp3, `created_at` |
 | **journey_cards** | Milestones (first‑year, one‑year…) |
 | **chat_threads / messages** | Persisted assistant context |
@@ -83,7 +83,7 @@ with check (created_by = auth.uid());
 
 ---
 
-## 4. API Surface (OpenAPI 3.1)
+## 4. API Surface (OpenAPI 3.1)
 
 | Path | Verb | Auth | Summary |
 |------|------|------|---------|
@@ -96,11 +96,11 @@ Tool manifest: [`mcp.json`](../mcp.json)
 
 ---
 
-## 5. Data Flows
+## 5. Data Flows
 
 ```
-(1) Login
-Browser → Supabase OAuth → JWT cookie → Middleware → Protected pages
+(1) Authentication
+Browser → Google OAuth → Supabase Session → JWT cookie → Protected pages
 
 (2) Blog‑Audio
 Client → /api/blog/{slug}/audio →
@@ -117,9 +117,9 @@ Client → /api/chat → Assistants API → Store thread/msg → SSE stream back
 
 | Concern | Approach |
 |---------|----------|
-| **State** | React hooks for UI, server actions for mutations |
+| **State** | React hooks for UI, server actions for mutations |
 | **Errors** | `error.tsx` boundaries + typed Error payloads |
-| **Performance** | Image optimization, HTTP caching, edge streaming |
+| **Performance** | Image optimization, HTTP caching, edge streaming |
 | **Testing** | Playwright e2e • Vitest for utils • PostgREST fixtures |
 
 ---
@@ -131,15 +131,15 @@ Client → /api/chat → Assistants API → Store thread/msg → SSE stream back
 | `NEXT_PUBLIC_SUPABASE_URL` | Client | ✔ | Project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client | ✔ | Public anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server | ‑ | Only migrations / RLS tests |
-| `OPENAI_API_KEY` | Server | ✔ | Chat + TTS |
+| `OPENAI_API_KEY` | Server | ✔ | Chat + TTS |
 | `NEXT_PUBLIC_SITE_URL` | Client | ✔ | OAuth redirect base |
-| `NEXT_PUBLIC_ALLOWED_EMAIL` | Server | ‑ | Comma‑list allowlist |
+| `NEXT_PUBLIC_ADMIN_EMAIL` | Client | ✔ | Admin-only features (e.g., create blog) |
 
 Copy template: `cp .env.example .env.local`.
 
 ---
 
-## 8. Schema Docs
+## 8. Schema Docs
 
 * **OpenAPI spec** – [`/docs/openapi.yaml`](../docs/openapi.yaml)  
 * **MCP manifest** – [`/mcp.json`](../mcp.json)  
@@ -161,7 +161,7 @@ Copy template: `cp .env.example .env.local`.
 
 * **Edge Functions** for low‑latency TTS streaming<br>
 * **Analytics** auto‑enabled via Vercel + GA4<br>
-* Env vars managed per‑environment in **Vercel Dashboard**.
+* Env vars managed per‑environment in **Vercel Dashboard**.
 
 ---
 
@@ -169,10 +169,10 @@ Copy template: `cp .env.example .env.local`.
 
 | Term | Meaning |
 |------|---------|
-| **Journey Card** | A milestone entry (e.g., "First Steps") displayed on timeline |
+| **Journey Card** | A milestone entry (e.g., "First Steps") displayed on timeline |
 | **Thread / Run** | OpenAI Assistants vocabulary: a *thread* holds messages; a *run* is an inference execution |
-| **Protected Route** | Any page under `(protected)` that requires Supabase session |
+| **Protected Route** | Any page under `(protected)` that requires Google OAuth |
 
 ---
 
-### Last updated → May 9 2025
+### Last updated → May 9 2025 

@@ -62,8 +62,8 @@ src/
 
 - **Middleware-based Auth**: `src/middleware.ts`
 - **Protected Routes**: Using route groups `(protected)`
-- **Role-Based Access**: Email allowlist system
-- **Supabase Auth**: JWT-based authentication
+- **Google OAuth**: Authentication through Supabase Auth
+- **Admin Access**: Email-based admin privileges for content management
 
 ### API Routes
 
@@ -103,7 +103,8 @@ src/
 ### 1. Protected Routes
 - Middleware-based authentication
 - Route group organization
-- Email allowlist validation
+- Google OAuth integration
+- Admin-only content management
 
 ### 2. Blog System
 - Rich text content
@@ -159,7 +160,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 OPENAI_API_KEY=
 NEXT_PUBLIC_SITE_URL=
-NEXT_PUBLIC_ALLOWED_EMAIL=
+NEXT_PUBLIC_ADMIN_EMAIL=    # For admin-only features
 ```
 
 ## Schema Documentation

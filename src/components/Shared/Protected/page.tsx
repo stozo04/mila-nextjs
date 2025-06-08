@@ -10,13 +10,6 @@ export default async function ProtectedPage({ children }: { children: React.Reac
         redirect('/login');
     }
 
-    // Check for allowed email addresses
-    const allowedEmail = process.env.NEXT_PUBLIC_ALLOWED_EMAIL;
-    const allowedEmails = allowedEmail?.split(';').map(email => email.trim()) || [];
-    
-    if (!allowedEmail || !allowedEmails.includes(user.email || '')) {
-        redirect('/unauthorized');
-    }
-
+    // Email allowlist check removed - any authenticated user can access protected routes
     return <>{children}</>;
 }
