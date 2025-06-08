@@ -68,7 +68,7 @@ export default function SecondYearPage() {
       <div className="row mb-4">
         <div className="col-12 text-center">
           <h1 className="display-4 mb-3">My Sweet Second Year</h1>
-          <p className="lead">Who says two's are terrible? Here's proof they're terrific!</p>
+          <p className="lead">Who says two&apos;s are terrible? Here&apos;s proof they&apos;re terrific!</p>
           {user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
             <button
               className="btn btn-success rounded-pill mt-3"
