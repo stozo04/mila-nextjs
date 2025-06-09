@@ -3,22 +3,38 @@ import { updateSession } from '@/utils/supabase/middleware'
 import { createServerClient } from '@supabase/ssr'
 
 // List of protected routes that require authentication
-const PROTECTED_ROUTES = ['/blogs', '/sonograms', '/baby-shower', '/gender-reveal', '/my-journey'] // Add any other protected routes here
+const PROTECTED_ROUTES = ['/blogs', '/sonograms', '/baby-shower', '/gender-reveal', '/my-journey']
 
 export async function middleware(request: NextRequest) {
-  console.log('Middleware triggered for path:', request.nextUrl.pathname)
-  
+  // URL normalization
+  const url = request.nextUrl
+  const pathname = url.pathname
+
+  // Remove trailing slashes except for root
+  if (pathname !== '/' && pathname.endsWith('/')) {
+    return NextResponse.redirect(new URL(pathname.slice(0, -1), request.url))
+  }
+
+  // Force HTTPS
+  if (process.env.NODE_ENV === 'production' && !request.headers.get('x-forwarded-proto')?.includes('https')) {
+    return NextResponse.redirect(new URL(request.url.replace('http://', 'https://')))
+  }
+
+  // Force www to non-www (or vice versa, depending on your preference)
+  const hostname = request.headers.get('host') || ''
+  if (hostname.startsWith('www.')) {
+    return NextResponse.redirect(new URL(request.url.replace('www.', '')))
+  }
+
   // First update the session
   const response = await updateSession(request)
   
   // Check if the current path is a protected route
   const isProtectedRoute = PROTECTED_ROUTES.some(route => 
-    request.nextUrl.pathname.startsWith(route)
+    pathname.startsWith(route)
   )
   
   if (isProtectedRoute) {
-    console.log('Protected route detected:', request.nextUrl.pathname)
-    
     // Create a Supabase client
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,11 +65,8 @@ export async function middleware(request: NextRequest) {
 
     // If no user is found, redirect to login
     if (!user) {
-      console.log('No user found, redirecting to login')
       return NextResponse.redirect(new URL('/login', request.url))
     }
-
-    // Email allowlist check removed - any authenticated user can access protected routes
   }
 
   return response
