@@ -36,6 +36,13 @@
     "detail_image": {
       "type": "string",
       "description": "URL of the image used in blog detail view"
+    },
+    "additional_images": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of additional image URLs for blog detail view"
     }
   }
 } 

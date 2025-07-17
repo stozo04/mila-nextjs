@@ -16,15 +16,28 @@ const CreateBlogModal = ({ show, onHide, onBlogCreated }: CreateBlogModalProps) 
     content: "",
     featured_image: "",
     detail_image: "",
+    additional_images: [] as string[],
     tag: "",
     date: new Date().toISOString()
   });
+  const [additionalImagesInput, setAdditionalImagesInput] = useState("");
 
   const handleCreateBlog = async () => {
     try {
+      // Parse additional images from textarea
+      const additionalImages = additionalImagesInput
+        .split('\n')
+        .map(url => url.trim())
+        .filter(url => url.length > 0);
+
+      const blogData = {
+        ...newBlog,
+        additional_images: additionalImages
+      };
+
       const { data, error } = await supabase
         .from("blogs")
-        .insert([newBlog])
+        .insert([blogData])
         .select();
 
       if (error) throw error;
@@ -38,9 +51,11 @@ const CreateBlogModal = ({ show, onHide, onBlogCreated }: CreateBlogModalProps) 
           content: "",
           featured_image: "",
           detail_image: "",
+          additional_images: [],
           tag: "",
           date: new Date().toISOString()
         });
+        setAdditionalImagesInput("");
       }
     } catch (error) {
       console.error("Error creating blog:", error);
@@ -96,6 +111,16 @@ const CreateBlogModal = ({ show, onHide, onBlogCreated }: CreateBlogModalProps) 
               type="text"
               value={newBlog.detail_image}
               onChange={(e) => setNewBlog({ ...newBlog, detail_image: e.target.value })}
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Additional Image Links (one per line)</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              value={additionalImagesInput}
+              onChange={(e) => setAdditionalImagesInput(e.target.value)}
+              placeholder="e.g., https://example.com/image1.jpg\nhttps://example.com/image2.jpg"
             />
           </Form.Group>
           <Form.Group className="mb-3">

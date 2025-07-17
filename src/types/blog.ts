@@ -7,6 +7,7 @@ export type Blog = {
   tag: string;
   featured_image: string; // Single image for blog list
   detail_image: string; // Single image for blog details
+  additional_images?: string[]; // Array of additional images for blog details
 }
 
 // Interface for Blog List Component

@@ -181,17 +181,50 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
       </div>
 
       {/* Detail image + modal preview */}
-      {blog.detail_image && (
-        <div className="blog-footer">
-          <Image
-            src={blog.detail_image}
-            alt={blog.title}
-            width={200}
-            height={200}
-            className="mb-4"
-            style={{ objectFit: "cover", cursor: "pointer" }}
-            onClick={() => setSelectedImage(blog.detail_image)}
-          />
+      {(blog.detail_image || (blog.additional_images && blog.additional_images.length > 0)) && (
+        <div className="blog-footer mb-5">
+          <div className="row g-3">
+            {/* Main detail image */}
+            {blog.detail_image && (
+              <div className="col-md-6 col-sm-12">
+                <Image
+                  src={blog.detail_image}
+                  alt={blog.title}
+                  width={400}
+                  height={300}
+                  className="img-fluid rounded"
+                  style={{ 
+                    objectFit: "cover", 
+                    cursor: "pointer",
+
+                  }}
+                  onClick={() => setSelectedImage(blog.detail_image)}
+                />
+              </div>
+            )}
+            
+            {/* Additional images gallery */}
+            {blog.additional_images && blog.additional_images.length > 0 && (
+              <>
+                {blog.additional_images.map((imageUrl, index) => (
+                  <div key={index} className={blog.detail_image ? "col-md-6 col-sm-12" : "col-md-4 col-sm-6"}>
+                    <Image
+                      src={imageUrl}
+                      alt={`${blog.title} - Photo ${index + 1}`}
+                      width={400}
+                      height={300}
+                      className="img-fluid rounded"
+                      style={{ 
+                        objectFit: "cover", 
+                        cursor: "pointer",
+                      }}
+                      onClick={() => setSelectedImage(imageUrl)}
+                    />
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
         </div>
       )}
 
