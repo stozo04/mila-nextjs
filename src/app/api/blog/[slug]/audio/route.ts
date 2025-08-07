@@ -147,7 +147,6 @@ export async function GET(
       return new NextResponse("Blog not found", { status: 404 });
     }
     const clean = stripHtml(blog.content).result.replace(/\s+/g, " ").trim();
-gates
     // 3) Split into chunks if too long (respecting sentence boundaries)
     const MAX_CHUNK_SIZE = 3800; // Leave buffer for TTS model limits
     const chunks = splitIntoChunks(clean, MAX_CHUNK_SIZE);
