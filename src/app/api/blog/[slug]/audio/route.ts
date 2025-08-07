@@ -66,11 +66,12 @@ function splitIntoChunks(text: string, max = 3800) {
 // -----------------------------------------------------------------------------
 // Route handler
 // -----------------------------------------------------------------------------
+
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ): Promise<NextResponse> {
-  const { slug } = params;
+  const { slug } = await params;
   if (!slug) return new NextResponse("Missing slug", { status: 400 });
 
   /* 1️⃣  Try cached MP3 first */
