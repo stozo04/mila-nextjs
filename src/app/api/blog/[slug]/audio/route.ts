@@ -16,6 +16,80 @@ You are Alexis Rose from Schitt's Creek:
 – Every moment is a VIP event—dramatic encouragement, self-awareness, endlessly charming
 `;
 
+// Function to split text into chunks respecting sentence boundaries
+function splitIntoChunks(text: string, maxChunkSize: number): string[] {
+  if (text.length <= maxChunkSize) {
+    return [text];
+  }
+
+  const chunks: string[] = [];
+  let currentChunk = "";
+  
+  // Split by sentences (periods, exclamation marks, question marks)
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  
+  for (const sentence of sentences) {
+    // If adding this sentence would exceed the limit
+    if (currentChunk.length + sentence.length > maxChunkSize) {
+      // If current chunk is not empty, add it to chunks
+      if (currentChunk.trim()) {
+        chunks.push(currentChunk.trim());
+        currentChunk = "";
+      }
+      
+      // If a single sentence is too long, split it by words
+      if (sentence.length > maxChunkSize) {
+        const words = sentence.split(/\s+/);
+        let wordChunk = "";
+        
+        for (const word of words) {
+          if (wordChunk.length + word.length + 1 > maxChunkSize) {
+            if (wordChunk.trim()) {
+              chunks.push(wordChunk.trim());
+              wordChunk = "";
+            }
+          }
+          wordChunk += (wordChunk ? " " : "") + word;
+        }
+        
+        if (wordChunk.trim()) {
+          currentChunk = wordChunk;
+        }
+      } else {
+        currentChunk = sentence;
+      }
+    } else {
+      currentChunk += (currentChunk ? " " : "") + sentence;
+    }
+  }
+  
+  // Add the last chunk if it's not empty
+  if (currentChunk.trim()) {
+    chunks.push(currentChunk.trim());
+  }
+  
+  return chunks;
+}
+
+// Helper function to convert stream to buffer
+async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  
+  return new Promise((resolve, reject) => {
+    stream.on('data', (chunk: Buffer) => {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+    
+    stream.on('end', () => {
+      resolve(Buffer.concat(chunks));
+    });
+    
+    stream.on('error', (error) => {
+      reject(error);
+    });
+  });
+}
+
 // Check for a cached audio blob
 async function getAudioFromCache(slug: string): Promise<Buffer | null> {
   const { data, error } = await supabase
@@ -74,47 +148,48 @@ export async function GET(
     }
     const clean = stripHtml(blog.content).result.replace(/\s+/g, " ").trim();
 
-    // 3) Truncate if too long
-    const MAX = 4000;
-    const inputText =
-      clean.length > MAX
-        ? clean.slice(0, MAX) + "… [truncated; read on the site]"
-        : clean;
+    // 3) Split into chunks if too long (respecting sentence boundaries)
+    const MAX_CHUNK_SIZE = 3800; // Leave buffer for personality instructions
+    const chunks = splitIntoChunks(clean, MAX_CHUNK_SIZE);
 
-    // 4) Call OpenAI TTS (returns a Node ReadableStream in .body)
+    // 4) Generate audio for each chunk and concatenate
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const aiRes = await openai.audio.speech.create({
-      model: "gpt-4o-mini-tts",
-      voice: "nova",
-      input: inputText,
-      instructions: PERSONALITY_INSTRUCTIONS.trim(),
-      response_format: "mp3",
-    });
+    const audioBuffers: Buffer[] = [];
 
-    if (!aiRes.body || typeof (aiRes.body as any).pipe !== "function") {
-      throw new Error("No streamable body from OpenAI");
+    console.log(`Generating audio for ${chunks.length} chunks...`);
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      console.log(`Processing chunk ${i + 1}/${chunks.length} (${chunk.length} characters)`);
+      
+      const aiRes = await openai.audio.speech.create({
+        model: "gpt-4o-mini-tts",
+        voice: "nova",
+        input: chunk,
+        instructions: PERSONALITY_INSTRUCTIONS.trim(),
+        response_format: "mp3",
+      });
+
+      if (!aiRes.body) {
+        throw new Error(`No body from OpenAI for chunk ${i + 1}`);
+      }
+
+      // Convert the stream to buffer
+      const chunkBuffer = await streamToBuffer(aiRes.body as unknown as NodeJS.ReadableStream);
+      audioBuffers.push(chunkBuffer);
     }
 
-    // 5) Create a PassThrough to both forward chunks and buffer for caching
-    const pass = new PassThrough();
-    const chunks: Buffer[] = [];
+    // 5) Concatenate all audio buffers
+    const fullAudio = Buffer.concat(audioBuffers);
+    
+    // 6) Cache the concatenated audio
+    await saveAudioToCache(slug, fullAudio);
 
-    pass.on("data", (chunk: Buffer) => {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    });
-    pass.on("end", async () => {
-      const full = Buffer.concat(chunks);
-      await saveAudioToCache(slug, full);
-    });
-
-    // 6) Pipe the OpenAI stream into our PassThrough
-    (aiRes.body as unknown as NodeJS.ReadableStream).pipe(pass);
-
-    // 7) Return the PassThrough as the response body (chunked)
-    return new NextResponse(pass as unknown as BodyInit, {
+    // 7) Return the concatenated audio
+    return new NextResponse(fullAudio, {
       headers: {
         "Content-Type": "audio/mpeg",
-        // omit Content-Length for chunked transfer
+        "Content-Length": fullAudio.length.toString(),
       },
     });
   } catch (err) {

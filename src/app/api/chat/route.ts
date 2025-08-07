@@ -24,21 +24,6 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     const { question, threadId, runId, getAnswer } = await request.json(); // Destructure getAnswer
-
-    // Store the question in Supabase
-    const { error: insertError } = await supabase
-      .from("chat_questions")
-      .insert([
-        {
-          question,
-          created_at: currentDate,
-        },
-      ]);
-
-    if (insertError) {
-      console.error("Error storing question:", insertError);
-      // Continue with the chat even if storing fails
-    }
     
     if (getAnswer && threadId && runId) {
       // If getAnswer is true, we are fetching the final answer based on existing thread and run IDs
@@ -64,6 +49,21 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Store the question in Supabase (only when processing a new question)
+      const { error: insertError } = await supabase
+        .from("chat_questions")
+        .insert([
+          {
+            question,
+            created_at: currentDate,
+          },
+        ]);
+
+      if (insertError) {
+        console.error("Error storing question:", insertError);
+        // Continue with the chat even if storing fails
+      }
+
       const thread = await openai.beta.threads.create();
 
       // Combine the current date with the user's question.
@@ -75,8 +75,13 @@ export async function POST(request: NextRequest) {
       });
 
       // Create and await the run
+      const assistantId = process.env.OPENAI_ASSISTANT_ID;
+      if (!assistantId) {
+        throw new Error("OPENAI_ASSISTANT_ID environment variable is not configured");
+      }
+      
       const run = await openai.beta.threads.runs.create(thread.id, {
-        assistant_id: process.env.OPENAI_ASSISTANT_ID || "",
+        assistant_id: assistantId,
       });
 
       // Immediately return threadId and runId

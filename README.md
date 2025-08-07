@@ -63,6 +63,7 @@ Open <http://localhost:3000> and enjoy the magic ✨.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Supabase anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | 🔒 | Only if you run migrations locally |
 | `OPENAI_API_KEY` | ✅ | Enables AI routes & chat bot |
+| `OPENAI_ASSISTANT_ID` | ✅ | OpenAI Assistant ID for chatbot |
 | `NEXT_PUBLIC_SITE_URL` | ⬆️ | Used in auth callbacks (deployments) |
 
 Never commit secrets—CI will fail if any of the **✅ required** vars are missing.

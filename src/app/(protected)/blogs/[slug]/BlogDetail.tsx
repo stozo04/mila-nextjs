@@ -63,7 +63,20 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
 
     try {
       setIsAudioLoading(true);
-      const res = await fetch(`/api/blog/${slug}/audio`);
+      
+      // Show user that this might take a moment for longer blogs
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        // If it's taking more than 10 seconds, show helpful message
+        console.log('Audio generation is taking longer than expected - this is normal for longer blog posts');
+      }, 10000);
+      
+      const res = await fetch(`/api/blog/${slug}/audio`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
       if (!res.ok) throw new Error("Failed to fetch audio");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -75,7 +88,12 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
       const errorMessage = err instanceof Error 
         ? `Error: ${err.name} - ${err.message}`
         : 'An unknown error occurred';
-      alert(`Sorry, unable to fetch audio. ${errorMessage}`);
+      
+      if (err instanceof Error && err.name === 'AbortError') {
+        alert('Audio generation was cancelled.');
+      } else {
+        alert(`Sorry, unable to fetch audio. ${errorMessage}\n\nNote: Longer blog posts may take more time to generate audio.`);
+      }
     } finally {
       setIsAudioLoading(false);
     }
@@ -136,7 +154,7 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
                     borderRadius: '50%',
                     animation: 'spin 1s linear infinite'
                   }} />
-                  Loading...
+                  Generating audio...
                 </>
               ) : (
                 <>
