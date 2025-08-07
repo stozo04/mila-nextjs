@@ -1,15 +1,19 @@
-
-// src/app/api/blog/[slug]/audio/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { supabase } from "@/lib/supabase";
 import OpenAI from "openai";
 import { stripHtml } from "string-strip-html";
+import { Buffer } from "node:buffer"; // explicit for TS intellisense
 
-export const runtime = "edge"; // 30-second execution window
+// -----------------------------------------------------------------------------
+// Runtime & limits
+// -----------------------------------------------------------------------------
+export const runtime = "nodejs";   // leave Edge to avoid 25 s TTFB cap
+export const maxDuration = 60;     // seconds (raise if needed)
 
-// ──────────────────────────────────────────────────────────────────────────────
-//  Alexis Rose persona
-// ──────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// Alexis Rose persona (kept for later prompt-engineering tweaks)
+// -----------------------------------------------------------------------------
 const PERSONALITY_INSTRUCTIONS = `
 You are Alexis Rose from Schitt's Creek:
 – A fabulously over-the-top Canadian socialite turned town insider
@@ -18,11 +22,11 @@ You are Alexis Rose from Schitt's Creek:
 – Boutique-babble ("vintage vibe", "artisan aesthetic")
 – Occasional French-flavored "oui, oui"
 – Every moment is a VIP event—dramatic encouragement, self-awareness, endlessly charming
-`;
+`.trim();
 
-// ──────────────────────────────────────────────────────────────────────────────
-//  DB helpers
-// ──────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// DB helpers
+// -----------------------------------------------------------------------------
 async function getAudioFromCache(slug: string): Promise<Buffer | null> {
   const { data } = await supabase
     .from("blog_audio")
@@ -41,78 +45,98 @@ async function saveAudioToCache(slug: string, buf: Buffer) {
   });
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-//  Main route
-// ──────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
+// Utility
+// -----------------------------------------------------------------------------
+function splitIntoChunks(text: string, max = 3800) {
+  const out: string[] = [];
+  let buf = "";
+  for (const sentence of text.split(/(?<=[.!?])\s+/)) {
+    if (buf.length + sentence.length > max) {
+      if (buf) out.push(buf.trim());
+      buf = sentence;
+    } else {
+      buf += (buf ? " " : "") + sentence;
+    }
+  }
+  if (buf) out.push(buf.trim());
+  return out;
+}
+
+// -----------------------------------------------------------------------------
+// Route handler
+// -----------------------------------------------------------------------------
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: { slug: string } }
 ): Promise<NextResponse> {
+  const { slug } = params;
+  if (!slug) return new NextResponse("Missing slug", { status: 400 });
+
+  /* 1️⃣  Try cached MP3 first */
+  const cached = await getAudioFromCache(slug);
+  if (cached) {
+    return new NextResponse(cached, {
+      headers: { "Content-Type": "audio/mpeg" },
+    });
+  }
+
+  /* 2️⃣  Fetch + sanitise blog post */
+  const { data: blog, error } = await supabase
+    .from("blogs")
+    .select("content")
+    .eq("slug", slug)
+    .single();
+
+  if (error || !blog?.content) {
+    return new NextResponse("Not found", { status: 404 });
+  }
+
+  const cleanText = stripHtml(blog.content).result.replace(/\s+/g, " ").trim();
+  const chunks = splitIntoChunks(cleanText);
+
+  /* 3️⃣  Generate audio and cache it */
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const audioChunks: Uint8Array[] = [];
+
   try {
-    const { slug } = await params;
-    if (!slug) return new NextResponse("Missing slug", { status: 400 });
+    for (const part of chunks) {
+      const res = await openai.audio.speech.create({
+        model: "gpt-4o-mini-tts",
+        voice: "nova",
+        input: part,
+        response_format: "mp3",
+        stream: true,
+        instructions: PERSONALITY_INSTRUCTIONS,
+      } as any);
 
-    // 1️⃣ — serve from cache if we already have it
-    const cached = await getAudioFromCache(slug);
-    if (cached) {
-      return new NextResponse(cached, {
-        headers: {
-          "Content-Type": "audio/mpeg",
-          "Content-Length": cached.length.toString(),
-        },
-      });
-    }
-
-    // 2️⃣ — pull & clean the blog post
-    const { data: blog, error } = await supabase
-      .from("blogs")
-      .select("content")
-      .eq("slug", slug)
-      .single();
-
-    if (error || !blog?.content)
-      return new NextResponse("Blog not found", { status: 404 });
-
-    const clean = stripHtml(blog.content).result.replace(/\s+/g, " ").trim();
-    const input = clean.slice(0, 4096); // OpenAI TTS limit
-
-    // 3️⃣ — call OpenAI TTS in streaming mode
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const aiRes = await openai.audio.speech.create({
-      model: "gpt-4o-mini-tts",
-      voice: "nova",
-      input,
-      response_format: "mp3",
-      stream: true,
-      instructions: PERSONALITY_INSTRUCTIONS.trim(),
-    } as any);
-    
-
-    const original = aiRes.body as ReadableStream<Uint8Array>;
-    if (!original) throw new Error("No stream returned from OpenAI");
-
-    // 4️⃣ — tee the stream so we can cache it without delaying the client
-    const [clientStream, cacheStream] = original.tee();
-
-    // Fire-and-forget task to build a Buffer and save to Supabase
-    (async () => {
-      const chunks: Uint8Array[] = [];
-      const reader = cacheStream.getReader();
+      const reader = (res.body as ReadableStream<Uint8Array>).getReader();
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
-        if (value) chunks.push(value);
+        audioChunks.push(value);
       }
-      const buf = Buffer.concat(chunks.map((u) => Buffer.from(u)));
-      await saveAudioToCache(slug, buf);
-    })().catch(console.error);
+    }
 
-    // 5️⃣ — stream directly to the browser (no timeout!)
-    return new NextResponse(clientStream, {
+    // Combine all chunks into a single buffer
+    const totalLength = audioChunks.reduce((sum, c) => sum + c.length, 0);
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const c of audioChunks) {
+      combined.set(c, offset);
+      offset += c.length;
+    }
+    const finalBuffer = Buffer.from(combined);
+
+    // Cache for future hits
+    await saveAudioToCache(slug, finalBuffer);
+
+    /* 4️⃣  Serve the audio */
+    return new NextResponse(finalBuffer, {
       headers: { "Content-Type": "audio/mpeg" },
     });
   } catch (err) {
-    console.error("TTS route error:", err);
-    return new NextResponse("Error generating audio", { status: 500 });
+    console.error("TTS generation error", err);
+    return new NextResponse("Audio generation failed", { status: 500 });
   }
 }
