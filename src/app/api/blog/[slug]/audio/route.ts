@@ -1,143 +1,127 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { NextRequest } from "next/server";
 import OpenAI from "openai";
-import { stripHtml } from "string-strip-html";
-import { Buffer } from "node:buffer"; // explicit for TS intellisense
+import { createClient } from "@supabase/supabase-js";
+import crypto from "crypto";
 
-// -----------------------------------------------------------------------------
-// Runtime & limits
-// -----------------------------------------------------------------------------
-export const runtime = "nodejs";   // leave Edge to avoid 25 s TTFB cap
-export const maxDuration = 60;     // seconds (raise if needed)
-
+export const runtime = "nodejs";
 // -----------------------------------------------------------------------------
 // Alexis Rose persona (kept for later prompt-engineering tweaks)
 // -----------------------------------------------------------------------------
-const PERSONALITY_INSTRUCTIONS = `
-You are Alexis Rose from Schitt's Creek:
-– A fabulously over-the-top Canadian socialite turned town insider
-– Warm, melodramatic with that signature Canadian lilt
-– Drawn-out vowels on fun words ("fuuun", "fabuuulous")
-– Boutique-babble ("vintage vibe", "artisan aesthetic")
-– Occasional French-flavored "oui, oui"
-– Every moment is a VIP event—dramatic encouragement, self-awareness, endlessly charming
-`.trim();
+const PERSONALITY_INSTRUCTIONS = `Affect/personality: A cheerful guide \n\nTone: Friendly, clear, and reassuring, creating a calm atmosphere and making the listener feel confident and comfortable.\n\nPronunciation: Clear, articulate, and steady, ensuring each instruction is easily understood while maintaining a natural, conversational flow.\n\nPause: Brief, purposeful pauses after key instructions (e.g., \"cross the street\" and \"turn right\") to allow time for the listener to process the information and follow along.\n\nEmotion: Warm and supportive, conveying empathy and care, ensuring the listener feels guided and safe throughout the journey.`;
 
-// -----------------------------------------------------------------------------
-// DB helpers
-// -----------------------------------------------------------------------------
-async function getAudioFromCache(slug: string): Promise<Buffer | null> {
+// --- OpenAI + Supabase clients
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+// --- Voice/model defaults
+const TTS_MODEL = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
+const TTS_VOICE = process.env.OPENAI_TTS_VOICE || "sage"; // try "verse", "sage", etc.
+
+// --------- helpers ---------
+function htmlToPlain(s: string) {
+  return String(s ?? "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function b64ToBytes(b64: string) {
+  return Buffer.from(b64, "base64");
+}
+
+function bytesToB64(bytes: Buffer | Uint8Array) {
+  return Buffer.isBuffer(bytes) ? bytes.toString("base64") : Buffer.from(bytes).toString("base64");
+}
+
+// Read cached audio; ensure the hash matches the latest text
+async function getCachedAudio(slug: string) {
   const { data } = await supabase
     .from("blog_audio")
     .select("audio_data")
     .eq("slug", slug)
     .single();
 
-  return data?.audio_data ? Buffer.from(data.audio_data, "base64") : null;
+  const b64 = data?.audio_data as string;
+  if (!b64) return null;
+
+  return b64ToBytes(b64);
 }
 
-async function saveAudioToCache(slug: string, buf: Buffer) {
-  await supabase.from("blog_audio").upsert({
-    slug,
-    audio_data: buf.toString("base64"),
-    created_at: new Date().toISOString(),
-  });
+async function saveAudioToCache(slug: string, bytes: Buffer) {
+  const audio_b64 = bytesToB64(bytes);
+  await supabase.from("blog_audio").upsert({ slug, audio_data: audio_b64, created_at: new Date().toISOString(), });
 }
 
-// -----------------------------------------------------------------------------
-// Utility
-// -----------------------------------------------------------------------------
-function splitIntoChunks(text: string, max = 3800) {
-  const out: string[] = [];
-  let buf = "";
-  for (const sentence of text.split(/(?<=[.!?])\s+/)) {
-    if (buf.length + sentence.length > max) {
-      if (buf) out.push(buf.trim());
-      buf = sentence;
-    } else {
-      buf += (buf ? " " : "") + sentence;
-    }
-  }
-  if (buf) out.push(buf.trim());
-  return out;
-}
-
-// -----------------------------------------------------------------------------
-// Route handler
-// -----------------------------------------------------------------------------
-
+// --------- route ---------
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-): Promise<NextResponse> {
-  const { slug } = await params;
-  if (!slug) return new NextResponse("Missing slug", { status: 400 });
-
-  /* 1️⃣  Try cached MP3 first */
-  const cached = await getAudioFromCache(slug);
-  if (cached) {
-    return new NextResponse(cached, {
-      headers: { "Content-Type": "audio/mpeg" },
-    });
-  }
-
-  /* 2️⃣  Fetch + sanitise blog post */
-  const { data: blog, error } = await supabase
-    .from("blogs")
-    .select("content")
-    .eq("slug", slug)
-    .single();
-
-  if (error || !blog?.content) {
-    return new NextResponse("Not found", { status: 404 });
-  }
-
-  const cleanText = stripHtml(blog.content).result.replace(/\s+/g, " ").trim();
-  const chunks = splitIntoChunks(cleanText);
-
-  /* 3️⃣  Generate audio and cache it */
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const audioChunks: Uint8Array[] = [];
-
+  { params }: { params: Promise<{ slug: string }> } // NextJS: params is a Promise
+) {
   try {
-    for (const part of chunks) {
-      const res = await openai.audio.speech.create({
-        model: "gpt-4o-mini-tts",
-        voice: "nova",
-        input: part,
-        response_format: "mp3",
-        stream: true,
-        instructions: PERSONALITY_INSTRUCTIONS,
-      } as any);
+    const { slug } = await params;
+    if (!slug) return new Response("Missing slug", { status: 400 });
 
-      const reader = (res.body as ReadableStream<Uint8Array>).getReader();
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        audioChunks.push(value);
-      }
+    // 1) Fetch blog
+    const { data: blog, error } = await supabase
+      .from("blogs")
+      .select("id, slug, title, content")
+      .eq("slug", slug)
+      .single();
+
+    if (error || !blog) return new Response("Blog not found", { status: 404 });
+
+    // 2) Build narration text + hash
+    const title = blog.title || "A letter to Mila";
+    const speakText = `${title}\n\n${htmlToPlain(blog.content)}`;
+
+    // 3) Read-through cache
+    const cached = await getCachedAudio(slug);
+    if (cached) {
+      return new Response(cached, {
+        status: 200,
+        headers: {
+          "Content-Type": "audio/mpeg",
+          "Cache-Control": "public, max-age=86400",
+          "Content-Length": String(cached.byteLength),
+        },
+      });
     }
 
-    // Combine all chunks into a single buffer
-    const totalLength = audioChunks.reduce((sum, c) => sum + c.length, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const c of audioChunks) {
-      combined.set(c, offset);
-      offset += c.length;
-    }
-    const finalBuffer = Buffer.from(combined);
-
-    // Cache for future hits
-    await saveAudioToCache(slug, finalBuffer);
-
-    /* 4️⃣  Serve the audio */
-    return new NextResponse(finalBuffer, {
-      headers: { "Content-Type": "audio/mpeg" },
+    // 4) Generate via OpenAI TTS
+    const speech = await openai.audio.speech.create({
+      model: TTS_MODEL,
+      voice: TTS_VOICE,
+      input: speakText,
+      instructions: PERSONALITY_INSTRUCTIONS,
+      response_format: "mp3",
     });
-  } catch (err) {
-    console.error("TTS generation error", err);
-    return new NextResponse("Audio generation failed", { status: 500 });
+
+    const arrayBuf = await speech.arrayBuffer();
+    const bytes = Buffer.from(arrayBuf);
+
+    // 5) Persist to blog_audio
+    await saveAudioToCache(slug, bytes);
+
+    // 6) Return the fresh audio
+    return new Response(bytes, {
+      status: 200,
+      headers: {
+        "Content-Type": "audio/mpeg",
+        "Cache-Control": "public, max-age=86400",
+        "Content-Length": String(bytes.length),
+      },
+    });
+  } catch (err: any) {
+    console.error("[/api/blog/[slug]/audio] error:", err);
+    return new Response(
+      JSON.stringify({
+        error: err?.error?.message || err?.message || "Failed to generate or cache audio",
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }

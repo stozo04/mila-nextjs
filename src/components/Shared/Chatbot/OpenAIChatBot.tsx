@@ -4,7 +4,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 type Role = 'user' | 'bot';
-type Message = { type: Role; content: string };
+// add this near the top
+const USE_STREAM = true;
+
+type ApiReply =
+  | { answer: string; conversationId?: string | null; sources?: { file_id?: string; title?: string; quote?: string }[] }
+  | undefined;
+
+type Message =
+  | { type: 'user'; content: string }
+  | { type: 'bot'; content: string; sources?: { file_id?: string; title?: string; quote?: string }[] };
+
 
 const TypingIndicator = () => (
   <div className="typing-indicator">
@@ -84,39 +94,105 @@ export default function OpenAIChatBot() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || isLoading) return;
-
+  
     const userMsg: Message = { type: 'user', content: message };
     setMessages(prev => [...prev, userMsg]);
+  
     const outgoing = transformMessage(message.trim());
     setMessage('');
     setIsLoading(true);
-
+  
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: outgoing,
-          conversationId: conversationId || undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await safeJson(res);
-        throw new Error(err?.error || `Request failed (${res.status})`);
+      if (USE_STREAM) {
+        // --- STREAMING PATH ---
+        // Insert an empty bot bubble we’ll fill as tokens arrive
+        const botIndex = messages.length + 1; // after pushing user
+        setMessages(prev => [...prev, { type: 'bot', content: '' }]);
+  
+        const res = await fetch('/api/chat-stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: outgoing,
+            conversationId: conversationId || undefined,
+          }),
+        });
+  
+        if (!res.ok || !res.body) {
+          throw new Error(`Stream request failed (${res.status})`);
+        }
+  
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let localSources: { file_id?: string; title?: string; quote?: string }[] = [];
+  
+        // Simple SSE parser: chunks split by double newline
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+  
+          const parts = buffer.split('\n\n');
+          buffer = parts.pop() || '';
+  
+          for (const part of parts) {
+            const lines = part.split('\n').filter(Boolean);
+            const eventLine = lines.find(l => l.startsWith('event:'));
+            const dataLine = lines.find(l => l.startsWith('data:')) || 'data:';
+  
+            const evt = eventLine?.slice(6).trim(); // after 'event:'
+            const data = dataLine.slice(5); // after 'data:'
+  
+            if (!evt) {
+              // default: token chunk
+              const token = data;
+              setMessages(prev => {
+                const copy = [...prev];
+                const current = copy[botIndex] as Message;
+                const prevText = (current?.type === 'bot' ? current.content : '');
+                copy[botIndex] = { type: 'bot', content: prevText + token, sources: localSources };
+                return copy;
+              });
+            } else if (evt === 'error') {
+              throw new Error(data);
+            } else if (evt === 'done') {
+              const payload = JSON.parse(data || '{}') as { conversationId?: string | null; sources?: any[] };
+              if (payload?.conversationId != null) setConversationId(payload.conversationId);
+              localSources = payload?.sources || [];
+              // ensure final sources attached
+              setMessages(prev => {
+                const copy = [...prev];
+                const current = copy[botIndex] as Message;
+                copy[botIndex] = { type: 'bot', content: current?.content || '', sources: localSources };
+                return copy;
+              });
+            }
+          }
+        }
+      } else {
+        // --- NON-STREAMING (existing) ---
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: outgoing, conversationId }),
+        });
+        if (!res.ok) {
+          const err = await safeJson(res);
+          throw new Error(err?.error || `Request failed (${res.status})`);
+        }
+        const data = (await res.json()) as ApiReply;
+        setConversationId((data?.conversationId ?? conversationId) || null);
+        setMessages(prev => [
+          ...prev,
+          { type: 'bot', content: data?.answer || '…', sources: data?.sources || [] },
+        ]);
       }
-
-      const data = await res.json() as { answer: string; conversationId?: string | null };
-      setConversationId(data.conversationId ?? conversationId ?? null);
-
-      const botMsg: Message = { type: 'bot', content: data.answer || '…' };
-      setMessages(prev => [...prev, botMsg]);
     } catch (err: any) {
-      const botMsg: Message = {
-        type: 'bot',
-        content: `Sorry, something went wrong: ${err?.message || 'Unknown error'}`,
-      };
-      setMessages(prev => [...prev, botMsg]);
+      setMessages(prev => [
+        ...prev,
+        { type: 'bot', content: `Sorry, something went wrong: ${err?.message || 'Unknown error'}` },
+      ]);
     } finally {
       setIsLoading(false);
     }
