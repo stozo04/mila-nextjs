@@ -33,23 +33,6 @@ function buildNowSystemItem(tz = "America/Chicago") {
 
   return { role: "system" as const, content: text };
 }
-function buildNowSystemItem(tz = "America/Chicago") {
-  const now = new Date();
-  // e.g., "Tuesday, August 26, 2025 at 2:37:12 PM Central Daylight Time"
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz,
-    dateStyle: "full",
-    timeStyle: "long",
-  }).format(now);
-
-  const text =
-    `Current date/time: ${fmt} (${tz}). ` +
-    `When asked about ages, durations, or “how long ago,” compute using this current date/time. ` +
-    `If provided birthdays (e.g., Mila born May 30, 2023), calculate age precisely to today. ` +
-    `Prefer exact values (years/months/days) when relevant.`;
-
-  return { role: "system" as const, content: text };
-}
 
 function extractSources(final: any) {
   const sources: Array<{ file_id?: string; title?: string; quote?: string }> = [];

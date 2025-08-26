@@ -12,6 +12,7 @@ type ChatBody = {
   question?: string;          // the user's text
   conversationId?: string;    // optional: keep context across turns
 };
+
 function buildNowSystemItem(tz = "America/Chicago") {
   const now = new Date();
   // e.g., "Tuesday, August 26, 2025 at 2:37:12 PM Central Daylight Time"
