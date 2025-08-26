@@ -1,12 +1,11 @@
-// src/app/api/blog/[slug]/audio/route.ts
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
-export const maxDuration = 120; // <-- allow longer runs if your plan supports it
+export const maxDuration = 60; // Hobby limit (or delete this line)
 
-// Persona (yours)
+// === Persona (yours) ===
 const PERSONALITY_INSTRUCTIONS = `Affect/personality: A cheerful guide 
 
 Tone: Friendly, clear, and reassuring, creating a calm atmosphere and making the listener feel confident and comfortable.
@@ -23,11 +22,14 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Voice/model (yours)
 const TTS_MODEL = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
 const TTS_VOICE = process.env.OPENAI_TTS_VOICE || "sage";
 
 // ---------- helpers ----------
+const b64ToBytes = (b64: string) => Buffer.from(b64, "base64");
+const bytesToB64 = (bytes: Buffer | Uint8Array) =>
+  Buffer.isBuffer(bytes) ? bytes.toString("base64") : Buffer.from(bytes).toString("base64");
+
 function htmlToPlain(s: string) {
   return String(s ?? "")
     .replace(/<br\s*\/?>/gi, "\n")
@@ -35,12 +37,9 @@ function htmlToPlain(s: string) {
     .replace(/\s+/g, " ")
     .trim();
 }
-const b64ToBytes = (b64: string) => Buffer.from(b64, "base64");
-const bytesToB64 = (bytes: Buffer | Uint8Array) =>
-  Buffer.isBuffer(bytes) ? bytes.toString("base64") : Buffer.from(bytes).toString("base64");
 
-// Conservative chunker (smaller target + cap)
-function chunkText(input: string, target = 1200, maxChunks = 10): string[] {
+// Smaller chunks + hard cap so we finish under 60s
+function chunkText(input: string, target = 900, maxChunks = 6): string[] {
   if (input.length <= target) return [input];
   const sentences = input
     .split(/(?<=[.!?])\s+(?=[A-Z0-9“"‘'])/g)
@@ -51,12 +50,14 @@ function chunkText(input: string, target = 1200, maxChunks = 10): string[] {
   let current = "";
 
   for (const s of sentences) {
-    const candidate = current ? `${current} ${s}` : s;
+    const candidate = current ? current + " " + s : s;
     if (candidate.length <= target) current = candidate;
     else {
       if (current) chunks.push(current);
       if (s.length > target) {
-        for (let i = 0; i < s.length; i += target) chunks.push(s.slice(i, i + target));
+        for (let i = 0; i < s.length && chunks.length < maxChunks; i += target) {
+          chunks.push(s.slice(i, i + target));
+        }
         current = "";
       } else current = s;
     }
@@ -66,7 +67,7 @@ function chunkText(input: string, target = 1200, maxChunks = 10): string[] {
   return chunks;
 }
 
-// Cache (your schema)
+// Simple table cache (your schema)
 async function getCachedAudio(slug: string) {
   const { data } = await supabase
     .from("blog_audio")
@@ -77,23 +78,22 @@ async function getCachedAudio(slug: string) {
   return b64 ? b64ToBytes(b64) : null;
 }
 async function saveAudioToCache(slug: string, bytes: Buffer) {
-  const audio_b64 = bytesToB64(bytes);
-  await supabase
-    .from("blog_audio")
-    .upsert({ slug, audio_data: audio_b64, created_at: new Date().toISOString() });
+  await supabase.from("blog_audio").upsert({
+    slug,
+    audio_data: bytesToB64(bytes),
+    created_at: new Date().toISOString(),
+  });
 }
 
-// JSON error/response helpers
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
-// Per-chunk TTS with timeout + single retry
-async function ttsChunkWithTimeout(input: string, timeoutMs = 30000): Promise<Buffer> {
+// Per-chunk TTS with a short timeout and 1 retry
+async function ttsChunk(input: string, timeoutMs = 12000): Promise<Buffer> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    const first = await openai.audio.speech.create({
+    const resp = await openai.audio.speech.create({
       model: TTS_MODEL,
       voice: TTS_VOICE,
       input,
@@ -101,19 +101,18 @@ async function ttsChunkWithTimeout(input: string, timeoutMs = 30000): Promise<Bu
       response_format: "mp3",
       signal: controller.signal as any,
     });
-    const arr = await first.arrayBuffer();
-    return Buffer.from(arr);
-  } catch (err) {
-    // retry once quickly if aborted or transient error
-    const second = await openai.audio.speech.create({
+    const buf = Buffer.from(await resp.arrayBuffer());
+    return buf;
+  } catch {
+    // quick retry without the abort controller
+    const retry = await openai.audio.speech.create({
       model: TTS_MODEL,
       voice: TTS_VOICE,
       input,
       instructions: PERSONALITY_INSTRUCTIONS,
       response_format: "mp3",
     });
-    const arr2 = await second.arrayBuffer();
-    return Buffer.from(arr2);
+    return Buffer.from(await retry.arrayBuffer());
   } finally {
     clearTimeout(timer);
   }
@@ -128,16 +127,16 @@ export async function GET(
     const { slug } = await params;
     if (!slug) return json(400, { error: "Missing slug" });
 
-    // 1) Load blog
-    const { data: blog, error: blogErr } = await supabase
+    // 1) Blog
+    const { data: blog, error } = await supabase
       .from("blogs")
       .select("id, slug, title, content")
       .eq("slug", slug)
       .single();
-    if (blogErr) return json(500, { error: "DB error fetching blog" });
+    if (error) return json(500, { error: "DB error fetching blog" });
     if (!blog) return json(404, { error: "Blog not found" });
 
-    // 2) Build text
+    // 2) Text
     const title = blog.title || "A letter to Mila";
     const speakText = `${title}\n\n${htmlToPlain(blog.content)}`;
     if (speakText.length < 8) return json(400, { error: "Empty blog content" });
@@ -155,25 +154,22 @@ export async function GET(
       });
     }
 
-    // 4) Chunk + synth
-    const parts = chunkText(speakText, 1200, 10);
+    // 4) Chunk + synth (stay under budget)
+    const parts = chunkText(speakText, 900, 6);
     const buffers: Buffer[] = [];
-
     for (let i = 0; i < parts.length; i++) {
-      // If we’re getting close to our function budget, bail with 202 and let client retry
       const elapsed = Date.now() - started;
-      if (elapsed > (maxDuration - 10) * 1000) {
-        // Save partial? (skip: we want full file). Tell client to retry soon.
+      if (elapsed > 45_000) {
+        // running out of time → tell client to retry soon
         return json(202, { pending: true, reason: "still_generating" });
       }
-
       const prefix =
         parts.length > 1
           ? `Part ${i + 1} of ${parts.length}. Continue seamlessly with consistent pacing and tone.\n\n`
           : "";
       const input = prefix + parts[i];
-      const buf = await ttsChunkWithTimeout(input, 30000); // 30s per chunk
-      buffers.push(buf);
+      const audio = await ttsChunk(input, 12_000);
+      buffers.push(audio);
     }
 
     const finalBytes = Buffer.concat(buffers);
@@ -190,7 +186,7 @@ export async function GET(
       },
     });
   } catch (err: any) {
-    console.error("[/api/blog/[slug]/audio] timeout-safe error:", err);
+    console.error("[/api/blog/[slug]/audio] error:", err);
     return json(500, { error: err?.message || "Failed to generate or cache audio" });
   }
 }
