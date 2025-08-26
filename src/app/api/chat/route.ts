@@ -12,6 +12,23 @@ type ChatBody = {
   question?: string;          // the user's text
   conversationId?: string;    // optional: keep context across turns
 };
+function buildNowSystemItem(tz = "America/Chicago") {
+  const now = new Date();
+  // e.g., "Tuesday, August 26, 2025 at 2:37:12 PM Central Daylight Time"
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    dateStyle: "full",
+    timeStyle: "long",
+  }).format(now);
+
+  const text =
+    `Current date/time: ${fmt} (${tz}). ` +
+    `When asked about ages, durations, or “how long ago,” compute using this current date/time. ` +
+    `If provided birthdays (e.g., Mila born May 30, 2023), calculate age precisely to today. ` +
+    `Prefer exact values (years/months/days) when relevant.`;
+
+  return { role: "system" as const, content: text };
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,7 +55,7 @@ export async function POST(req: NextRequest) {
       // Use conversation to keep server-side context (no more threads)
       ...(conversationId ? { conversation: { id: conversationId } } : {}),
       // Input items: user message
-      input: [{ role: "user", content: question }],
+      input: [buildNowSystemItem(), { role: "user", content: question }],
       // If you want to store (for reuse / token savings):
       store: true,
        // built-in File Search against your vector store
