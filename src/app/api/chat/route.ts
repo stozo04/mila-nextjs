@@ -1,104 +1,86 @@
 // src/app/api/chat/route.ts
-import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createClient } from "@supabase/supabase-js";
+import { NextRequest } from "next/server";
 
-const openai = new OpenAI({
+export const runtime = "edge"; // fast + scalable
+const VECTOR_STORE_ID = process.env.OPENAI_VECTOR_STORE_ID
+const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Get the current date as a string in your desired format.
-const currentDate = new Date().toLocaleDateString("en-US", {
-  timeZone: "UTC", // or your desired time zone
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-});
+type ChatBody = {
+  question?: string;          // the user's text
+  conversationId?: string;    // optional: keep context across turns
+};
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Using service role key for server-side operations
-);
-
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { question, threadId, runId, getAnswer } = await request.json(); // Destructure getAnswer
-    
-    if (getAnswer && threadId && runId) {
-      // If getAnswer is true, we are fetching the final answer based on existing thread and run IDs
-      const messages = await openai.beta.threads.messages.list(threadId);
-      const lastMessage = messages.data
-        .filter((message) => message.role === "assistant")
-        .pop();
+    const { question, conversationId }: ChatBody = await req.json();
 
-      if (!lastMessage) {
-        throw new Error("No response from assistant");
-      }
-      const answer =
-        lastMessage.content[0].type === "text"
-          ? lastMessage.content[0].text.value
-          : "No text response available";
-      return NextResponse.json({ answer });
-    } else {
-      // Original logic to start a new chat and run
-      if (!question) {
-        return NextResponse.json(
-          { error: "Missing question" },
-          { status: 400 }
-        );
-      }
-
-      // Store the question in Supabase (only when processing a new question)
-      const { error: insertError } = await supabase
-        .from("chat_questions")
-        .insert([
-          {
-            question,
-            created_at: currentDate,
-          },
-        ]);
-
-      if (insertError) {
-        console.error("Error storing question:", insertError);
-        // Continue with the chat even if storing fails
-      }
-
-      const thread = await openai.beta.threads.create();
-
-      // Combine the current date with the user's question.
-      const questionWithDate = `Assume today's date is ${currentDate}. ${question}`;
-
-      const message = await openai.beta.threads.messages.create(thread.id, {
-        role: "user",
-        content: questionWithDate,
+    if (!question || !question.trim()) {
+      return new Response(JSON.stringify({ error: "Missing question" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
       });
-
-      // Create and await the run
-      const assistantId = process.env.OPENAI_ASSISTANT_ID;
-      if (!assistantId) {
-        throw new Error("OPENAI_ASSISTANT_ID environment variable is not configured");
-      }
-      
-      const run = await openai.beta.threads.runs.create(thread.id, {
-        assistant_id: assistantId,
-      });
-
-      // Immediately return threadId and runId
-      return NextResponse.json(
-        { threadId: thread.id, runId: run.id },
-        { status: 202 }
-      ); // 202 Accepted - processing started
     }
-  } catch (error: any) {
-    // Explicitly type error as any or Error
-    console.error("Error:", error);
-    return NextResponse.json(
+
+    // Optional: point to a Prompt created in the dashboard.
+    // If you don't have one yet, leave it undefined and just pass model below.
+    const promptId = process.env.OPENAI_PROMPT_ID || undefined;
+
+    // Choose a default model; you can bump to gpt-4.1, gpt-4.1-mini, etc.
+    const model = process.env.OPENAI_MODEL || "gpt-4.1-mini";
+
+    const response = await client.responses.create({
+      model,
+      // If you have a Prompt, attach it here:
+      ...(promptId ? { prompt: { id: promptId } } : {}),
+      // Use conversation to keep server-side context (no more threads)
+      ...(conversationId ? { conversation: { id: conversationId } } : {}),
+      // Input items: user message
+      input: [{ role: "user", content: question }],
+      // If you want to store (for reuse / token savings):
+      store: true,
+       // built-in File Search against your vector store
+    tools: [
       {
-        error: "An error occurred while processing your request",
-        details: error instanceof Error ? error.message : String(error),
+        type: "file_search",
+        vector_store_ids: [VECTOR_STORE_ID || ""],
       },
-      { status: 500 }
+    ],
+    });
+
+    // Extract top-level text and an updated conversation id (if any)
+    const answer =
+      (response.text && response.text.output_text) ||
+      response.output_text ||
+      // Fallback: stitch from output items if needed
+      (response.output?.[0]?.content?.[0]?.type === "output_text"
+        ? response.output[0].content[0].text
+        : "");
+
+    // Conversation ID (present when store=true or when Conversations are used)
+    const newConvId = response.conversation?.id;
+
+    return new Response(
+      JSON.stringify({
+        answer: answer?.toString() ?? "",
+        conversationId: newConvId || conversationId || null,
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
     );
+  } catch (err: any) {
+    console.error("[/api/chat] Error:", err);
+    const message =
+      err?.error?.message ||
+      err?.message ||
+      "Unknown error while creating a response";
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
