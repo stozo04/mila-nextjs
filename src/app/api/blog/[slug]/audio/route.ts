@@ -165,7 +165,7 @@ export async function GET(
       }
       const prefix =
         parts.length > 1
-          ? `Part ${i + 1} of ${parts.length}. Continue seamlessly with consistent pacing and tone.\n\n`
+          ? `Part ${i + 1} of ${parts.length}.\n\n`
           : "";
       const input = prefix + parts[i];
       const audio = await ttsChunk(input, 12_000);
