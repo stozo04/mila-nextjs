@@ -1,7 +1,7 @@
 'use client';
 
 import Image from "next/image";
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Loading from '@/app/loading';
 import { supabase } from '@/lib/supabase';
 import { FileObject } from '@supabase/storage-js';
@@ -14,6 +14,7 @@ const GenderRevealPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [offset, setOffset] = useState(0);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const fetchedOffsetsRef = useRef<Set<number>>(new Set());
   const LIMIT = 3;
 
   const fetchImages = async () => {
@@ -32,7 +33,13 @@ const GenderRevealPage = () => {
       }
 
       if (data) {
-        setImages(prevImages => [...prevImages, ...data]);
+        setImages(prevImages => {
+          const merged = [...prevImages, ...data];
+          // Deduplicate by filename to avoid duplicate keys/renders
+          const dedupMap = new Map<string, FileObject>();
+          for (const f of merged) dedupMap.set(f.name, f);
+          return Array.from(dedupMap.values());
+        });
       }
     } catch (error) {
       console.error('Error fetching images:', error);
@@ -42,6 +49,9 @@ const GenderRevealPage = () => {
   };
 
   useEffect(() => {
+    // Avoid duplicate fetches for the same offset (e.g., React Strict Mode)
+    if (fetchedOffsetsRef.current.has(offset)) return;
+    fetchedOffsetsRef.current.add(offset);
     fetchImages();
   }, [offset]);
 
