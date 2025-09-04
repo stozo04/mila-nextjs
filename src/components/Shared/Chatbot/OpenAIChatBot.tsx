@@ -4,12 +4,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 type Role = 'user' | 'bot';
-// add this near the top
-const USE_STREAM = true;
-
-type ApiReply =
-  | { answer: string; conversationId?: string | null; sources?: { file_id?: string; title?: string; quote?: string }[] }
-  | undefined;
 
 type Message =
   | { type: 'user'; content: string }
@@ -73,22 +67,19 @@ export default function OpenAIChatBot() {
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
-  // --- Persist widget state across reloads ---
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('openai-chatbot-state');
-      if (saved) {
-        const parsed = JSON.parse(saved) as { messages: Message[]; conversationId: string | null };
-        setMessages(parsed.messages || []);
-        setConversationId(parsed.conversationId || null);
-      }
-    } catch {}
+  // --- Reset state helpers (no history retention) ---
+  const resetChat = React.useCallback(() => {
+    setMessages([]);
+    setMessage('');
+    setConversationId(null);
+    setIsLoading(false);
+    try { localStorage.removeItem('openai-chatbot-state'); } catch { }
   }, []);
+
+  // Clear any persisted state on initial load so each page view is fresh
   useEffect(() => {
-    try {
-      localStorage.setItem('openai-chatbot-state', JSON.stringify({ messages, conversationId }));
-    } catch {}
-  }, [messages, conversationId]);
+    resetChat();
+  }, [resetChat]);
 
   // --- Submit handler ---
   const handleSubmit = async (e: React.FormEvent) => {
@@ -103,7 +94,7 @@ export default function OpenAIChatBot() {
     setIsLoading(true);
   
     try {
-      if (USE_STREAM) {
+      {
         // --- STREAMING PATH ---
         // Insert an empty bot bubble we’ll fill as tokens arrive
         const botIndex = messages.length + 1; // after pushing user
@@ -170,23 +161,6 @@ export default function OpenAIChatBot() {
             }
           }
         }
-      } else {
-        // --- NON-STREAMING (existing) ---
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: outgoing, conversationId }),
-        });
-        if (!res.ok) {
-          const err = await safeJson(res);
-          throw new Error(err?.error || `Request failed (${res.status})`);
-        }
-        const data = (await res.json()) as ApiReply;
-        setConversationId((data?.conversationId ?? conversationId) || null);
-        setMessages(prev => [
-          ...prev,
-          { type: 'bot', content: data?.answer || '…', sources: data?.sources || [] },
-        ]);
       }
     } catch (err: any) {
       setMessages(prev => [
@@ -202,7 +176,17 @@ export default function OpenAIChatBot() {
     <div className="position-fixed bottom-0 end-0 mb-4 me-4" style={{ zIndex: 1050 }}>
       {/* Toggle Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (isOpen) {
+            // Closing via toggle button (X)
+            resetChat();
+            setIsOpen(false);
+          } else {
+            // Opening fresh
+            resetChat();
+            setIsOpen(true);
+          }
+        }}
         className="btn btn-primary rounded-circle p-3 shadow"
         aria-label={isOpen ? 'Close chat' : 'Open chat'}
         type="button"
@@ -226,7 +210,7 @@ export default function OpenAIChatBot() {
             <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Chat with me</h5>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => { resetChat(); setIsOpen(false); }}
                 className="btn btn-link text-white p-0 border-0"
                 style={{ fontSize: '1.5rem', lineHeight: 1 }}
                 aria-label="Close"
@@ -283,12 +267,6 @@ export default function OpenAIChatBot() {
                     Send
                   </button>
                 </div>
-                {/* Small footer for context */}
-                <div className="mt-2">
-                  <small className="text-muted">
-                    {conversationId ? 'Continuing your conversation.' : 'New conversation will start.'}
-                  </small>
-                </div>
               </form>
             </div>
           </div>
@@ -296,13 +274,4 @@ export default function OpenAIChatBot() {
       )}
     </div>
   );
-}
-
-// --- helpers ---
-async function safeJson(res: Response) {
-  try {
-    return await res.json();
-  } catch {
-    return null;
-  }
 }

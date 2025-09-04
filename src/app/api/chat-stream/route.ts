@@ -6,10 +6,9 @@ export const runtime = "edge";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const MODEL = process.env.OPENAI_MODEL || "gpt-4.1-mini";
+const MODEL = process.env.OPENAI_MODEL;
 const PROMPT_ID = process.env.OPENAI_PROMPT_ID;
-const VECTOR_STORE_ID =
-  process.env.OPENAI_VECTOR_STORE_ID || "vs_67a9713baad8819187ebc6dedd741aa5";
+const VECTOR_STORE_ID = process.env.OPENAI_VECTOR_STORE_ID;
 
 type Body = {
   question?: string;
@@ -26,16 +25,15 @@ function buildNowSystemItem(tz = "America/Chicago") {
   }).format(now);
 
   const text =
-    `Current date/time: ${fmt} (${tz}). ` +
-    `When asked about ages, durations, or “how long ago,” compute using this current date/time. ` +
-    `If provided birthdays (e.g., Mila born May 30, 2023), calculate age precisely to today. ` +
-    `Prefer exact values (years/months/days) when relevant.`;
+    "You are Mila's Chatbot. You must always respond in the first person, as if you are Mila speaking directly. Never say 'Mila has...' or refer to Mila in the third person — always say 'I', 'me', or 'my'. You have access to Mila's life information from the blogs. When asked a question, use the FileSearch tool to find the correct answer and reply in Mila's authentic voice and personality. If no answer is found, reply: 'I do not have that information.' Keep responses brief, factual, and true to Mila. Do not guess or assume anything not in the blogs. Use the current date/time to calculate ages, durations, and 'how long ago' answers. Mila was born May 30, 2023, so always compute her exact age (years/months/days) as of today. Prefer precise values where relevant." +
+    ` Current date/time: ${fmt} (${tz}).`;
 
   return { role: "system" as const, content: text };
 }
 
 function extractSources(final: any) {
-  const sources: Array<{ file_id?: string; title?: string; quote?: string }> = [];
+  const sources: Array<{ file_id?: string; title?: string; quote?: string }> =
+    [];
   for (const item of final?.output ?? []) {
     for (const c of item?.content ?? []) {
       for (const a of c?.annotations ?? []) {
@@ -70,12 +68,14 @@ export async function POST(req: NextRequest) {
       ...(conversationId ? { conversation: { id: conversationId } } : {}),
       input: [buildNowSystemItem(), { role: "user", content: question }],
       store: true,
-      tools: [
-        {
-          type: "file_search",
-          vector_store_ids: [VECTOR_STORE_ID],
-        },
-      ],
+      tools: VECTOR_STORE_ID
+        ? [
+            {
+              type: "file_search" as const,
+              vector_store_ids: [VECTOR_STORE_ID],
+            },
+          ]
+        : [],
     });
 
     const encoder = new TextEncoder();
@@ -97,7 +97,9 @@ export async function POST(req: NextRequest) {
         stream.on("response.error", (e: any) => {
           controller.enqueue(
             encoder.encode(
-              `event: error\ndata: ${JSON.stringify({ message: e.message || "stream error" })}\n\n`
+              `event: error\ndata: ${JSON.stringify({
+                message: e.message || "stream error",
+              })}\n\n`
             )
           );
           controller.close();
@@ -111,7 +113,10 @@ export async function POST(req: NextRequest) {
 
           controller.enqueue(
             encoder.encode(
-              `event: done\ndata: ${JSON.stringify({ conversationId: convId, sources })}\n\n`
+              `event: done\ndata: ${JSON.stringify({
+                conversationId: convId,
+                sources,
+              })}\n\n`
             )
           );
           controller.close();
@@ -119,7 +124,9 @@ export async function POST(req: NextRequest) {
       },
       cancel() {
         // If client disconnects, stop the OpenAI stream.
-        try { stream.abort(); } catch {}
+        try {
+          stream.abort();
+        } catch {}
       },
     });
 
@@ -137,7 +144,9 @@ export async function POST(req: NextRequest) {
     return new Response(
       JSON.stringify({
         error:
-          err?.error?.message || err?.message || "Unknown error while streaming",
+          err?.error?.message ||
+          err?.message ||
+          "Unknown error while streaming",
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
