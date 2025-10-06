@@ -38,9 +38,9 @@ export default function ChatKitWidget() {
           level: 2,
         },
         surface: {
-          background: "#fff5f6",
-          foreground: "#fe9a9b",
-        },
+          background: '#fe9a9b',
+          foreground: '#ffffff'
+        }
       },
       typography: {
         fontFamily: "'Dancing Script', cursive",
@@ -62,8 +62,21 @@ export default function ChatKitWidget() {
         ],
       },
     },
+
     startScreen: {
       greeting: "Chat with me",
+      prompts: [
+        {
+          icon: "circle-question",
+          label: "Who is Mila?",
+          prompt: "Tell me about Mila's story.",
+        },
+        {
+          icon: "sparkle",
+          label: "Fun milestone",
+          prompt: "Share a fun milestone from Mila's journey.",
+        },
+      ],
     },
     composer: {
       placeholder: "Type your message...",
