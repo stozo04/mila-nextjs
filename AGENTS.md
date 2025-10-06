@@ -6,14 +6,15 @@ This guide helps AI agents work effectively in this repository.
 
 Build and run a Next.js app that features:
 - Supabase auth and content
-- An OpenAI‑powered chatbot with streaming and optional File Search (RAG)
+- An OpenAI ChatKit embed backed by an Agent workflow (legacy streaming chat still available) with optional File Search (RAG)
 - Blog TTS endpoint that streams audio
 
 ## Core Concepts
 
 - App Router: API routes live under `src/app/api/**/route.ts`.
 - Edge runtime: `chat-stream` runs on the edge for low latency.
-- Streaming UX: The UI consumes Server‑Sent Events (SSE) from `/api/chat-stream`.
+- ChatKit UX: The embedded widget exchanges a client secret via `/api/chatkit/session` and renders bottom-right.
+- Streaming UX: Legacy chat consumes Server-Sent Events (SSE) from `/api/chat-stream`.
 - Fresh sessions: Chat clears messages and conversation on open/close and first mount.
 
 ## How To Run
@@ -32,6 +33,7 @@ Build and run a Next.js app that features:
   - `OPENAI_API_KEY`
   - `OPENAI_VECTOR_STORE_ID`
   - `OPENAI_MODEL`
+  - `OPENAI_CHATKIT_WORKFLOW_ID`
   - `SITE_URL`
 
 4) Start
@@ -39,9 +41,13 @@ Build and run a Next.js app that features:
 
 ## Key Files
 
-- UI chatbot: `src/components/Shared/Chatbot/OpenAIChatBot.tsx`
-  - Posts to `/api/chat-stream`
-  - Parses SSE events: default token data, `event: done`, `event: error`
+- ChatKit widget: `src/components/Shared/Chatbot/ChatKitWidget.tsx`
+  - Fetches client secrets from `/api/chatkit/session`
+  - Positions the ChatKit web component bottom-right
+- ChatKit session API: `src/app/api/chatkit/session/route.ts`
+  - Exchanges the workflow ID for a client secret (requires `OPENAI_CHATKIT_WORKFLOW_ID`)
+- Legacy streaming chat: `src/components/Shared/Chatbot/OpenAIChatBot.tsx`
+  - Posts to `/api/chat-stream` and parses SSE events (`data`, `event: done`, `event: error`)
 - Streaming API: `src/app/api/chat-stream/route.ts`
   - Uses OpenAI Responses API streaming
   - Includes File Search tool if `OPENAI_VECTOR_STORE_ID` is set
@@ -81,6 +87,10 @@ Don’t
   - Change `OPENAI_MODEL` or `OPENAI_PROMPT_ID` env vars
   - Keep streaming logic the same
 
+- Update ChatKit workflow
+  - Set `OPENAI_CHATKIT_WORKFLOW_ID` to the new workflow ID
+  - Restart the dev server to ensure the widget picks up the change
+
 - Debug File Search
   - Verify `OPENAI_VECTOR_STORE_ID` is set
   - Confirm the ID exists and is accessible by the API key’s project
@@ -99,8 +109,6 @@ Don’t
 
 ## Release Notes (recent changes)
 
-- Standardized on streaming `/api/chat-stream` only
-- Removed non‑stream `/api/chat` route
-- Added Node 20 requirement via `engines`, `.nvmrc`, `.node-version`
-- Chat resets on mount and close (no history)
-
+- Added OpenAI ChatKit embed (`ChatKitWidget`) and `/api/chatkit/session`
+- Legacy `OpenAIChatBot` remains in repo but is hidden from layout
+- Added `OPENAI_CHATKIT_WORKFLOW_ID` env var alongside existing OpenAI config

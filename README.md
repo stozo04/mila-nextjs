@@ -8,7 +8,7 @@ Mila is a blog dedicated to my daughter to capture her life memories month to mo
 - Supabase Auth & Database (Postgres, RLS)
 - Role‑based protected routes: `(protected)` and `(public)` segments
 - Responsive UI with Bootstrap 5 + SCSS
-- AI chatbot about Mila (OpenAI Responses API + File Search)
+- AI chatbot powered by OpenAI ChatKit workflow
 - TTS for blog posts via `/api/blog/[slug]/audio`
 - Vercel Analytics, ready for CI/CD
 
@@ -40,6 +40,7 @@ SUPABASE_SERVICE_ROLE_KEY=""         # Supabase service role key (server-side on
 OPENAI_API_KEY=""                    # Your OpenAI secret key
 OPENAI_VECTOR_STORE_ID=""            # Optional: OpenAI Vector Store ID for File Search
 OPENAI_MODEL=""                      # Optional: override the default model (e.g., gpt-4.1, gpt-4o-mini)
+OPENAI_CHATKIT_WORKFLOW_ID=""        # Workflow ID from OpenAI Agent Builder for ChatKit
 # --- Site URLs ---
 SITE_URL=""                          # Used for backend or deployment config (sometimes Netlify/Vercel)
 NEXT_PUBLIC_SITE_URL=""              # Base URL for auth callbacks (e.g., https://yourapp.com)
@@ -49,11 +50,16 @@ NEXT_PUBLIC_ADMIN_EMAIL=""           # Email for admin account (grants elevated 
 
 ## Chatbot Architecture
 
-- Client: `src/components/Shared/Chatbot/OpenAIChatBot.tsx`
-  - Streams tokens from `/api/chat-stream`
-  - Resets state on mount and when closed (no history persisted)
-- API: `src/app/api/chat-stream/route.ts`
-  - Edge runtime, uses OpenAI Responses API stream
+- Client embed: `src/components/Shared/Chatbot/ChatKitWidget.tsx`
+  - Embeds OpenAI ChatKit, exchanging a client secret via `/api/chatkit/session`
+  - Pins the widget bottom-right to replace the legacy chat UI
+- Session API: `src/app/api/chatkit/session/route.ts`
+  - Exchanges the workflow (`OPENAI_CHATKIT_WORKFLOW_ID`) for a ChatKit client secret
+  - Guards on missing env vars and surfaces OpenAI API errors
+- Legacy streaming chat (disabled in UI): `src/components/Shared/Chatbot/OpenAIChatBot.tsx`
+  - Still streams from `/api/chat-stream` for future reuse
+- Streaming API: `src/app/api/chat-stream/route.ts`
+  - Edge runtime, uses OpenAI Responses API streaming
   - File Search tool is included if `OPENAI_VECTOR_STORE_ID` is set
   - Emits SSE: token chunks (default), `event: done` with `{ conversationId, sources }`, and `event: error`
 
@@ -89,4 +95,3 @@ docs/                  # Long‑form docs, assets
 [MIT](LICENSE)
 
 Built by Steven Gates.
-

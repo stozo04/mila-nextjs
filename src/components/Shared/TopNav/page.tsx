@@ -59,6 +59,19 @@ const NavMenu = () => {
     }
   };
 
+  const donateNavItem = (
+    <li className="nav-item">
+      <a
+        href="https://go.fidelity.com/knfo0b"
+        className="nav-link"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Support Mila
+      </a>
+    </li>
+  );
+
   return (
     <nav className="navbar navbar-expand-lg bg-body-tertiary">
       <div className="container-fluid d-flex justify-content-between align-items-center">
@@ -70,94 +83,99 @@ const NavMenu = () => {
         </button>
         <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
           <ul className="navbar-nav">
-            {isLoading ? null : isAuthenticated ? (
+            {isLoading ? null : (
               <>
-                <li className="nav-item">
-                  <Link href="/sonograms" className="nav-link">
-                    Sonograms
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link href="/gender-reveal" className="nav-link">
-                    Gender Reveal
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link href="/blogs" className="nav-link">
-                    Blogs
-                  </Link>
-                </li>
-                <li className="nav-item dropdown">
-                  <a
-                    className="nav-link dropdown-toggle"
-                    href="#"
-                    role="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                  >
-                    Baby Shower
-                  </a>
-                  <ul className="dropdown-menu">
-                    <li>
-                      <Link href="/baby-shower/houston" className="dropdown-item">
-                        Houston
+                {donateNavItem}
+                {isAuthenticated ? (
+                  <>
+                    <li className="nav-item">
+                      <Link href="/sonograms" className="nav-link">
+                        Sonograms
                       </Link>
                     </li>
-                    <li>
-                      <Link href="/baby-shower/dallas" className="dropdown-item">
-                        Dallas
+                    <li className="nav-item">
+                      <Link href="/gender-reveal" className="nav-link">
+                        Gender Reveal
                       </Link>
                     </li>
-                  </ul>
-                </li>
-                <li className="nav-item dropdown">
-                  <a
-                    className="nav-link dropdown-toggle"
-                    href="#"
-                    role="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                  >
-                    My Journey
-                  </a>
-                  <ul className="dropdown-menu">
-                    <li>
-                      <Link href="/my-journey/birthday" className="dropdown-item">
-                        Birthday
+                    <li className="nav-item">
+                      <Link href="/blogs" className="nav-link">
+                        Blogs
                       </Link>
                     </li>
-                    <li>
-                      <Link href="/my-journey/first-year" className="dropdown-item">
-                        My First Year
+                    <li className="nav-item dropdown">
+                      <a
+                        className="nav-link dropdown-toggle"
+                        href="#"
+                        role="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                      >
+                        Baby Shower
+                      </a>
+                      <ul className="dropdown-menu">
+                        <li>
+                          <Link href="/baby-shower/houston" className="dropdown-item">
+                            Houston
+                          </Link>
+                        </li>
+                        <li>
+                          <Link href="/baby-shower/dallas" className="dropdown-item">
+                            Dallas
+                          </Link>
+                        </li>
+                      </ul>
+                    </li>
+                    <li className="nav-item dropdown">
+                      <a
+                        className="nav-link dropdown-toggle"
+                        href="#"
+                        role="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                      >
+                        My Journey
+                      </a>
+                      <ul className="dropdown-menu">
+                        <li>
+                          <Link href="/my-journey/birthday" className="dropdown-item">
+                            Birthday
+                          </Link>
+                        </li>
+                        <li>
+                          <Link href="/my-journey/first-year" className="dropdown-item">
+                            My First Year
+                          </Link>
+                        </li>
+                        <li>
+                          <Link href="/my-journey/one-year" className="dropdown-item">
+                            One Year
+                          </Link>
+                        </li>
+                        <li>
+                          <Link href="/my-journey/second-year" className="dropdown-item">
+                            Two Year
+                          </Link>
+                        </li>
+                      </ul>
+                    </li>
+                    <li className="nav-item">
+                      <Link href="/about/genealogy" className="nav-link">
+                        About Me
                       </Link>
                     </li>
-                    <li>
-                      <Link href="/my-journey/one-year" className="dropdown-item">
-                        One Year
-                      </Link>
+                    <li className="nav-item">
+                      <button onClick={handleLogout} className="nav-link btn btn-link">
+                        Logout
+                      </button>
                     </li>
-                    <li>
-                      <Link href="/my-journey/second-year" className="dropdown-item">
-                        Two Year
-                      </Link>
-                    </li>
-                  </ul>
-                </li>
-                <li className="nav-item">
-                  <Link href="/about/genealogy" className="nav-link">
-                    About Me
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <button onClick={handleLogout} className="nav-link btn btn-link">
-                    Logout
-                  </button>
-                </li>
+                  </>
+                ) : (
+                  <li className="nav-item">
+                    <SignInButton />
+                  </li>
+                )}
               </>
-            ) : (
-              <li className="nav-item">
-                <SignInButton />
-              </li>
             )}
           </ul>
         </div>
