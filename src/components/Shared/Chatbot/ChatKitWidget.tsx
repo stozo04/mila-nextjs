@@ -32,6 +32,7 @@ export default function ChatKitWidget() {
   const chatKitRef = useRef<OpenAIChatKit | null>(null);
   latestDeviceId.current = deviceId;
   const [isOpen, setIsOpen] = useState(false);
+  const [isTriggerHovered, setIsTriggerHovered] = useState(false);
 
   const { control } = useChatKit({
     theme: {
@@ -162,9 +163,19 @@ export default function ChatKitWidget() {
           backgroundColor: "#fe9a9b",
           borderColor: "#fe9a9b",
           display: isOpen ? "none" : "flex",
+          transform: isTriggerHovered ? "translateY(-4px) scale(1.05)" : "translateY(0) scale(1)",
+          boxShadow: isTriggerHovered
+            ? "0 12px 24px rgba(254, 154, 155, 0.45)"
+            : "0 8px 18px rgba(254, 154, 155, 0.35)",
+          transition: "transform 0.2s ease, box-shadow 0.2s ease",
         }}
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setIsTriggerHovered(false);
+          setIsOpen(true);
+        }}
         aria-label="Open chat"
+        onMouseEnter={() => setIsTriggerHovered(true)}
+        onMouseLeave={() => setIsTriggerHovered(false)}
       >
         <BsStars size={28} color="#ffffff" />
       </button>
@@ -173,6 +184,9 @@ export default function ChatKitWidget() {
           width: 360,
           height: 520,
           display: isOpen ? "block" : "none",
+          boxShadow: "0 24px 45px rgba(34, 34, 34, 0.22)",
+          borderRadius: 18,
+          transition: "box-shadow 0.25s ease",
         }}
       >
         <ChatKit
