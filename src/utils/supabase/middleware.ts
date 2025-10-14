@@ -2,9 +2,9 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-  // List of public routes that don't require authentication
-  const publicRoutes = ['/']
-  
+  // Routes that remain publicly accessible without requiring Supabase auth
+  const publicRoutes = ['/', '/privacy-policy']
+
   if (publicRoutes.includes(request.nextUrl.pathname)) {
     return NextResponse.next()
   }
