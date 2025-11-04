@@ -12,18 +12,18 @@ export async function middleware(request: NextRequest) {
 
   // Remove trailing slashes except for root
   if (pathname !== '/' && pathname.endsWith('/')) {
-    return NextResponse.redirect(new URL(pathname.slice(0, -1), request.url))
+    return NextResponse.redirect(new URL(pathname.slice(0, -1), request.url), 308)
   }
 
   // Force HTTPS
   if (process.env.NODE_ENV === 'production' && !request.headers.get('x-forwarded-proto')?.includes('https')) {
-    return NextResponse.redirect(new URL(request.url.replace('http://', 'https://')))
+    return NextResponse.redirect(new URL(request.url.replace('http://', 'https://')), 308)
   }
 
   // Force www to non-www (or vice versa, depending on your preference)
   const hostname = request.headers.get('host') || ''
   if (hostname.startsWith('www.')) {
-    return NextResponse.redirect(new URL(request.url.replace('www.', '')))
+    return NextResponse.redirect(new URL(request.url.replace('www.', '')), 308)
   }
 
   // First update the session

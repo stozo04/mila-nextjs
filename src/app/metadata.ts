@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://milarosegates.com'),
+  metadataBase: new URL('https://milagates.com'),
   title: {
     default: 'Mila Rose Gates',
     template: '%s | Mila Rose Gates'
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Mila Rose Gates',
     description: 'Welcome to Mila Rose Gates\' website',
-    url: 'https://milarosegates.com',
+    url: 'https://milagates.com',
     siteName: 'Mila Rose Gates',
     locale: 'en_US',
     type: 'website',

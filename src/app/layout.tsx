@@ -18,7 +18,7 @@ const cormorantUpright = Cormorant_Upright({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://milarosegates.com'),
+  metadataBase: new URL('https://milagates.com'),
   title: {
     default: 'Mila Rose Gates',
     template: '%s | Mila Rose Gates'
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Mila Rose Gates',
     description: 'Welcome to Mila Rose Gates\' website',
-    url: 'https://milarosegates.com',
+    url: 'https://milagates.com',
     siteName: 'Mila Rose Gates',
     locale: 'en_US',
     type: 'website',
@@ -43,7 +43,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <title>Mila Rose Gates</title>
-        <link rel="canonical" href="https://milarosegates.com" />
         <Script
           src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js"
           strategy="afterInteractive"
