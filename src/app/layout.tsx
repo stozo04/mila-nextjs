@@ -8,9 +8,10 @@ import GoogleAnalytics from "@/components/Shared/Google/googleAnalytics";
 import NavMenu from "@/components/Shared/TopNav/page";
 import Footer from "@/components/Shared/Footer/Footer";
 import { Analytics } from "@vercel/analytics/react"
-import ChatKitWidget from "@/components/Shared/Chatbot/ChatKitWidget";
+// import ChatKitWidget from "@/components/Shared/Chatbot/ChatKitWidget";
 import { Metadata } from 'next';
-import Script from "next/script";
+import OpenAIChatBot from "@/components/Shared/Chatbot/OpenAIChatBot";
+// import Script from "next/script";
 
 const cormorantUpright = Cormorant_Upright({
   subsets: ['latin'], // Or other subsets as needed
@@ -43,10 +44,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <title>Mila Rose Gates</title>
-        <Script
+        {/* <Script
           src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js"
           strategy="afterInteractive"
-        />
+        /> */}
       </head>
       <body className={cormorantUpright.className}> {/* Font applied to <body> */}
           <Bootstrap>
@@ -56,8 +57,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="d-flex flex-column flex-grow-1">
                   {children}
                   {/* Legacy chat temporarily disabled in favor of ChatKit */}
-                  {/* <OpenAIChatBot /> */}
-                  <ChatKitWidget />
+                <OpenAIChatBot />
+                {/* <ChatKitWidget /> */}
                   <Analytics />
                 </div>
                 <Footer />
