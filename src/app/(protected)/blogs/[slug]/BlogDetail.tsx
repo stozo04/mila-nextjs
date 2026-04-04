@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import parse from 'html-react-parser';
 import Loading from '@/app/loading';
+import { normalizeYoutubeUrl } from "@/lib/youtube";
 import { Blog } from "@/types/blog";
 
 const fetchBlogData = async (slug: string) => {
@@ -111,6 +112,8 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
   if (isLoading) return <Loading />;
   if (!blog) return notFound();
 
+  const videoEmbedUrl = normalizeYoutubeUrl(blog.video_url);
+
   return (
     <div className="container mt-5">
       {/* Header with Listen control */}
@@ -207,8 +210,8 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
         <p>Your Papa</p>
       </div>
 
-      {/* Detail image + modal preview */}
-      {(blog.detail_image || (blog.additional_images && blog.additional_images.length > 0)) && (
+      {/* Detail image + video + modal preview */}
+      {(blog.detail_image || videoEmbedUrl || (blog.additional_images && blog.additional_images.length > 0)) && (
         <div className="blog-footer mb-5">
           <div className="row g-3">
             {/* Main detail image */}
@@ -221,6 +224,7 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
                   height={300}
                   className="img-fluid rounded"
                   style={{ 
+                    width: "100%",
                     objectFit: "cover", 
                     cursor: "pointer",
 
@@ -229,12 +233,31 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
                 />
               </div>
             )}
-            
+
+            {/* Video Section */}
+            {videoEmbedUrl && (
+              <div className={blog.detail_image ? "col-md-6 col-sm-12" : "col-12"}>
+                <div
+                  className="ratio ratio-4x3 mx-auto"
+                  style={{
+                    maxWidth: blog.detail_image ? "100%" : "560px",
+                  }}
+                >
+                  <iframe
+                    src={videoEmbedUrl}
+                    title={blog.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              </div>
+            )}
+
             {/* Additional images gallery */}
             {blog.additional_images && blog.additional_images.length > 0 && (
               <>
                 {blog.additional_images.map((imageUrl, index) => (
-                  <div key={index} className={blog.detail_image ? "col-md-6 col-sm-12" : "col-md-4 col-sm-6"}>
+                  <div key={index} className={blog.detail_image || videoEmbedUrl ? "col-md-6 col-sm-12" : "col-md-4 col-sm-6"}>
                     <Image
                       src={imageUrl}
                       alt={`${blog.title} - Photo ${index + 1}`}

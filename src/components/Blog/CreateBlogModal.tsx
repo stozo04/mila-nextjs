@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 import { supabase } from '@/lib/supabase';
+import { normalizeYoutubeUrl } from '@/lib/youtube';
 import { Blog } from '@/types/blog';
 
 interface CreateBlogModalProps {
@@ -17,6 +18,7 @@ const CreateBlogModal = ({ show, onHide, onBlogCreated }: CreateBlogModalProps) 
     featured_image: "",
     detail_image: "",
     additional_images: [] as string[],
+    video_url: "",
     tag: "",
     date: new Date().toISOString()
   });
@@ -32,7 +34,8 @@ const CreateBlogModal = ({ show, onHide, onBlogCreated }: CreateBlogModalProps) 
 
       const blogData = {
         ...newBlog,
-        additional_images: additionalImages
+        additional_images: additionalImages,
+        video_url: normalizeYoutubeUrl(newBlog.video_url) ?? newBlog.video_url.trim(),
       };
 
       const { data, error } = await supabase
@@ -52,6 +55,7 @@ const CreateBlogModal = ({ show, onHide, onBlogCreated }: CreateBlogModalProps) 
           featured_image: "",
           detail_image: "",
           additional_images: [],
+          video_url: "",
           tag: "",
           date: new Date().toISOString()
         });
@@ -121,6 +125,15 @@ const CreateBlogModal = ({ show, onHide, onBlogCreated }: CreateBlogModalProps) 
               value={additionalImagesInput}
               onChange={(e) => setAdditionalImagesInput(e.target.value)}
               placeholder="e.g., https://example.com/image1.jpg\nhttps://example.com/image2.jpg"
+            />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>YouTube Video URL</Form.Label>
+            <Form.Control
+              type="text"
+              value={newBlog.video_url}
+              placeholder="e.g., https://www.youtube.com/watch?v=VIDEO_ID or https://www.youtube.com/shorts/VIDEO_ID"
+              onChange={(e) => setNewBlog({ ...newBlog, video_url: e.target.value })}
             />
           </Form.Group>
           <Form.Group className="mb-3">

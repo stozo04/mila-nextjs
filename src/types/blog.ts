@@ -8,6 +8,7 @@ export type Blog = {
   featured_image: string; // Single image for blog list
   detail_image: string; // Single image for blog details
   additional_images?: string[]; // Array of additional images for blog details
+  video_url?: string; // YouTube video URL
 }
 
 // Interface for Blog List Component
