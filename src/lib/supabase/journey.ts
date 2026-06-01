@@ -10,7 +10,8 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export const enum JourneyType {
   FIRST_YEAR = 'first_year',
   ONE_YEAR = 'one_year',
-  TWO_YEAR = 'two_year'
+  TWO_YEAR = 'two_year',
+  THREE_YEAR = 'three_year'
 }
 
 export interface JourneyCardDB extends JourneyCard {
