@@ -36,7 +36,10 @@ const BlogsPage = () => {
     fetchUser();
   }, [visibleCount, selectedTag, searchQuery]);
 
-  const fetchAllTags = async () => {
+  // Function declarations, not const arrows: the effect above calls these
+  // before their definitions appear, which is a temporal-dead-zone hazard with
+  // const. Declarations hoist, so the reference is always valid.
+  async function fetchAllTags() {
     const { data: tagsData, error } = await supabase
       .from("blogs")
       .select('tag')
@@ -59,7 +62,7 @@ const BlogsPage = () => {
     setTagCounts(tagCountMap);
   };
 
-  const fetchBlogs = async () => {
+  async function fetchBlogs() {
     setIsLoading(true);    
     // Artificial delay for testing - Comment to test loading state
     //  await new Promise(resolve => setTimeout(resolve, 2000));

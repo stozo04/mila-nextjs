@@ -14,13 +14,15 @@ const CDNURL = "https://pawkklvezvrmtpqbztwb.supabase.co/storage/v1/object/publi
 
 const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3 }) => {
     const [images, setImages] = useState<FileObject[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
+    // Starts true: the effect below fetches on mount, so the first paint is a
+    // loading state regardless. Setting it from inside the effect instead would
+    // be a synchronous setState in an effect body — an extra render pass.
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [offset, setOffset] = useState<number>(0);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState<boolean>(true);
 
     const fetchImages = async () => {
-        setIsLoading(true);
         try {
             const { data, error } = await supabase
                 .storage
@@ -48,18 +50,28 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3 }) => {
         }
     };
 
+    // The effect that used to reset images/offset/hasMore when folder or limit
+    // changed is gone. It set three states synchronously inside an effect, which
+    // costs an extra render pass, and it never actually did anything: every call
+    // site passes a literal folder, so the props are fixed for the lifetime of a
+    // mounted Gallery, and navigating between galleries mounts a new one with
+    // fresh state. If folder ever becomes dynamic, give Gallery a key={folder}
+    // at the call site rather than resetting state from an effect.
     useEffect(() => {
-        setImages([]);
-        setOffset(0);
-        setHasMore(true);
-    }, [folder, limit]);
-
-    useEffect(() => {
+        // fetchImages only sets state after awaiting, but the rule flags any
+        // effect that can reach a setState at all. Silenced rather than
+        // pretended-fixed: the real answer is to stop fetching from an effect —
+        // render this server-side, or put it behind a data-fetching library.
+        // That is a refactor of a working gallery, not a lint fix.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchImages();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [offset, folder, limit]);
 
     const handleViewMore = () => {
+        // Loading is flipped here rather than in fetchImages: an event handler
+        // is the right place for it, and it keeps the effect free of a
+        // synchronous setState.
+        setIsLoading(true);
         setOffset(prevOffset => prevOffset + limit);
     };
 

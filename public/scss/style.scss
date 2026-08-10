@@ -1,17 +1,19 @@
-// Import Bootstrap CSS
-@import "bootstrap/dist/css/bootstrap.min.css";
-
-// Bootstrap
-@import "bootstrap.scss";
-// Scss main
-@import "main/_variable";
-@import "main/_mixins";
-@import "main/_typography";
-@import "main/_global";
+// @use, not @import — Dart Sass 3.0 removes @import. Load order is preserved,
+// so emitted CSS order is unchanged.
+// Bootstrap — bootstrap.scss compiles Bootstrap from source and adds our
+// overrides. The precompiled bootstrap.min.css used to be pulled in here as
+// well, so every Bootstrap rule shipped twice; the source build came second and
+// won, making the first copy dead weight.
+@use "./bootstrap";
+// Scss main — mixins are not listed here; they emit no CSS and are loaded by
+// the one file that actually uses them (main/_global.scss).
+@use "./main/variable";
+@use "./main/typography";
+@use "./main/global";
 
 // Scss Pages
-@import "pages/_navbar";
-@import "pages/section.scss";
+@use "./pages/navbar";
+@use "./pages/section";
 
 .loading-container {
   display: flex;
