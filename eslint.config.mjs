@@ -16,6 +16,12 @@ const eslintConfig = defineConfig([
       'react-hooks/exhaustive-deps': 'off',
     },
   },
+  {
+    // One-off Node maintenance scripts, run directly with node. CommonJS is
+    // correct there, so the ESM-only rule does not apply.
+    files: ['src/scripts/**/*.js'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
   globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts']),
 ])
 

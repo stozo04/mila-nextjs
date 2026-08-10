@@ -27,10 +27,12 @@ const loadDeviceId = () => {
 };
 
 export default function ChatKitWidget() {
+  // deviceId is memoised with no dependencies, so it never changes for the life
+  // of the component. The latestDeviceId ref that used to mirror it existed to
+  // dodge a stale closure that cannot happen, and it was written during render —
+  // which React forbids, because a render may be discarded or replayed.
   const deviceId = useMemo(() => loadDeviceId(), []);
-  const latestDeviceId = useRef(deviceId);
   const chatKitRef = useRef<OpenAIChatKit | null>(null);
-  latestDeviceId.current = deviceId;
   const [isOpen, setIsOpen] = useState(false);
   const [isTriggerHovered, setIsTriggerHovered] = useState(false);
 
@@ -127,7 +129,7 @@ export default function ChatKitWidget() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            deviceId: latestDeviceId.current,
+            deviceId,
           }),
         });
 
