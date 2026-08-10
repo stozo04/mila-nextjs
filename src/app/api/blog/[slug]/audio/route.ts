@@ -93,14 +93,18 @@ async function ttsChunk(input: string, timeoutMs = 12000): Promise<Buffer> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const resp = await openai.audio.speech.create({
-      model: TTS_MODEL,
-      voice: TTS_VOICE,
-      input,
-      instructions: PERSONALITY_INSTRUCTIONS,
-      response_format: "mp3",
-      signal: controller.signal as any,
-    });
+    // signal belongs in the request options, not the body. Passed in the body it
+    // was silently ignored, so the timeout above never actually aborted anything.
+    const resp = await openai.audio.speech.create(
+      {
+        model: TTS_MODEL,
+        voice: TTS_VOICE,
+        input,
+        instructions: PERSONALITY_INSTRUCTIONS,
+        response_format: "mp3",
+      },
+      { signal: controller.signal }
+    );
     const buf = Buffer.from(await resp.arrayBuffer());
     return buf;
   } catch {

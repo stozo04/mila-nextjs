@@ -2,8 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['pawkklvezvrmtpqbztwb.supabase.co'],
     remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "pawkklvezvrmtpqbztwb.supabase.co",
+      },
       {
         protocol: "https",
         hostname: "picsum.photos",
@@ -14,13 +17,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  eslint: {
-    // ✅ Don’t fail the Vercel build on ESLint errors
-    ignoreDuringBuilds: true,
-  },
   typescript: {
-    // ✅ Don’t fail the Vercel build on TS type errors
-    ignoreBuildErrors: true,
+    // Was true. A type error that reaches production as a broken page costs more
+    // than a failed build. Flipped during the Next 16 upgrade so the migration
+    // could not hide behind a green deploy.
+    ignoreBuildErrors: false,
   },
   async redirects() {
     return [

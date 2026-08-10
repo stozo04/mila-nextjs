@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(`data: ${e.delta}\n\n`));
         });
 
-        stream.on("response.error", (e: any) => {
+        stream.on("error", (e: any) => {
           controller.enqueue(
             encoder.encode(
               `event: error\ndata: ${JSON.stringify({
@@ -108,7 +108,15 @@ export async function POST(req: NextRequest) {
         stream.on("end", async () => {
           // Get the full structured final response (for conv id + citations)
           const final = await stream.finalResponse();
-          const convId = final?.conversation?.id || conversationId || null;
+          // The API echoes `conversation` when the request supplied one (see the
+          // conversation param above), but the SDK Response type omits it. Keep
+          // reading it — it is how a newly created conversation id gets back to
+          // the client for the next turn.
+          const convId =
+            (final as unknown as { conversation?: { id?: string } } | null)
+              ?.conversation?.id ||
+            conversationId ||
+            null;
           const sources = extractSources(final);
 
           controller.enqueue(
