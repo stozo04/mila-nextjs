@@ -2,7 +2,12 @@
 import OpenAI from "openai";
 import { NextRequest } from "next/server";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
+// The edge runtime is deprecated in Next 16. Edge streamed without a function
+// timeout; nodejs does not, and this route can stream a long chat answer.
+// 60s is the ceiling on every Vercel plan, so this cannot truncate a reply that
+// edge would have delivered.
+export const maxDuration = 60;
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
