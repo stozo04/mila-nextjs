@@ -1,11 +1,15 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import { JourneyCard } from '../../types/blog'
 
-// Assuming you have these environment variables set
+// createBrowserClient, NOT createClient — see the note in src/lib/supabase.ts.
+// This was the second sessionless client. The my-journey pages build their own
+// correct createBrowserClient for auth.getUser(), but read their cards through
+// getJourneyCards() here, so the data call stayed role `anon` and every card
+// vanished once RLS landed — a page that authenticates fine and then renders empty.
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 export const enum JourneyType {
   FIRST_YEAR = 'first_year',
