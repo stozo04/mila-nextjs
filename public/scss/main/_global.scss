@@ -1,3 +1,7 @@
+// minQuery/maxQuery are used below. Under @use each file must load what it
+// uses; `as *` keeps the call sites unchanged.
+@use "mixins" as *;
+
 html {
   scroll-behavior: initial;
 }
@@ -1274,3 +1278,13 @@ input:-webkit-autofill:active {
     height: 40px;
   }
 }
+
+// See the note in main/_typography.scss. Restated here because this module also
+// styles headings (.alt-color h1-h6, and the base h1-h6 block above), and
+// @extend does not reach across @use module boundaries.
+.h1 { @extend h1; }
+.h2 { @extend h2; }
+.h3 { @extend h3; }
+.h4 { @extend h4; }
+.h5 { @extend h5; }
+.h6 { @extend h6; }

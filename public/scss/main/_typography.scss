@@ -369,3 +369,17 @@ li {
     padding-bottom: 40px;
   }
 }
+
+// Bootstrap's _type.scss does `.h1 { @extend h1; }`. Under @import everything
+// shared one scope, so that @extend also picked up the heading rules in this
+// file — which is why .h1-.h6 carried our sizes, not just Bootstrap's.
+// @extend does not cross @use module boundaries, so it has to be restated in
+// each module that styles headings. Without this, `class="h4"` (used 11 times
+// on the privacy policy page) silently loses our typography.
+// These blocks declare nothing; @extend only adds selectors to existing rules.
+.h1 { @extend h1; }
+.h2 { @extend h2; }
+.h3 { @extend h3; }
+.h4 { @extend h4; }
+.h5 { @extend h5; }
+.h6 { @extend h6; }

@@ -1,9 +1,16 @@
 // Custom.scss
 
 
-// Include any default variable overrides here (though functions won't be available)
-
-@import "../../node_modules/bootstrap/scss/bootstrap";
+// Kept as a relative path deliberately. The package path
+// (@use "bootstrap/scss/bootstrap") resolves, but Bootstrap's own first line is
+// @import "mixins/banner", which then fails to resolve from that context —
+// the build dies with "Can't find stylesheet to import".
+// The cost of the relative path is that Sass counts Bootstrap as our source
+// rather than a dependency, so quietDeps cannot silence its internal
+// deprecation warnings; next.config.ts names those deprecations explicitly.
+// No Sass variable overrides here — every customisation below is plain CSS —
+// so a plain @use with no `with (...)` is sufficient.
+@use "../../node_modules/bootstrap/scss/bootstrap";
 
 // Then add additional custom code here
 /* styles.css */
