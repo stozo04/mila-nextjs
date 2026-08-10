@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": "20.x"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint"
   },
   "dependencies": {
     "@openai/chatkit-react": "^0.0.0",
@@ -20,22 +20,22 @@
     "bootstrap": "^5.3.3",
     "html-react-parser": "^5.2.2",
     "marked": "^15.0.6",
-    "next": "^15.5.2",
+    "next": "^16.3.0",
     "next-themes": "^0.4.4",
     "openai": "^5.12.1",
-    "react": "^19.0.0",
+    "react": "^19.2.8",
     "react-bootstrap": "^2.10.9",
-    "react-dom": "^19.0.0",
+    "react-dom": "^19.2.8",
     "react-icons": "^5.4.0",
     "sass": "^1.83.4",
     "string-strip-html": "^13.4.12"
   },
   "devDependencies": {
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
     "eslint": "^9",
-    "eslint-config-next": "15.1.6",
+    "eslint-config-next": "^16.3.0",
     "typescript": "^5"
   }
 }

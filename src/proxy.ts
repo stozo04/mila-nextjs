@@ -5,7 +5,7 @@ import { createServerClient } from '@supabase/ssr'
 // List of protected routes that require authentication
 const PROTECTED_ROUTES = ['/blogs', '/sonograms', '/baby-shower', '/gender-reveal', '/my-journey']
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // URL normalization
   const url = request.nextUrl
   const pathname = url.pathname
