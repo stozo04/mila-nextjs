@@ -79,7 +79,7 @@ Site / Access
 - Caches final MP3 in Supabase `blog_audio` as base64; serves cached bytes on subsequent requests.
 
 ### Auth & Routing
-- Middleware: `src/middleware.ts`
+- Middleware: `src/utils/middleware.ts`
   - Normalizes URLs (strip trailing slash), enforces HTTPS in production, strips `www.`
   - Calls `updateSession` (`src/utils/supabase/middleware.ts`) to refresh session cookies.
   - Protects routes: `/blogs`, `/sonograms`, `/baby-shower`, `/gender-reveal`, `/my-journey`.
