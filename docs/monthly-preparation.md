@@ -111,8 +111,10 @@ Node 22; its older AGENTS.md run instructions still say Node 20. Verification us
 Node 22.22.1, matching the manifest and currently installed Supabase dependency.
 
 The PR includes the current `master` cleanup, which resolved the earlier lint
-findings and Bootstrap/Sass build warnings. Full lint passes on the integrated
-work. The local Steven UI and responsive letter layout were inspected in Chrome;
+findings. Full lint, TypeScript and the production build pass on the integrated
+work. The build still reports six non-blocking Bootstrap/Sass warnings about
+deprecated `if()` syntax, including a notice about omitted repetitions.
+The local Steven UI and responsive letter layout were inspected in Chrome;
 production database role checks hid drafts from a non-admin and exposed them to
 Steven. These checks do not replace a real non-admin browser acceptance test or
 an approved Storage upload after release.
