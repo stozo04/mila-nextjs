@@ -1,0 +1,5 @@
+# GET http://127.0.0.1:3000/gender-reveal
+# status: 307
+# location: /login
+# captured: 2026-09-02T17:58:14.786Z
+/login

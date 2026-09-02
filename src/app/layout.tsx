@@ -56,7 +56,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <NavMenu />
                 <div className="d-flex flex-column flex-grow-1">
                   {children}
-                  {/* Legacy chat temporarily disabled in favor of ChatKit */}
+                  {/* ChatKit is parked: OpenAIChatBot (SSE via /api/chat-stream) is the
+                      live widget. Swap the two lines below to put ChatKit back, and
+                      uncomment its import above. */}
                 <OpenAIChatBot />
                 {/* <ChatKitWidget /> */}
                   <Analytics />

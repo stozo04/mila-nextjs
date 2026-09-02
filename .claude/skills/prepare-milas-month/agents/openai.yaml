@@ -1,0 +1,6 @@
+interface:
+  display_name: "Prepare Mila's Month"
+  short_description: "Create Mila's completed monthly drafts"
+  default_prompt: "Use $prepare-milas-month to prepare Mila's completed month with an optional journey message."
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,5 @@
+# GET http://127.0.0.1:3000/api/blog/three-years-three-months/images
+# status: 200
+# location: (none)
+# captured: 2026-09-02T18:15:29.962Z
+{"images":{"featured_image":"https://pawkklvezvrmtpqbztwb.supabase.co/storage/v1/object/public/mila_storage_bucket/birthday/three-years-three-months/894da2bd-6268-4986-8ad3-22e57cd210f1.jpg","detail_image":"https://pawkklvezvrmtpqbztwb.supabase.co/storage/v1/object/public/mila_storage_bucket/birthday/three-years-three-months/bfa9e61b-c0a3-4e34-8bb0-6ef1d9a6db74.jpg"}}
