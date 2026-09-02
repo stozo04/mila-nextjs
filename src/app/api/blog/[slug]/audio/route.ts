@@ -136,6 +136,7 @@ export async function GET(
       .from("blogs")
       .select("id, slug, title, content")
       .eq("slug", slug)
+      .eq("is_draft", false)
       .single();
     if (error) return json(500, { error: "DB error fetching blog" });
     if (!blog) return json(404, { error: "Blog not found" });

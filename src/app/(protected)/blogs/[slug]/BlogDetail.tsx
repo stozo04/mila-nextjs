@@ -38,18 +38,45 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishNotice, setPublishNotice] = useState('');
+  const [publishError, setPublishError] = useState('');
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Load blog data
   useEffect(() => {
     const loadBlog = async () => {
       setIsLoading(true);
-      const blogData = await fetchBlogData(slug);
+      const [blogData, { data: admin }] = await Promise.all([
+        fetchBlogData(slug), supabase.rpc('is_mila_admin'),
+      ]);
       setBlog(blogData);
+      setIsAdmin(admin === true);
+      setPublishNotice('');
+      setPublishError('');
       setIsLoading(false);
     };
     loadBlog();
   }, [slug]);
+
+  const handlePublish = async () => {
+    if (!isAdmin || !blog?.is_draft || isPublishing) return;
+    setIsPublishing(true);
+    setPublishNotice('');
+    setPublishError('');
+    try {
+      const response = await fetch(`/api/blog/${encodeURIComponent(slug)}/publish`, { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      setBlog(data.blog);
+      setPublishNotice('Letter published. Signed-in visitors can now read it.');
+    } catch (error) {
+      setPublishError(error instanceof Error ? error.message : 'Unable to publish the letter. Please reload before retrying.');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   const handleListen = async () => {
     // If already generated, just play/pause
@@ -116,69 +143,70 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
 
   return (
     <div className="container mt-5">
+      {publishNotice && <p className="alert alert-success" role="status">{publishNotice}</p>}
+      {publishError && <p className="alert alert-danger" role="alert">{publishError}</p>}
       {/* Header with Listen control */}
-      <div className="text-center mb-4">
-        <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3" style={{ padding: '0 5%' }}>
-          <h4 className="mb-2 mb-md-0">My Precious Mila,</h4>
-          <div className="d-flex align-items-center gap-3">
-            <strong className="d-none d-md-inline">{formatDate(blog.date)}</strong>
-            <button
-              onClick={handleListen}
-              disabled={isAudioLoading}
-              className="listen-button"
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                color: '#4a5568',
-                fontSize: '0.95rem',
-                fontWeight: 500,
-                backgroundColor: isAudioLoading ? '#f3f4f6' : '#f8fafc',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                whiteSpace: 'nowrap'
-              }}
-              onMouseOver={(e) => {
-                if (!isAudioLoading) {
-                  e.currentTarget.style.backgroundColor = '#f1f5f9';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }
-              }}
-              onMouseOut={(e) => {
-                if (!isAudioLoading) {
-                  e.currentTarget.style.backgroundColor = '#f8fafc';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }
-              }}
-            >
-              {isAudioLoading ? (
-                <>
-                  <div className="loading-spinner" style={{
-                    width: '16px',
-                    height: '16px',
-                    border: '2px solid #e2e8f0',
-                    borderTop: '2px solid #4a5568',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite'
-                  }} />
-                  Generating audio...
-                </>
-              ) : (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 5.14V19.14L19 12.14L8 5.14Z" fill="currentColor"/>
-                  </svg>
-                  Listen
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+      <div className={`blog-header letter-header mb-4${blog.is_draft && isAdmin ? ' has-publish' : ''}`}>
+        {blog.is_draft && isAdmin && <button className="btn btn-success publish-letter" onClick={handlePublish} disabled={isPublishing}>
+          {isPublishing ? 'Publishing…' : 'Publish Letter'}
+        </button>}
+        <h4 className="letter-greeting mb-0">My Precious Mila,</h4>
+        <strong className="letter-date">{formatDate(blog.date)}</strong>
+        <button
+          onClick={handleListen}
+          disabled={isAudioLoading || blog.is_draft || !blog.content.trim()}
+          className="listen-button"
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#4a5568',
+            fontSize: '0.95rem',
+            fontWeight: 500,
+            backgroundColor: isAudioLoading ? '#f3f4f6' : '#f8fafc',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+            whiteSpace: 'nowrap'
+          }}
+          onMouseOver={(e) => {
+            if (!isAudioLoading) {
+              e.currentTarget.style.backgroundColor = '#f1f5f9';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }
+          }}
+          onMouseOut={(e) => {
+            if (!isAudioLoading) {
+              e.currentTarget.style.backgroundColor = '#f8fafc';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }
+          }}
+        >
+          {isAudioLoading ? (
+            <>
+              <div className="loading-spinner" style={{
+                width: '16px',
+                height: '16px',
+                border: '2px solid #e2e8f0',
+                borderTop: '2px solid #4a5568',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
+              Generating audio...
+            </>
+          ) : (
+            <>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 5.14V19.14L19 12.14L8 5.14Z" fill="currentColor"/>
+              </svg>
+              Listen
+            </>
+          )}
+        </button>
       </div>
 
       {/* Audio player (once loaded) */}
@@ -335,6 +363,18 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
 
       {/* Add keyframes for loading spinner and audio player styles */}
       <style jsx global>{`
+        .letter-header {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          grid-template-areas: 'greeting greeting' 'date listen';
+          align-items: center;
+          gap: 12px 16px;
+        }
+        .letter-header.has-publish { grid-template-areas: 'publish publish' 'greeting greeting' 'date listen'; }
+        .letter-greeting { grid-area: greeting; }
+        .letter-date { grid-area: date; }
+        .letter-header .publish-letter { grid-area: publish; justify-self: end; }
+        .letter-header .listen-button { grid-area: listen; justify-self: end; }
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }

@@ -9,6 +9,7 @@ export type Blog = {
   detail_image: string; // Single image for blog details
   additional_images?: string[]; // Array of additional images for blog details
   video_url?: string; // YouTube video URL
+  is_draft?: boolean;
 }
 
 // Interface for Blog List Component

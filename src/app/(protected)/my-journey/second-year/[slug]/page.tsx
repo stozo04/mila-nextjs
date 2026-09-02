@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Header from "@/components/BabyShower/Header";
-import Gallery from "@/components/BabyShower/Gallery";
+import JourneyGallery from "@/components/Journey/JourneyGallery";
 import { useParams } from "next/navigation";
 import { getJourneyCards, JourneyType } from "@/lib/supabase/journey";
 import type { JourneyCard } from "@/types/blog";
@@ -76,16 +76,12 @@ export default function SecondYearDetailPage() {
             )}
             <div className="row">
                 <div className="col-12">
-                    <Header title={cardData.message} date={cardData.date} />
+                    <Header title={cardData.message || cardData.title} date={cardData.date} />
                 </div>
             </div>
             <div className="row mt-4">
                 <div className="col-12">
-                    <Gallery 
-                        folder={`birthday/${currentSlug}`}
-                        limit={3} 
-                        key={`${currentSlug}-gallery`}
-                    />
+                    <JourneyGallery slug={currentSlug} />
                 </div>
             </div>
         </div>
