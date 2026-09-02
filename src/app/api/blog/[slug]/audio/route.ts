@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // Hobby limit (or delete this line)
@@ -15,12 +15,6 @@ Pronunciation: Clear, articulate, and steady, ensuring each instruction is easil
 Pause: Brief, purposeful pauses after key instructions (e.g., "cross the street" and "turn right") to allow time for the listener to process the information and follow along.
 
 Emotion: Warm and supportive, conveying empathy and care, ensuring the listener feels guided and safe throughout the journey.`;
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 const TTS_MODEL = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
 const TTS_VOICE = process.env.OPENAI_TTS_VOICE || "sage";
@@ -68,7 +62,7 @@ function chunkText(input: string, target = 900, maxChunks = 6): string[] {
 }
 
 // Simple table cache (your schema)
-async function getCachedAudio(slug: string) {
+async function getCachedAudio(supabase: SupabaseClient, slug: string) {
   const { data } = await supabase
     .from("blog_audio")
     .select("audio_data")
@@ -77,7 +71,7 @@ async function getCachedAudio(slug: string) {
   const b64 = data?.audio_data as string | undefined;
   return b64 ? b64ToBytes(b64) : null;
 }
-async function saveAudioToCache(slug: string, bytes: Buffer) {
+async function saveAudioToCache(supabase: SupabaseClient, slug: string, bytes: Buffer) {
   await supabase.from("blog_audio").upsert({
     slug,
     audio_data: bytesToB64(bytes),
@@ -89,7 +83,7 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 // Per-chunk TTS with a short timeout and 1 retry
-async function ttsChunk(input: string, timeoutMs = 12000): Promise<Buffer> {
+async function ttsChunk(openai: OpenAI, input: string, timeoutMs = 12000): Promise<Buffer> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -131,6 +125,11 @@ export async function GET(
     const { slug } = await params;
     if (!slug) return json(400, { error: "Missing slug" });
 
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
     // 1) Blog
     const { data: blog, error } = await supabase
       .from("blogs")
@@ -147,7 +146,7 @@ export async function GET(
     if (speakText.length < 8) return json(400, { error: "Empty blog content" });
 
     // 3) Cache
-    const cached = await getCachedAudio(slug);
+    const cached = await getCachedAudio(supabase, slug);
     if (cached) {
       return new Response(cached, {
         status: 200,
@@ -160,6 +159,7 @@ export async function GET(
     }
 
     // 4) Chunk + synth (stay under budget)
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const parts = chunkText(speakText, 900, 6);
     const buffers: Buffer[] = [];
     for (let i = 0; i < parts.length; i++) {
@@ -173,12 +173,12 @@ export async function GET(
           ? `Part ${i + 1} of ${parts.length}.\n\n`
           : "";
       const input = prefix + parts[i];
-      const audio = await ttsChunk(input, 12_000);
+      const audio = await ttsChunk(openai, input, 12_000);
       buffers.push(audio);
     }
 
     const finalBytes = Buffer.concat(buffers);
-    await saveAudioToCache(slug, finalBytes);
+    await saveAudioToCache(supabase, slug, finalBytes);
 
     return new Response(finalBytes, {
       status: 200,
