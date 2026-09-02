@@ -2,6 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILL_DIR="$(dirname "$SCRIPT_DIR")"
+WORKSPACE_ROOT="$(cd "$SKILL_DIR/../../.." && pwd)"
 TMP_DIR="/tmp/verify-mila"
 PID_FILE="$TMP_DIR/dev-server.pid"
 LOG_FILE="$TMP_DIR/doctor.log"
@@ -10,6 +12,13 @@ mkdir -p "$TMP_DIR"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] Running health checks..."
+
+# Load .env.local if it exists
+if [[ -f "$WORKSPACE_ROOT/.env.local" ]]; then
+  set -a
+  source "$WORKSPACE_ROOT/.env.local"
+  set +a
+fi
 
 FAILED=0
 

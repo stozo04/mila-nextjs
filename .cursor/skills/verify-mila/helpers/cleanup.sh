@@ -25,19 +25,19 @@ if ! kill -0 "$PID" 2>/dev/null; then
 fi
 
 echo "Stopping process $PID..."
-kill "$PID"
+kill -- -$PID
 
 # Wait up to 10s for graceful shutdown
 TIMEOUT=10
 ELAPSED=0
 while kill -0 "$PID" 2>/dev/null && [[ $ELAPSED -lt $TIMEOUT ]]; do
   sleep 1
-  ((ELAPSED++))
+  ELAPSED=$((ELAPSED + 1))
 done
 
 if kill -0 "$PID" 2>/dev/null; then
   echo "Process didn't stop gracefully, force killing..."
-  kill -9 "$PID" 2>/dev/null || true
+  kill -9 -- -$PID 2>/dev/null || true
   sleep 1
 fi
 

@@ -70,7 +70,7 @@ while [[ $ELAPSED -lt $TIMEOUT ]]; do
   fi
   
   sleep 1
-  ((ELAPSED++))
+  ELAPSED=$((ELAPSED + 1))
 done
 
 echo "ERROR: Timeout waiting for dev server"
