@@ -2,6 +2,20 @@
 
 This guide helps AI agents work effectively in this repository.
 
+## Before you start
+
+Pick the one that matches the work and follow it:
+
+- **Building a feature** → [`FEATURE-PROMPT.md`](FEATURE-PROMPT.md). Write the feature file in `.claude/skills/verify-mila/features/` **before** the code, and stop for review.
+- **Fixing a bug** → [`BUG-PROMPT.md`](BUG-PROMPT.md). Reproduce it first-hand and prove the mechanism before changing anything or writing anything down.
+- **Verifying that a change actually works** → the [`verify-mila`](.claude/skills/verify-mila/SKILL.md) skill. Drive the running app and capture evidence; do not assert behavior from the diff.
+
+Three rules that override convenience:
+
+1. **`npm run dev` talks to the live Supabase project.** There is no seed and no staging project. Drives are read-only: never submit a mutating control (Create Blog, Publish Letter, image roles, the uploader, Prepare Mila's Month), and never request `/api/blog/<slug>/audio`, `/api/chat-stream`, or `/api/chatkit/session` — each costs money on a single call. If verifying something genuinely requires a write, stop and ask.
+2. **The feature map is a specification, not a description.** When the app disagrees with it, the default is that the app is wrong — fix the code. Never rewrite a check so it passes against behavior you just found broken; a known defect stays a failing check.
+3. **Verify against the real artifact.** The DOM, the actual response, the actual row — not a summary, an accessibility tree, or an inference from source. A passing proxy is not a passing feature.
+
 ## Purpose
 
 Build and run a Next.js app that features:
