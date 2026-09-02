@@ -24,8 +24,7 @@
 .DS_Store
 *.pem
 
-# Lockfiles (Optional: If you're working solo)
-package-lock.json
+# Unused package manager lockfiles
 yarn.lock
 pnpm-lock.yaml
 

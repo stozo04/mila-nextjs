@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
     // `import` is now needed ONLY for Bootstrap: public/scss has been migrated
     // to @use, and removing this entry still leaves 11 warnings, all from
     // Bootstrap's own internals. Drop it when Bootstrap stops using @import.
-    silenceDeprecations: ["import", "global-builtin", "color-functions"],
+    silenceDeprecations: ["import", "global-builtin", "color-functions", "if-function"],
   },
   async redirects() {
     return [

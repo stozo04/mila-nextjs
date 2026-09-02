@@ -9,8 +9,6 @@ export const runtime = "nodejs";
 // edge would have delivered.
 export const maxDuration = 60;
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 const MODEL = process.env.OPENAI_MODEL;
 const PROMPT_ID = process.env.OPENAI_PROMPT_ID;
 const VECTOR_STORE_ID = process.env.OPENAI_VECTOR_STORE_ID;
@@ -65,6 +63,8 @@ export async function POST(req: NextRequest) {
     if (!question?.trim()) {
       return new Response("Missing question", { status: 400 });
     }
+
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     // Start a Responses **stream**
     const stream = await client.responses.stream({
