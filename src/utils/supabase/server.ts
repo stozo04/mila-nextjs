@@ -27,3 +27,13 @@ export async function createClient() {
     }
   )
 }
+
+export async function authorizeAdmin() {
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return Response.json({ error: 'Sign in to continue.' }, { status: 401 });
+  const { data: isAdmin, error: adminError } = await supabase.rpc('is_mila_admin');
+  if (adminError) return Response.json({ error: 'Admin actions are unavailable.' }, { status: 503 });
+  if (!isAdmin) return Response.json({ error: 'Only Steven can perform this action.' }, { status: 403 });
+  return supabase;
+}

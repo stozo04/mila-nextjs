@@ -4,15 +4,17 @@ import React, { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { FileObject } from "@supabase/storage-js";
+import { Modal } from 'react-bootstrap';
+import type { Blog } from '@/types/blog';
 
 type GalleryProps = {
     folder: string; // e.g., 'houston' or 'dallas'
     limit?: number;
+    letterImages?: Pick<Blog, 'featured_image' | 'detail_image'> | null;
+    renderPhotoActions?: (filename: string) => React.ReactNode;
 };
 
-const CDNURL = "https://pawkklvezvrmtpqbztwb.supabase.co/storage/v1/object/public/mila_storage_bucket/";
-
-const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3 }) => {
+const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3, letterImages, renderPhotoActions }) => {
     const [images, setImages] = useState<FileObject[]>([]);
     // Starts true: the effect below fetches on mount, so the first paint is a
     // loading state regardless. Setting it from inside the effect instead would
@@ -21,6 +23,8 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3 }) => {
     const [offset, setOffset] = useState<number>(0);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState<boolean>(true);
+    const [error, setError] = useState('');
+    const photoUrl = (filename: string) => supabase.storage.from('mila_storage_bucket').getPublicUrl(`${folder}/${filename}`).data.publicUrl;
 
     const fetchImages = async () => {
         try {
@@ -41,10 +45,12 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3 }) => {
                 if (data.length < limit) {
                     setHasMore(false);
                 }
-                setImages(prevImages => offset > 0 ? [...prevImages, ...data] : data);
+                const photos = data.filter(image => image.id && image.name !== '.emptyFolderPlaceholder');
+                setImages(prevImages => offset > 0 ? [...prevImages, ...photos] : photos);
             }
         } catch (error) {
             console.error('Error fetching images:', error);
+            setError('Unable to load photos. Please reload the page.');
         } finally {
             setIsLoading(false);
         }
@@ -72,34 +78,42 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3 }) => {
         // is the right place for it, and it keeps the effect free of a
         // synchronous setState.
         setIsLoading(true);
+        setError('');
         setOffset(prevOffset => prevOffset + limit);
     };
 
     return (
         <div className="container mt-5 mb-5">
+            {error && <p role="alert" className="text-danger">{error}</p>}
             {/* Images Grid */}
             <div className="row row-cols-1 row-cols-md-3 g-4">
-                {images.map((image) => (
-                    <div key={image.name} className="col">
-                        <div className="card h-100" style={{ cursor: 'pointer' }}>
-                            <Suspense fallback={
-                                <div className="placeholder-glow" style={{ height: '300px' }}>
-                                    <span className="placeholder col-12 h-100"></span>
-                                </div>
-                            }>
-                                <Image
-                                    src={CDNURL + folder + '/' + image.name}
-                                    alt={`${image.name}`}
-                                    width={400}
-                                    height={300}
-                                    className="card-img-top"
-                                    style={{ objectFit: "cover" }}
-                                    onClick={() => setSelectedImage(CDNURL + folder + '/' + image.name)}
-                                />
-                            </Suspense>
+                {images.map((image) => {
+                    const url = photoUrl(image.name);
+                    const roles = [letterImages?.featured_image === url && 'Featured', letterImages?.detail_image === url && 'Detail'].filter(Boolean).join(' · ');
+                    return (
+                        <div key={image.name} className="col">
+                            <div className="card h-100" style={roles ? { boxShadow: '0 0 0 2px #d48ca8, 0 0 16px #d48ca866' } : undefined}>
+                                <button type="button" className="border-0 p-0 bg-transparent rounded" aria-label={`View photo ${image.name}`} onClick={() => setSelectedImage(image.name)}>
+                                    <Suspense fallback={
+                                        <div className="placeholder-glow" style={{ height: '300px' }}>
+                                            <span className="placeholder col-12 h-100"></span>
+                                        </div>
+                                    }>
+                                        <Image
+                                            src={url}
+                                            alt={`${image.name}`}
+                                            width={400}
+                                            height={300}
+                                            className="card-img-top"
+                                            style={{ objectFit: "cover" }}
+                                        />
+                                    </Suspense>
+                                </button>
+                                {roles && <span className="small fw-semibold text-center py-1" style={{ color: '#8c1745', background: '#fff7fa' }}>{roles}</span>}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* View More Button */}
@@ -120,65 +134,68 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3 }) => {
             </div>
 
             {/* Image Preview Modal */}
-            {selectedImage && (
+            {selectedImage && (renderPhotoActions ? (
+                <Modal show onHide={() => setSelectedImage(null)} centered size="lg" aria-label="Photo preview">
+                    <Modal.Header closeButton><Modal.Title>Photo preview</Modal.Title></Modal.Header>
+                    <Modal.Body className="p-0">
+                        <Image
+                            src={photoUrl(selectedImage)}
+                            alt="Preview"
+                            width={800}
+                            height={600}
+                            className="img-fluid rounded"
+                            style={{
+                                width: '100%',
+                                height: 'auto',
+                                objectFit: 'contain',
+                                maxHeight: '65vh'
+                            }}
+                        />
+                    </Modal.Body>
+                    <Modal.Footer>{renderPhotoActions(selectedImage)}</Modal.Footer>
+                </Modal>
+            ) : (
                 <div
                     className="modal fade show d-block"
+                    role="dialog" aria-label="Photo preview"
                     style={{
                         backgroundColor: 'rgba(0,0,0,0.8)',
                         backdropFilter: 'blur(5px)',
                         transition: 'all 0.3s ease-in-out'
                     }}
                     onClick={() => setSelectedImage(null)}
+                    onKeyDown={event => { if (event.key === 'Escape') setSelectedImage(null); }}
                 >
-                    <div 
+                    <div
                         className="modal-dialog modal-dialog-centered modal-lg"
-                        style={{
-                            transform: 'scale(1)',
-                            opacity: 1,
-                            animation: 'modalPop 0.3s ease-out'
-                        }}
+                        style={{ transform: 'scale(1)', opacity: 1, animation: 'modalPop 0.3s ease-out' }}
                     >
                         <div className="modal-content border-0 shadow-lg">
                             <div className="modal-body p-0 position-relative">
                                 <button
-                                    type="button"
+                                    type="button" aria-label="Close photo preview" autoFocus
                                     className="btn-close position-absolute top-0 end-0 m-3 p-2"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedImage(null);
-                                    }}
+                                    onClick={event => { event.stopPropagation(); setSelectedImage(null); }}
                                     style={{
-                                        backgroundColor: 'white',
-                                        borderRadius: '50%',
-                                        padding: '0.5rem',
-                                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                                        zIndex: 1,
-                                        opacity: 0.8,
+                                        backgroundColor: 'white', borderRadius: '50%', padding: '0.5rem',
+                                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)', zIndex: 1, opacity: 0.8,
                                         transition: 'opacity 0.2s ease'
                                     }}
-                                    onMouseOver={(e) => e.currentTarget.style.opacity = '1'}
-                                    onMouseOut={(e) => e.currentTarget.style.opacity = '0.8'}
-                                ></button>
+                                    onMouseOver={event => event.currentTarget.style.opacity = '1'}
+                                    onMouseOut={event => event.currentTarget.style.opacity = '0.8'}
+                                />
                                 <Image
-                                    src={selectedImage}
-                                    alt="Preview"
-                                    width={800}
-                                    height={600}
+                                    src={photoUrl(selectedImage)} alt="Preview" width={800} height={600}
                                     className="img-fluid rounded"
-                                    style={{
-                                        width: '100%',
-                                        height: 'auto',
-                                        objectFit: 'contain',
-                                        maxHeight: '80vh'
-                                    }}
+                                    style={{ width: '100%', height: 'auto', objectFit: 'contain', maxHeight: '80vh' }}
                                 />
                             </div>
                         </div>
                     </div>
                 </div>
-            )}
+            ))}
         </div>
     );
 };
 
-export default Gallery; 
+export default Gallery;

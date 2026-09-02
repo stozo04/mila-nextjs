@@ -59,7 +59,7 @@ const BlogsPage = () => {
     });
 
     setTags(["All", ...Object.keys(tagCountMap)]);
-    setTagCounts(tagCountMap);
+    setTagCounts({ ...tagCountMap, All: tagsData.length });
   };
 
   async function fetchBlogs() {
@@ -164,15 +164,19 @@ const BlogsPage = () => {
           <div className="row">
             {blogs.map((blog) => (
               <div key={blog.id} className="col-md-4 mb-4">
-                <div className="card h-100">
-                  <Image
+                <div className={`card h-100${blog.is_draft ? ' border-warning border-2' : ''}`}>
+                  {blog.is_draft && <div className="card-header bg-warning-subtle text-warning-emphasis border-warning py-3">
+                    <span className="badge text-bg-warning text-wrap fs-6">Draft · Needs publishing</span>
+                    <p className="small mt-2 mb-0">Only you can see this letter. Open it and publish when it’s ready.</p>
+                  </div>}
+                  {blog.featured_image && <Image
                     src={blog.featured_image}
                     alt={blog.title}
                     width={400}
                     height={250}
                     className="card-img-top"
                     style={{ objectFit: "cover" }}
-                  />
+                  />}
                   <div className="card-body d-flex flex-column">
                     <h5 className="card-title">{blog.title}</h5>
                     <p className="card-text text-muted">
@@ -193,7 +197,7 @@ const BlogsPage = () => {
 
           {/* Show More Button */}
           {blogs.length >= visibleCount && (
-            <div className="text-center mt-4">
+            <div className="text-center mt-4 mb-4">
               <button 
                 className="btn btn-outline-primary rounded-pill px-4"
                 onClick={handleShowMore}

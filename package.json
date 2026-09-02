@@ -9,7 +9,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prepare-milas-month": "node scripts/prepare-milas-month.mjs"
   },
   "dependencies": {
     "@openai/chatkit-react": "^0.0.0",

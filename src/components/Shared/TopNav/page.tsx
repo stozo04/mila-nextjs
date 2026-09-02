@@ -6,10 +6,13 @@ import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import SignInButton from '@/components/Auth/SignInButton';
+import PrepareMonth from '@/components/Journey/PrepareMonth';
 
 const NavMenu = () => {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [adminUserId, setAdminUserId] = useState<string | null>(null);
+  const isAuthenticated = !!userId;
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,10 +35,10 @@ const NavMenu = () => {
           }
           console.warn('Auth check error:', error.message ?? error);
         }
-        setIsAuthenticated(!!session);
+        setUserId(session?.user.id ?? null);
       } catch (err: any) {
         console.warn('Auth check threw:', err?.message ?? err);
-        setIsAuthenticated(false);
+        setUserId(null);
       } finally {
         setIsLoading(false);
       }
@@ -44,12 +47,21 @@ const NavMenu = () => {
     checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
+      setUserId(session?.user.id ?? null);
       setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    supabase.rpc('is_mila_admin').then(({ data }) => {
+      if (active) setAdminUserId(data === true ? userId : null);
+    });
+    return () => { active = false; };
+  }, [userId, supabase]);
 
   const handleLogout = async () => {
     try {
@@ -73,6 +85,15 @@ const NavMenu = () => {
   );
 
   return (
+    <>
+    {!isLoading && userId && adminUserId === userId && (
+      <aside className="bg-success-subtle border-bottom py-2" aria-label="Mila’s monthly preparation">
+        <div className="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <span className="small fw-semibold">Steven’s admin tools</span>
+          <PrepareMonth />
+        </div>
+      </aside>
+    )}
     <nav className="navbar navbar-expand-lg bg-body-tertiary">
       <div className="container-fluid d-flex justify-content-between align-items-center">
         <Link href="/">
@@ -186,6 +207,7 @@ const NavMenu = () => {
         </div>
       </div>
     </nav>
+    </>
   );
 };
 
