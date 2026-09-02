@@ -1,0 +1,9 @@
+{
+  "name": "verify-mila-helpers",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@playwright/test": "^1.40.0",
+    "playwright": "^1.40.0"
+  }
+}
