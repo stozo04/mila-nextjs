@@ -1,0 +1,5 @@
+# GET http://127.0.0.1:3000/api/journey/prepare-month
+# status: 200
+# location: (none)
+# captured: 2026-09-02T18:18:52.626Z
+{"tag":"2026","date":"July 30 – August 30, 2026","slug":"three-years-three-months","title":"3 Years 3 Months","section":"third-year","milestone":"2026-08-30","blog_title":"3 Years 3 Months Letter","journey_type":"three_year","period_start":"2026-07-30"}

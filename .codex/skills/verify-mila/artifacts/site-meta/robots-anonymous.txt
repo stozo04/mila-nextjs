@@ -1,0 +1,5 @@
+# GET http://127.0.0.1:3000/robots.txt
+# status: 307
+# location: /login
+# captured: 2026-09-02T17:50:46.577Z
+/login
