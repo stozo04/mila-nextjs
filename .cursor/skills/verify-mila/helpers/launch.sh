@@ -45,7 +45,7 @@ fi
 cd "$WORKSPACE_ROOT"
 
 echo "Starting npm run dev --port 3010..."
-nohup npm run dev -- --port 3010 > "$SERVER_LOG" 2>&1 &
+setsid nohup npm run dev -- --port 3010 > "$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 echo $SERVER_PID > "$PID_FILE"
 
