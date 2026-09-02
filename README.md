@@ -8,13 +8,13 @@ Mila is a blog dedicated to my daughter to capture her life memories month to mo
 - Supabase Auth & Database (Postgres, RLS)
 - Role‑based protected routes: `(protected)` and `(public)` segments
 - Responsive UI with Bootstrap 5 + SCSS
-- AI chatbot powered by OpenAI ChatKit workflow
+- AI chatbot streaming from OpenAI (ChatKit embed built but currently parked)
 - TTS for blog posts via `/api/blog/[slug]/audio`
 - Vercel Analytics, ready for CI/CD
 
 ## Requirements
 
-- Node.js 20.x (LTS)
+- Node.js 22.x (matches `package.json` `engines`, `.nvmrc`, `.node-version`)
 - npm / pnpm / yarn
 - Supabase project and keys
 - OpenAI API key
@@ -50,14 +50,15 @@ NEXT_PUBLIC_ADMIN_EMAIL=""           # Email for admin account (grants elevated 
 
 ## Chatbot Architecture
 
-- Client embed: `src/components/Shared/Chatbot/ChatKitWidget.tsx`
-  - Embeds OpenAI ChatKit, exchanging a client secret via `/api/chatkit/session`
-  - Pins the widget bottom-right to replace the legacy chat UI
-- Session API: `src/app/api/chatkit/session/route.ts`
+- Live widget: `src/components/Shared/Chatbot/OpenAIChatBot.tsx`
+  - Mounted in `src/app/layout.tsx` and pinned bottom-right — this is what users see
+  - Streams from `/api/chat-stream` over SSE
+- ChatKit embed (built, currently parked): `src/components/Shared/Chatbot/ChatKitWidget.tsx`
+  - Commented out in `src/app/layout.tsx` along with its import; nothing renders it
+  - Would exchange a client secret via `/api/chatkit/session`
+- ChatKit session API: `src/app/api/chatkit/session/route.ts`
   - Exchanges the workflow (`OPENAI_CHATKIT_WORKFLOW_ID`) for a ChatKit client secret
   - Guards on missing env vars and surfaces OpenAI API errors
-- Legacy streaming chat (disabled in UI): `src/components/Shared/Chatbot/OpenAIChatBot.tsx`
-  - Still streams from `/api/chat-stream` for future reuse
 - Streaming API: `src/app/api/chat-stream/route.ts`
   - Edge runtime, uses OpenAI Responses API streaming
   - File Search tool is included if `OPENAI_VECTOR_STORE_ID` is set

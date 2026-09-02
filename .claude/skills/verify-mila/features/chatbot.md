@@ -35,7 +35,7 @@ Preconditions:
 
 ## Gotchas
 
-- **The rendered chatbot is the legacy SSE one, not ChatKit.** `src/app/layout.tsx` renders `OpenAIChatBot` and has `ChatKitWidget` commented out — the opposite of what `README.md` and `AGENTS.md` describe. A run that verifies "the ChatKit widget" against this app is verifying something that is not mounted. `/api/chatkit/session` and `ChatKitWidget.tsx` still exist but nothing reaches them.
+- **The rendered chatbot is the SSE `OpenAIChatBot`, not ChatKit.** `src/app/layout.tsx` mounts it and has `ChatKitWidget` commented out along with its import. A run that verifies "the ChatKit widget" is verifying something that is not mounted. `/api/chatkit/session` and `ChatKitWidget.tsx` still exist but nothing reaches them. `README.md` and `AGENTS.md` described the reverse until 2026-09-02; if you see a doc claiming ChatKit is live, it has regressed.
 - The panel is fixed bottom-right at `z-index: 1050` on every page. It overlaps page content on short viewports and can intercept a click intended for something beneath it — including gallery controls. Close it before driving another feature.
 - The launcher resets the conversation on **open as well as close**, so there is no history to verify across sessions. An empty panel is correct behavior, not a lost transcript.
 - Questions are rewritten before sending: "you" becomes "Mila", "your" becomes "Mila's". The text sent is not the text typed, so a transcript check must expect the transformed question.

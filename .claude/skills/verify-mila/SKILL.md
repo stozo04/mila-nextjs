@@ -49,7 +49,7 @@ If port 3000 is already listening before you launch, **do not launch a second se
 node .claude/skills/verify-mila/control-mila.mjs doctor
 ```
 
-Exit 0 means the instance is worth driving. It checks Node major 22 (`package.json` says `22.x`; the stale `AGENTS.md` still says 20), the required `.env.local` keys **by name only**, that `/` returns 200 with the landing carousel, and that an unknown path returns `307 → /login` — which is both the real gate and proof you are talking to this app and not a stale server from another checkout.
+Exit 0 means the instance is worth driving. It checks Node major 22 (`package.json` `engines`, `.nvmrc`, and `.node-version` all agree), the required `.env.local` keys **by name only**, that `/` returns 200 with the landing carousel, and that an unknown path returns `307 → /login` — which is both the real gate and proof you are talking to this app and not a stale server from another checkout.
 
 The `headless admin sign-in configured` row is informational and never blocks. When it passes, tier 2 is available; when it fails, `MILA_ADMIN_*` are absent and every signed-in check falls back to tier 3.
 
