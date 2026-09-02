@@ -71,8 +71,13 @@ Notes: <any observations, flakes, or warnings>
 | `home` | Landing page carousel | `/` (public) | No | ✅ Mapped |
 | `login` | Google OAuth login page | `/login` | No | ✅ Mapped |
 | `privacy-policy` | Privacy policy static page | `/privacy-policy` | No | ✅ Mapped |
-| `blogs-list` | Protected blog listing with search/filter | `/blogs` | Yes | ✅ Mapped (auth-gated) |
-| `journey-cards` | Journey milestones gallery | `/my-journey/first-year` | Yes | ✅ Mapped (auth-gated) |
+| `blogs-list` | Protected blog listing with search/filter | `/blogs` | Yes | ✅ Mapped |
+| `blog-detail` | Individual blog post with TTS audio | `/blogs/[slug]` | Yes | ✅ Mapped |
+| `sonograms` | Prenatal ultrasound gallery | `/sonograms` | Yes | ✅ Mapped |
+| `gender-reveal` | Video + photo gallery with modal | `/gender-reveal` | Yes | ✅ Mapped |
+| `baby-shower` | Houston and Dallas event galleries | `/baby-shower/{houston\|dallas}` | Yes | ✅ Mapped |
+| `journey` | Milestone galleries (birthday, years 1-3) | `/my-journey/*` | Yes | ✅ Mapped |
+| `journey-cards` | Journey milestones gallery (legacy alias) | `/my-journey/first-year` | Yes | ✅ Mapped |
 
 ### Feature Files
 
