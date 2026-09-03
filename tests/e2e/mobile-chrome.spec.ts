@@ -64,6 +64,8 @@ test('chat stays usable and wraps a long draft on mobile', async ({ page }) => {
   expect(viewport).not.toBeNull();
   expect(closeBox!.width).toBeGreaterThanOrEqual(44);
   expect(closeBox!.height).toBeGreaterThanOrEqual(44);
+  await expect(close.locator('svg')).toHaveAttribute('width', '24');
+  await expect(close.locator('svg')).toHaveAttribute('height', '24');
   expect(panelBox!.x).toBeGreaterThanOrEqual(0);
   expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(viewport!.width);
   expect(panelBox!.y + panelBox!.height).toBeLessThanOrEqual(launcherBox!.y);
