@@ -284,6 +284,10 @@ export default function OpenAIChatBot() {
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
+                        // Ignore Enter during IME composition (CJK, mobile keyboards)
+                        if (e.nativeEvent.isComposing || e.keyCode === 229) {
+                          return;
+                        }
                         e.preventDefault();
                         handleSubmit(e as unknown as React.FormEvent);
                       }
