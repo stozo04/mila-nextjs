@@ -31,7 +31,7 @@ test('chat stays usable and wraps a long draft on mobile', async ({ page }) => {
   const panel = page.getByRole('dialog', { name: 'Chat with me' });
   const close = page.getByRole('button', { name: 'Close chat panel' });
   const composer = page.getByRole('textbox', { name: 'Message' });
-  const launcher = page.getByRole('button', { name: 'Close chat' });
+  const launcher = page.getByRole('button', { name: 'Close chat', exact: true });
 
   await expect(panel).toBeVisible();
   await expect(composer).toHaveJSProperty('tagName', 'TEXTAREA');
