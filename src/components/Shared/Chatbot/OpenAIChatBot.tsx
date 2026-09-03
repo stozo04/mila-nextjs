@@ -47,6 +47,7 @@ export default function OpenAIChatBot() {
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
 
   // --- Mila transform from your original ---
   const transformMessage = (input: string): string => {
@@ -66,6 +67,17 @@ export default function OpenAIChatBot() {
   // --- Keep scroll pinned to bottom ---
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
+
+  // Let questions wrap and grow on small screens without taking over the panel.
+  useEffect(() => {
+    const composer = composerRef.current;
+    if (!composer) return;
+
+    composer.style.height = 'auto';
+    const nextHeight = Math.min(composer.scrollHeight, 128);
+    composer.style.height = `${nextHeight}px`;
+    composer.style.overflowY = composer.scrollHeight > 128 ? 'auto' : 'hidden';
+  }, [message]);
 
   // --- Reset state helpers (no history retention) ---
   const resetChat = React.useCallback(() => {
@@ -173,7 +185,7 @@ export default function OpenAIChatBot() {
   };
 
   return (
-    <div className="position-fixed bottom-0 end-0 mb-4 me-4" style={{ zIndex: 1050 }}>
+    <div className="chat-widget">
       {/* Toggle Button */}
       <button
         onClick={() => {
@@ -187,7 +199,7 @@ export default function OpenAIChatBot() {
             setIsOpen(true);
           }
         }}
-        className="btn btn-primary rounded-circle p-3 shadow"
+        className="btn btn-primary rounded-circle shadow chat-launcher"
         aria-label={isOpen ? 'Close chat' : 'Open chat'}
         type="button"
       >
@@ -205,21 +217,25 @@ export default function OpenAIChatBot() {
 
       {/* Chat Modal */}
       {isOpen && (
-        <div className="position-fixed bottom-0 end-0 mb-4 me-4">
-          <div className="card shadow" style={{ width: '300px' }}>
+        <section
+          className="card shadow chat-panel"
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="mila-chat-title"
+        >
             <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Chat with me</h5>
+              <h5 className="mb-0" id="mila-chat-title">Chat with me</h5>
               <button
                 onClick={() => { resetChat(); setIsOpen(false); }}
-                className="btn btn-link text-white p-0 border-0"
-                style={{ fontSize: '1.5rem', lineHeight: 1 }}
-                aria-label="Close"
+                className="btn text-white border-0 chat-close"
+                aria-label="Close chat panel"
+                type="button"
               >
-                ×
+                <span aria-hidden="true">×</span>
               </button>
             </div>
-            <div className="card-body d-flex flex-column" style={{ height: '400px' }}>
-              <div className="flex-grow-1 overflow-auto mb-3">
+            <div className="card-body d-flex flex-column chat-body">
+              <div className="flex-grow-1 overflow-auto mb-3 chat-messages">
                 {messages.length === 0 ? (
                   <p className="text-muted">What would you like to know about me...</p>
                 ) : (
@@ -249,15 +265,16 @@ export default function OpenAIChatBot() {
                 <div ref={messagesEndRef} />
               </div>
 
-              <form onSubmit={handleSubmit} className="mt-auto">
-                <div className="input-group">
-                  <input
-                    type="text"
+              <form onSubmit={handleSubmit} className="mt-auto chat-composer">
+                  <textarea
+                    ref={composerRef}
+                    rows={1}
                     className="form-control"
                     placeholder="Type your message..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     disabled={isLoading}
+                    aria-label="Message"
                   />
                   <button
                     type="submit"
@@ -266,11 +283,9 @@ export default function OpenAIChatBot() {
                   >
                     Send
                   </button>
-                </div>
               </form>
             </div>
-          </div>
-        </div>
+        </section>
       )}
     </div>
   );

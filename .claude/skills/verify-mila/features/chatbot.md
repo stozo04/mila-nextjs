@@ -5,7 +5,7 @@ A round chat launcher sits in the bottom-right corner of every page. Opening it 
 ## Sub-features
 
 - `chat-launcher` shows a round button on every page, labelled "Open chat" or "Close chat".
-- `chat-panel` opens a 300px panel headed "Chat with me" with the prompt "What would you like to know about me...".
+- `chat-panel` opens a viewport-safe panel headed "Chat with me" with the prompt "What would you like to know about me...".
 - `chat-send` submits a question and streams the reply into a bot bubble. Billable — presence only.
 - `chat-typing` shows an animated typing indicator while a reply is in flight.
 - `chat-disabled` disables the input and **Send** while a reply streams, and disables **Send** on an empty box.
@@ -26,7 +26,8 @@ Preconditions:
 - **Never send a message.** Each submit calls `/api/chat-stream`, which bills the OpenAI Responses API and stores the conversation. `control-mila.mjs` refuses that route.
 
 - **Confirm the launcher ships.** Open `/`. Run `node .claude/skills/verify-mila/control-mila.mjs get / --save chatbot/home`, then search the saved body for `Open chat`. The launcher's `aria-label` is present in the server HTML.
-- **Open the panel.** In `claude-in-chrome`, open `http://127.0.0.1:3000/` and click the control named `Open chat`. A panel appears bottom-right headed `Chat with me`, showing the placeholder text `What would you like to know about me...` and an input placeheld `Type your message...`.
+- **Open the panel.** In `claude-in-chrome`, open `http://127.0.0.1:3000/` and click the control named `Open chat`. A panel appears above the launcher at bottom-right, stays within the viewport, and is headed `Chat with me`. It shows the placeholder text `What would you like to know about me...` and a textarea placeheld `Type your message...`.
+- **Check the mobile composer.** At a narrow viewport, type a long draft without submitting it. The textarea wraps and grows to show the draft, the panel remains inside the viewport without overlapping the launcher, and the header close control has at least a 44 by 44 pixel hit target.
 - **Confirm Send is disabled when empty.** With the input empty, **Send** is disabled. Type a character; it enables. Clear it; it disables again. **Stop here — do not submit.**
 - **Close the panel.** Choose the `×` in the header. The panel dismisses and the launcher returns to its "Open chat" state. Reopen and close it with the launcher instead; both paths work.
 - **Confirm the reset.** Reopen the panel. The message list is empty and shows the placeholder prompt again, with no history from the previous open.
@@ -36,7 +37,7 @@ Preconditions:
 ## Gotchas
 
 - **The rendered chatbot is the SSE `OpenAIChatBot`, not ChatKit.** `src/app/layout.tsx` mounts it and has `ChatKitWidget` commented out along with its import. A run that verifies "the ChatKit widget" is verifying something that is not mounted. `/api/chatkit/session` and `ChatKitWidget.tsx` still exist but nothing reaches them. `README.md` and `AGENTS.md` described the reverse until 2026-09-02; if you see a doc claiming ChatKit is live, it has regressed.
-- The panel is fixed bottom-right at `z-index: 1050` on every page. It overlaps page content on short viewports and can intercept a click intended for something beneath it — including gallery controls. Close it before driving another feature.
+- The panel is fixed above the bottom-right launcher at `z-index: 1050` on every page. It can cover page content while open, so close it before driving another feature.
 - The launcher resets the conversation on **open as well as close**, so there is no history to verify across sessions. An empty panel is correct behavior, not a lost transcript.
 - Questions are rewritten before sending: "you" becomes "Mila", "your" becomes "Mila's". The text sent is not the text typed, so a transcript check must expect the transformed question.
 - A stream failure appends a bot bubble reading `Sorry, something went wrong: <message>` rather than surfacing an error state. Assert on that text if you are verifying the failure path.
