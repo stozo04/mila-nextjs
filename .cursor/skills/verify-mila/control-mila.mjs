@@ -3,9 +3,9 @@
 // Two subcommands: `doctor` (is this instance worth driving?) and `get` (drive one route).
 // It never signs in and never sends a mutating request that could reach live Supabase.
 //
-//   node .claude/skills/verify-mila/control-mila.mjs doctor
-//   node .claude/skills/verify-mila/control-mila.mjs get /blogs --save route-protection/blogs
-//   node .claude/skills/verify-mila/control-mila.mjs get /api/journey/prepare-month --method POST --body '{}'
+//   node .cursor/skills/verify-mila/control-mila.mjs doctor
+//   node .cursor/skills/verify-mila/control-mila.mjs get /blogs --save route-protection/blogs
+//   node .cursor/skills/verify-mila/control-mila.mjs get /api/journey/prepare-month --method POST --body '{}'
 //
 // Base URL defaults to http://127.0.0.1:3000; override with MILA_BASE_URL.
 //
@@ -179,7 +179,7 @@ async function session() {
 
 function loadCookieHeader() {
   if (!existsSync(SESSION_FILE)) {
-    console.error('no saved session. Run: node .claude/skills/verify-mila/control-mila.mjs session');
+    console.error('no saved session. Run: node .cursor/skills/verify-mila/control-mila.mjs session');
     process.exit(1);
   }
   const { cookies } = JSON.parse(readFileSync(SESSION_FILE, 'utf8'));

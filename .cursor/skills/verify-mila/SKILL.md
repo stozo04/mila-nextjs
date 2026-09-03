@@ -46,7 +46,7 @@ If port 3000 is already listening before you launch, **do not launch a second se
 ## Doctor
 
 ```powershell
-node .claude/skills/verify-mila/control-mila.mjs doctor
+node .cursor/skills/verify-mila/control-mila.mjs doctor
 ```
 
 Exit 0 means the instance is worth driving. It checks Node major 22 (`package.json` `engines`, `.nvmrc`, and `.node-version` all agree), the required `.env.local` keys **by name only**, that `/` returns 200 with the landing carousel, and that an unknown path returns `307 → /login` — which is both the real gate and proof you are talking to this app and not a stale server from another checkout.
@@ -58,7 +58,7 @@ Run doctor first whenever anything looks off.
 ## Drive
 
 ```powershell
-node .claude/skills/verify-mila/control-mila.mjs get <path> [--save <name>] [--expect-unauthorized]
+node .cursor/skills/verify-mila/control-mila.mjs get <path> [--save <name>] [--expect-unauthorized]
 ```
 
 **Run it from PowerShell.** Git Bash rewrites a leading-slash argument into a Windows path (`/blogs` → `C:/Program Files/Git/blogs`), so every route arrives wrong. Prefix `MSYS_NO_PATHCONV=1` if you must use bash.
@@ -68,8 +68,8 @@ node .claude/skills/verify-mila/control-mila.mjs get <path> [--save <name>] [--e
 ### Signed-in requests (tier 2)
 
 ```powershell
-node .claude/skills/verify-mila/control-mila.mjs session
-node .claude/skills/verify-mila/control-mila.mjs get /blogs --as-admin
+node .cursor/skills/verify-mila/control-mila.mjs session
+node .cursor/skills/verify-mila/control-mila.mjs get /blogs --as-admin
 ```
 
 `session` signs in with the admin password and stores the auth cookies in `.session.json` (git-ignored). It builds them with the app's **own** `@supabase/ssr`, so the cookie name, `base64-` encoding, and 3180-byte chunking always match what the server expects. It prints the account email and `is_mila_admin`, never a token. `session --clear` deletes the file.
@@ -93,7 +93,7 @@ Drive the real browser with `claude-in-chrome`: `tabs_context_mcp` first, then a
 
 ## Evidence
 
-Artifacts go to `.claude/skills/verify-mila/artifacts/<feature>/` (git-ignored). Each saved body carries a header with the method, URL, status, redirect target, and capture time.
+Artifacts go to `.cursor/skills/verify-mila/artifacts/<feature>/` (git-ignored). Each saved body carries a header with the method, URL, status, redirect target, and capture time.
 
 Proof standards:
 
@@ -108,7 +108,7 @@ For logic that does not need the app running, the repo already ships offline che
 ## Cleanup
 
 ```powershell
-node .claude/skills/verify-mila/control-mila.mjs session --clear
+node .cursor/skills/verify-mila/control-mila.mjs session --clear
 if ($mila) { taskkill /PID $mila /T /F }
 ```
 

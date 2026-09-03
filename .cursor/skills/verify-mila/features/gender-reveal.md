@@ -23,8 +23,8 @@ Preconditions:
 - `doctor` exits 0 and a signed-in session is available (`session` for requests, Chrome for rendered UI).
 - Reads Supabase Storage. Read-only — the page has no upload or delete control.
 
-- **Confirm the gate.** Open `/gender-reveal` signed out. Run `node .claude/skills/verify-mila/control-mila.mjs get /gender-reveal --save gender-reveal/anonymous`. Status is `307` with `location: /login`.
-- **Confirm the legacy redirect.** Run `node .claude/skills/verify-mila/control-mila.mjs get /gender-reveal.html`. Status is `308 Permanent Redirect` with `location: /gender-reveal`.
+- **Confirm the gate.** Open `/gender-reveal` signed out. Run `node .cursor/skills/verify-mila/control-mila.mjs get /gender-reveal --save gender-reveal/anonymous`. Status is `307` with `location: /login`.
+- **Confirm the legacy redirect.** Run `node .cursor/skills/verify-mila/control-mila.mjs get /gender-reveal.html`. Status is `308 Permanent Redirect` with `location: /gender-reveal`.
 - **Load the page.** In a signed-in tab, open `http://127.0.0.1:3000/gender-reveal`. The header reads `Gender Reveal Party` on the left and `January 21, 2023` on the right.
 - **Confirm the video frame.** A YouTube iframe titled `Gender Reveal` renders above the grid in a 16:9 container. Assert the frame's presence and title. Do not play it.
 - **Confirm the first page of photos.** Three photo cards render below the video once the Storage list resolves.

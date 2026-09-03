@@ -28,7 +28,7 @@ Preconditions:
 - **The uploader writes to live Storage and the role controls write to a live blog row. Neither may be submitted.** Verify presence, enablement, and validation copy only.
 - Pick an existing card slug from a year page. Never invent one.
 
-- **Confirm the gate.** Open a card signed out. Run `node .claude/skills/verify-mila/control-mila.mjs get /my-journey/4-year/any-slug --save journey-card/anonymous`. Status is `307` with `location: /login`.
+- **Confirm the gate.** Open a card signed out. Run `node .cursor/skills/verify-mila/control-mila.mjs get /my-journey/4-year/any-slug --save journey-card/anonymous`. Status is `307` with `location: /login`.
 - **Open a card.** In a signed-in tab, choose **View** from a year page. The heading shows the card's message on the left and its date on the right, with the gallery beneath.
 - **Return to the year.** On a dynamic-year card, choose **Back to year**. The route returns to `/my-journey/<year>`. Fixed-year cards have no such link — use browser back.
 - **Drive the gallery.** Three photos render. Choose **View More** to append three more; the control settles on a disabled **No More Images** at the end. Full recipe in [baby shower](./baby-shower.md); the component is the same.
@@ -36,8 +36,8 @@ Preconditions:
 - **Confirm the uploader is absent otherwise.** In a non-admin signed-in tab, the region is not rendered at all.
 - **Check the image-role controls.** In the admin tab, choose a photo to open its preview. The modal is titled `Photo preview` and its footer holds **Use as featured image** and **Use as detail image**. **Do not press either** — each writes a public URL onto the paired blog row. Close the modal instead.
 - **Check the role labels.** A photo already assigned shows a pink glow and a caption reading `Featured`, `Detail`, or `Featured · Detail`. These are admin-only; a non-admin sees neither the labels nor the footer controls.
-- **Prove the endpoint rejects an anonymous caller.** Run `node .claude/skills/verify-mila/control-mila.mjs get /api/blog/test-slug/images --method POST --body '{}' --expect-unauthorized`. It returns `401` with `{"error":"Sign in to continue."}` — rejected before any write.
-- **Read the current role assignments headlessly.** Run `node .claude/skills/verify-mila/control-mila.mjs session`, then `... get /api/blog/<slug>/images --as-admin --save journey-card/letter-images` with a real card slug. Status is `200 OK` with `{"images":{"featured_image":...,"detail_image":...}}`. Either value may be `null` when that role is unset. This is the read half of `card-image-roles`; the write half stays unexercised. `--as-admin` refuses the `POST`, so there is no way to slip into a write from here.
+- **Prove the endpoint rejects an anonymous caller.** Run `node .cursor/skills/verify-mila/control-mila.mjs get /api/blog/test-slug/images --method POST --body '{}' --expect-unauthorized`. It returns `401` with `{"error":"Sign in to continue."}` — rejected before any write.
+- **Read the current role assignments headlessly.** Run `node .cursor/skills/verify-mila/control-mila.mjs session`, then `... get /api/blog/<slug>/images --as-admin --save journey-card/letter-images` with a real card slug. Status is `200 OK` with `{"images":{"featured_image":...,"detail_image":...}}`. Either value may be `null` when that role is unset. This is the read half of `card-image-roles`; the write half stays unexercised. `--as-admin` refuses the `POST`, so there is no way to slip into a write from here.
 - **Proof.** Screenshot the card with the heading and gallery, the uploader region in the admin tab, and the open photo preview showing both role controls. State that no upload or role assignment was performed.
 
 ## Gotchas
