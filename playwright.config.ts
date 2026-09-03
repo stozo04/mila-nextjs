@@ -16,16 +16,18 @@ export default defineConfig({
       use: { ...devices['Pixel 7'] },
     },
   ],
-  webServer: {
-    command: 'npm run start -- -H 127.0.0.1 -p 3100',
-    url: 'http://127.0.0.1:3100',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-    env: {
-      NEXT_PUBLIC_SUPABASE_URL:
-        process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://example.invalid',
-      NEXT_PUBLIC_SUPABASE_ANON_KEY:
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'e2e-placeholder',
-    },
-  },
+  webServer: process.env.CI
+    ? undefined
+    : {
+        command: 'npm run start -- -H 127.0.0.1 -p 3100',
+        url: 'http://127.0.0.1:3100',
+        reuseExistingServer: true,
+        timeout: 120_000,
+        env: {
+          NEXT_PUBLIC_SUPABASE_URL:
+            process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://example.invalid',
+          NEXT_PUBLIC_SUPABASE_ANON_KEY:
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'e2e-placeholder',
+        },
+      },
 });
