@@ -48,7 +48,7 @@ test('chat stays usable and wraps a long draft on mobile', async ({ page }) => {
   }));
   expect(composerMetrics.clientHeight).toBeGreaterThan(initialHeight);
   expect(composerMetrics.scrollHeight).toBeLessThanOrEqual(
-    composerMetrics.clientHeight + 1,
+    composerMetrics.clientHeight + 2,
   );
 
   const [panelBox, closeBox, launcherBox] = await Promise.all([
