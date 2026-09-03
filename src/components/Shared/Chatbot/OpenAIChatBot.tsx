@@ -282,6 +282,12 @@ export default function OpenAIChatBot() {
                     placeholder="Type your message..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSubmit(e as unknown as React.FormEvent);
+                      }
+                    }}
                     disabled={isLoading}
                     aria-label="Message"
                   />
