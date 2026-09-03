@@ -28,7 +28,7 @@ jobs:
         run: |
           npm run start -- -H 127.0.0.1 -p 3100 > /tmp/mila-nextjs.log 2>&1 &
           for attempt in {1..30}; do
-            if curl --noproxy '*' --fail --silent http://127.0.0.1:3100/ > /dev/null; then
+            if curl --noproxy '*' --fail --silent -H 'x-forwarded-proto: https' http://127.0.0.1:3100/ > /dev/null; then
               exit 0
             fi
             sleep 1
