@@ -25,7 +25,7 @@ Preconditions:
 - `doctor` exits 0 and a signed-in session is available (`session` for requests, Chrome for rendered UI).
 - No database state is involved; this feature is pure static content and is safe to drive fully.
 
-- **Confirm the gate.** Open `/sonograms` signed out. Run `node .claude/skills/verify-mila/control-mila.mjs get /sonograms --save sonograms/anonymous`. Status is `307` with `location: /login`.
+- **Confirm the gate.** Open `/sonograms` signed out. Run `node .cursor/skills/verify-mila/control-mila.mjs get /sonograms --save sonograms/anonymous`. Status is `307` with `location: /login`.
 - **Load the index.** In a signed-in tab, open `http://127.0.0.1:3000/sonograms`. The heading reads `Welcome to the world, Mila!` and exactly five cards render, titled `Sonogram 1` through `Sonogram 5`.
 - **Open an entry.** Choose the `Sonogram 3` card. The route becomes `/sonograms/3`, the heading reads `Sonogram 3`, the date reads `January 10, 2023`, and the **Age** line reads `19 weeks`.
 - **Cycle the carousel.** Choose **Next** inside the image panel. The displayed image advances; three images exist per entry. Choose **Previous** to return.

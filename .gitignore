@@ -50,3 +50,5 @@ next-env.d.ts
 # Verification skill evidence (proof artifacts, not source)
 /.claude/skills/verify-mila/artifacts/
 /.claude/skills/verify-mila/.session.json
+/.cursor/skills/verify-mila/artifacts/
+/.cursor/skills/verify-mila/.session.json

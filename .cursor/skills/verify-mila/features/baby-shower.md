@@ -23,7 +23,7 @@ Preconditions:
 - `doctor` exits 0 and a signed-in session is available (`session` for requests, Chrome for rendered UI).
 - Reads Supabase Storage. Read-only — neither page has an upload control.
 
-- **Confirm the gate.** Open a city signed out. Run `node .claude/skills/verify-mila/control-mila.mjs get /baby-shower/houston --save baby-shower/anonymous`. Status is `307` with `location: /login`.
+- **Confirm the gate.** Open a city signed out. Run `node .cursor/skills/verify-mila/control-mila.mjs get /baby-shower/houston --save baby-shower/anonymous`. Status is `307` with `location: /login`.
 - **Reach it from the nav.** In a signed-in tab, choose **Baby Shower**, then **Houston**. The route becomes `/baby-shower/houston` and the heading reads `Houston` on the left with `May 15, 2023` on the right.
 - **Confirm the first page.** Three photo cards render once the Storage list resolves. Each card's image sits inside a button whose accessible name is `View photo <filename>`.
 - **Page to the end.** Choose **View More** repeatedly. Each press appends up to three photos. When the folder is exhausted the control's text becomes **No More Images** and it is disabled — that is the terminal state, unlike the gender reveal page.

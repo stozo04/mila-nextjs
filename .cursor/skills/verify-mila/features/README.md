@@ -4,7 +4,7 @@ This directory is the maintained source for verifying the user-facing behavior o
 
 ## Baseline preconditions
 
-- Launch with `npm run dev` and drive `http://127.0.0.1:3000`. Run `node .claude/skills/verify-mila/control-mila.mjs doctor` and require exit 0 before driving anything.
+- Launch with `npm run dev` and drive `http://127.0.0.1:3000`. Run `node .cursor/skills/verify-mila/control-mila.mjs doctor` and require exit 0 before driving anything.
 - **The dev server talks to the live Supabase project.** There is no seed, no local Supabase, no staging project. Every drive is read-only.
 - **Never submit a mutating control.** Create Blog, Create Journey Card, Publish Letter, "Use as featured image", "Use as detail image", the JPEG uploader, and "Create card and letter draft" are verified by presence, enablement, and anonymous rejection — never by clicking submit.
 - **Never request `/api/blog/<slug>/audio`, `/api/chat-stream`, or `/api/chatkit/session`.** Each spends money on a single call; the audio route also bypasses RLS on the service-role key and writes `blog_audio`. `control-mila.mjs get` refuses all three.

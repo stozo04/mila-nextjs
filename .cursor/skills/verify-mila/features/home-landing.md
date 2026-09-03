@@ -24,8 +24,8 @@ Preconditions:
 - `doctor` exits 0.
 - No signed-in session is required. This feature is fully drivable in tier 1.
 
-- **Load the page anonymously.** Open `/`. Run `node .claude/skills/verify-mila/control-mila.mjs get / --save home-landing/home`. Status is `200 OK`, content-type `text/html`, and no `location` header — the session gate does not fire here.
-- **Confirm every slide shipped.** Count the slides in the saved body. Run `(Select-String -Path .claude/skills/verify-mila/artifacts/home-landing/home.html -Pattern 'carousel-item' -AllMatches).Matches.Count`. The count is `14`, matching the fourteen imports in `src/app/(public)/page.tsx`.
+- **Load the page anonymously.** Open `/`. Run `node .cursor/skills/verify-mila/control-mila.mjs get / --save home-landing/home`. Status is `200 OK`, content-type `text/html`, and no `location` header — the session gate does not fire here.
+- **Confirm every slide shipped.** Count the slides in the saved body. Run `(Select-String -Path .cursor/skills/verify-mila/artifacts/home-landing/home.html -Pattern 'carousel-item' -AllMatches).Matches.Count`. The count is `14`, matching the fourteen imports in `src/app/(public)/page.tsx`.
 - **Confirm the first slide is active.** Search the same body for `carousel-item active`. Exactly one slide carries `active`.
 - **Confirm the controls exist.** Search for the accessible names `Previous` and `Next`. Both appear as `visually-hidden` labels on the two carousel control buttons.
 - **Advance the carousel (browser).** Choose **Next**. In `claude-in-chrome`, open `http://127.0.0.1:3000/`, then click the element with accessible name `Next`. The active slide changes to the following image.

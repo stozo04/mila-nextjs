@@ -26,7 +26,7 @@ Preconditions:
 - `doctor` exits 0.
 - `chrome-authenticated`, `chrome-dropdowns`, `chrome-admin-banner`, and `chrome-logout` need a signed-in browser. `chrome-admin-banner` needs the admin account specifically.
 
-- **Confirm the nav is not server-rendered.** Open `/`. Run `node .claude/skills/verify-mila/control-mila.mjs get / --save site-chrome/home-ssr`, then search the body for `nav-item`. There are **zero** matches and exactly one `navbar-brand`. This is the baseline fact that forces every other check in this file into a browser.
+- **Confirm the nav is not server-rendered.** Open `/`. Run `node .cursor/skills/verify-mila/control-mila.mjs get / --save site-chrome/home-ssr`, then search the body for `nav-item`. There are **zero** matches and exactly one `navbar-brand`. This is the baseline fact that forces every other check in this file into a browser.
 - **See the signed-out nav.** In `claude-in-chrome`, open `http://127.0.0.1:3000/` while signed out and wait for the auth check to settle. The nav shows **Support Mila** and **Sign In** and no section links. Confirm with the DOM, not the accessibility tree: `javascript_tool` running `[...document.querySelectorAll('#navbarNav a, #navbarNav button')].map(n => n.textContent.trim())` returns exactly those two. Verified 2026-09-02 against this dev server.
 - **See the signed-in nav.** In a signed-in tab, reload `/`. The nav shows Sonograms, Gender Reveal, Blogs, Baby Shower, My Journey, About Me, and Logout.
 - **Open each dropdown.** Choose **Baby Shower**, then **My Journey**. Each expands; the first lists Houston and Dallas, the second lists Birthday, My First Year, One Year, Two Year, Three Year. Assert the item text, then close without navigating.

@@ -23,7 +23,7 @@ Preconditions:
 - `setup-form` and everything below it need a signed-in **admin** Chrome.
 - **Never submit this form.** It changes the credentials on the real account. Verify the guard, the form, and the client-side validation copy only.
 
-- **Confirm the anonymous gate.** Open the page signed out. Run `node .claude/skills/verify-mila/control-mila.mjs get /admin/prepare-month-setup --save admin-password-setup/anonymous`. Status is `307` with `location: /login` — the session gate fires before the admin check.
+- **Confirm the anonymous gate.** Open the page signed out. Run `node .cursor/skills/verify-mila/control-mila.mjs get /admin/prepare-month-setup --save admin-password-setup/anonymous`. Status is `307` with `location: /login` — the session gate fires before the admin check.
 - **Confirm the non-admin guard.** In a signed-in but non-admin tab, open `/admin/prepare-month-setup`. The site 404 page renders — "Page Not Found" with **Go Home** — rather than a permission message. Skipped if no non-admin account is available.
 - **Load the form.** In the admin tab, open the same path. The heading reads `Set up the monthly command` with the explanation that Google sign-in will keep working. Two fields are present: `New Supabase password` (id `monthly-password`) and `Confirm password` (id `monthly-password-confirm`), both `type="password"`, plus a green **Set password** button.
 - **Check the short-password rejection.** Type `short` into both fields and submit. The form shows `Use at least 12 characters and enter the same password in both fields.` and **no network request is made** — this validation runs entirely client-side before the Supabase call, so it is safe to exercise.

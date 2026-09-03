@@ -26,7 +26,7 @@ Preconditions:
 - `blogs-draft-badge` and `blogs-create` additionally need the admin account.
 - The live database currently holds 68 letters. Do not create, edit, or publish any of them here.
 
-- **Confirm the gate.** Open `/blogs` signed out. Run `node .claude/skills/verify-mila/control-mila.mjs get /blogs --save blogs-index/anonymous`. Status is `307` with `location: /login`.
+- **Confirm the gate.** Open `/blogs` signed out. Run `node .cursor/skills/verify-mila/control-mila.mjs get /blogs --save blogs-index/anonymous`. Status is `307` with `location: /login`.
 - **Load the index.** In a signed-in tab, open `http://127.0.0.1:3000/blogs`. A loading state appears first, then a card grid. Three cards are visible before any paging.
 - **Read the filter pills.** The pill row starts with **All** in the filled style and its total in parentheses, followed by one pill per distinct tag with that tag's count.
 - **Filter by a tag.** Choose any tag pill other than All. The grid reloads showing only that tag's letters and the visible count resets to three. The chosen pill becomes filled and All becomes outlined.
