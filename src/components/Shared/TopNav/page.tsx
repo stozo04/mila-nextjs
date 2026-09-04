@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import SignInButton from '@/components/Auth/SignInButton';
 import PrepareMonth from '@/components/Journey/PrepareMonth';
+import NavActionButton from './NavActionButton';
 
 const NavMenu = () => {
   const router = useRouter();
@@ -191,9 +192,9 @@ const NavMenu = () => {
                       </Link>
                     </li>
                     <li className="nav-item">
-                      <button onClick={handleLogout} className="nav-link btn btn-link">
+                      <NavActionButton onClick={handleLogout}>
                         Logout
-                      </button>
+                      </NavActionButton>
                     </li>
                   </>
                 ) : (
