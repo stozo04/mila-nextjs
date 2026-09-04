@@ -18,9 +18,9 @@ So: reproduce, diagnose, **prove**, then fix. In that order.
 
 Do not start from my description alone — I report symptoms, not causes.
 
-```powershell
+```bash
 npm run dev
-node .claude/skills/verify-mila/control-mila.mjs doctor
+node .cursor/skills/verify-mila/control-mila.mjs doctor
 ```
 
 State plainly what you observed, and where. **Say which environment**: local dev, or production at milagates.com. They differ — production may be running older code, and `localhost` and `127.0.0.1` have separate cookie jars.
@@ -64,10 +64,10 @@ If you are not fixing it this run: leave the step stating the intended behavior,
 
 Drive the feature file's steps and show the check that used to fail now passing, with evidence in `artifacts/`. Then clean up:
 
-```powershell
-node .claude/skills/verify-mila/control-mila.mjs session --clear
-$mila = (Get-NetTCPConnection -LocalPort 3000 -State Listen).OwningProcess | Select-Object -Unique
-if ($mila) { taskkill /PID $mila /T /F }
+```bash
+node .cursor/skills/verify-mila/control-mila.mjs session --clear
+mila_pid=$(lsof -ti:3000)
+if [ -n "$mila_pid" ]; then kill -9 "$mila_pid"; fi
 ```
 
 ## Guardrails

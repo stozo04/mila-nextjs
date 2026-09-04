@@ -6,9 +6,9 @@ This guide helps AI agents work effectively in this repository.
 
 Pick the one that matches the work and follow it:
 
-- **Building a feature** → [`FEATURE-PROMPT.md`](FEATURE-PROMPT.md). Write the feature file in `.claude/skills/verify-mila/features/` **before** the code, and stop for review.
+- **Building a feature** → [`FEATURE-PROMPT.md`](FEATURE-PROMPT.md). Write the feature file in `.cursor/skills/verify-mila/features/` **before** the code, and stop for review.
 - **Fixing a bug** → [`BUG-PROMPT.md`](BUG-PROMPT.md). Reproduce it first-hand and prove the mechanism before changing anything or writing anything down.
-- **Verifying that a change actually works** → the [`verify-mila`](.claude/skills/verify-mila/SKILL.md) skill. Drive the running app and capture evidence; do not assert behavior from the diff.
+- **Verifying that a change actually works** → the [`verify-mila`](.cursor/skills/verify-mila/SKILL.md) skill. Drive the running app and capture evidence; do not assert behavior from the diff.
 
 Three rules that override convenience:
 

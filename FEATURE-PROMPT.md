@@ -8,7 +8,7 @@ Paste this to an agent when you want to build something new, with your feature d
 
 **Write the spec before the code.**
 
-`.claude/skills/verify-mila/features/` is a specification of what this site *should* do — not a description of what it currently does. Written first, it says what "done" means before anyone is attached to code they already wrote. Written afterwards, it is just a summary of whatever got built, bugs included.
+`.cursor/skills/verify-mila/features/` is a specification of what this site *should* do — not a description of what it currently does. Written first, it says what "done" means before anyone is attached to code they already wrote. Written afterwards, it is just a summary of whatever got built, bugs included.
 
 Everything below follows from that.
 
@@ -16,7 +16,7 @@ Everything below follows from that.
 
 ### 1. Write the feature file first
 
-Create `.claude/skills/verify-mila/features/<feature>.md` **before writing any application code**, following the contract in [`features/README.md`](.claude/skills/verify-mila/features/README.md): an H1, one paragraph, then exactly four H2s — `Sub-features`, `How to get to it (user POV)`, `Driving it with control-mila`, `Gotchas`.
+Create `.cursor/skills/verify-mila/features/<feature>.md` **before writing any application code**, following the contract in [`features/README.md`](.cursor/skills/verify-mila/features/README.md): an H1, one paragraph, then exactly four H2s — `Sub-features`, `How to get to it (user POV)`, `Driving it with control-mila`, `Gotchas`.
 
 Answer these from the user's point of view:
 
@@ -41,10 +41,10 @@ Write the driving steps accordingly. Tier 1/2 steps are exact `control-mila.mjs`
 
 ### 4. Drive it
 
-```powershell
+```bash
 npm run dev
-node .claude/skills/verify-mila/control-mila.mjs doctor          # must exit 0
-node .claude/skills/verify-mila/control-mila.mjs session         # if signed-in paths are involved
+node .cursor/skills/verify-mila/control-mila.mjs doctor          # must exit 0
+node .cursor/skills/verify-mila/control-mila.mjs session         # if signed-in paths are involved
 ```
 
 Then run the feature file's own steps, top to bottom, and capture evidence to `artifacts/<feature>/`.
@@ -57,10 +57,10 @@ Read the DOM, not a summary of it. Check the actual value, the actual row, the a
 
 ### 6. Clean up
 
-```powershell
-node .claude/skills/verify-mila/control-mila.mjs session --clear
-$mila = (Get-NetTCPConnection -LocalPort 3000 -State Listen).OwningProcess | Select-Object -Unique
-if ($mila) { taskkill /PID $mila /T /F }
+```bash
+node .cursor/skills/verify-mila/control-mila.mjs session --clear
+mila_pid=$(lsof -ti:3000)
+if [ -n "$mila_pid" ]; then kill -9 "$mila_pid"; fi
 ```
 
 Evidence in `artifacts/` survives cleanup. It is the proof.
