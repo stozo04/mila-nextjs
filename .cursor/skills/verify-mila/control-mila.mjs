@@ -8,10 +8,6 @@
 //   node .cursor/skills/verify-mila/control-mila.mjs get /api/journey/prepare-month --method POST --body '{}'
 //
 // Base URL defaults to http://127.0.0.1:3000; override with MILA_BASE_URL.
-//
-// Run it from PowerShell. Git Bash rewrites a leading-slash argument into a Windows
-// path (`/blogs` -> `C:/Program Files/Git/blogs`), so every route arg arrives wrong;
-// prefix `MSYS_NO_PATHCONV=1` if you must use bash.
 
 import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
