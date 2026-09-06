@@ -21,7 +21,7 @@ Read [`features/README.md`](./features/README.md) before driving anything, then 
 | --- | --- | --- | --- |
 | **1 — anonymous** | none | `control-mila.mjs get` | Unattended |
 | **2 — signed-in requests** | minted by `session` | `control-mila.mjs get --as-admin` | Unattended |
-| **3 — rendered UI** | the user's real Chrome | `claude-in-chrome` MCP, read-only | Needs the user signed in and present |
+| **3 — rendered UI** | the user's real Chrome | available browser adapter, read-only | Needs the user signed in and present |
 
 Tier 2 proves gates, redirects, authorization, and any **server-rendered** response. It cannot prove anything the browser assembles after mount — the nav, galleries, the blogs list, letter bodies, modals. Those are tier 3, because the markup simply is not in the response. See the third bullet under Evidence.
 
@@ -61,7 +61,7 @@ Run doctor first whenever anything looks off.
 node .claude/skills/verify-mila/control-mila.mjs get <path> [--save <name>] [--expect-unauthorized]
 ```
 
-**Run it from PowerShell.** Git Bash rewrites a leading-slash argument into a Windows path (`/blogs` → `C:/Program Files/Git/blogs`), so every route arrives wrong. Prefix `MSYS_NO_PATHCONV=1` if you must use bash.
+Commands work in PowerShell or Bash. On Windows Git Bash, prefix route commands with MSYS_NO_PATHCONV=1 to prevent leading-slash arguments becoming Windows filesystem paths.
 
 `get` prints status, `location`, content-type, and byte count, and follows no redirects (`redirect: 'manual'`) so a gate is observable rather than swallowed. `--save <name>` writes the response body plus a provenance header to `artifacts/<name>`.
 
@@ -89,7 +89,7 @@ The harness refuses four things, by design:
 
 ### Rendered UI (tier 3)
 
-Drive the real browser with `claude-in-chrome`: `tabs_context_mcp` first, then a new tab at `http://127.0.0.1:3000`. Prefer accessible names and the stable handles each feature file lists (`#journey-photos`, `aria-label="Upload journey photos"`, button text) over CSS position.
+Use the available browser adapter and its documented tab discovery, then a new tab at `http://127.0.0.1:3000`. Prefer accessible names and the stable handles each feature file lists (`#journey-photos`, `aria-label="Upload journey photos"`, button text) over CSS position.
 
 ## Evidence
 
@@ -121,3 +121,7 @@ Nothing else needs teardown: no fixtures, no rows, no uploads. Artifacts under `
 ## Helpers
 
 `control-mila.mjs` is the only helper. Zero dependencies, Node 22, invocations shown above.
+
+## Bash launch and cleanup
+
+The node commands also work in Bash. If port 3000 already has a server, run doctor and reuse it without teardown. Otherwise start npm run dev, record only that server's PID, and stop only that process when finished. On Unix, lsof -ti:3000 identifies listeners; never kill an existing listener merely because it owns the port. Clear the session with the same node ... session --clear command before stopping a server you started. PowerShell cleanup above stops the captured process tree.

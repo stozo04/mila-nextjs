@@ -40,7 +40,7 @@ Preconditions:
 
 - **Never drive `/api/blog/<slug>/audio` directly.** It runs on `SUPABASE_SERVICE_ROLE_KEY`, so it bypasses RLS, and each uncached letter costs an OpenAI TTS call plus a `blog_audio` upsert. The harness refuses it; do not work around that.
 - A long letter can exceed the audio route's time budget and return `202 {"pending":true}`; the client then polls every two seconds. A "nothing happened" report after pressing Listen may be this path, not a failure.
-- A failed narration surfaces through a **native `alert()`**, which blocks browser automation entirely. If the tab stops responding to `claude-in-chrome`, this is the likely cause and the user must dismiss it manually. One more reason not to press Listen.
+- A failed narration surfaces through a **native `alert()`**, which blocks browser automation entirely. If the tab stops responding to the available browser adapter, this is the likely cause and the user must dismiss it manually. One more reason not to press Listen.
 - Draft letters 404 for non-admins rather than showing a permission message: the client fetch uses `.single()`, RLS returns no row, and the page calls `notFound()`. "Letter not found" and "letter not visible to you" are indistinguishable from the UI.
 - The date is parsed here by splitting the `YYYY-MM-DD` string into parts, unlike the index which passes the raw string to `new Date()`. The same letter can show a different day on the index than on its own page west of UTC.
 - The letter body is raw HTML from the database rendered through `html-react-parser`. Assert on visible text, not on markup structure.

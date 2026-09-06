@@ -21,7 +21,7 @@ Read [`features/README.md`](./features/README.md) before driving anything, then 
 | --- | --- | --- | --- |
 | **1 — anonymous** | none | `control-mila.mjs get` | Unattended |
 | **2 — signed-in requests** | minted by `session` | `control-mila.mjs get --as-admin` | Unattended |
-| **3 — rendered UI** | the user's real Chrome | `claude-in-chrome` MCP, read-only | Needs the user signed in and present |
+| **3 — rendered UI** | the user's real Chrome | available browser adapter, read-only | Needs the user signed in and present |
 
 Tier 2 proves gates, redirects, authorization, and any **server-rendered** response. It cannot prove anything the browser assembles after mount — the nav, galleries, the blogs list, letter bodies, modals. Those are tier 3, because the markup simply is not in the response. See the third bullet under Evidence.
 
@@ -46,7 +46,7 @@ If port 3000 is already listening before you launch, **do not launch a second se
 ## Doctor
 
 ```powershell
-node .claude/skills/verify-mila/control-mila.mjs doctor
+node .codex/skills/verify-mila/control-mila.mjs doctor
 ```
 
 Exit 0 means the instance is worth driving. It checks Node major 22 (`package.json` `engines`, `.nvmrc`, and `.node-version` all agree), the required `.env.local` keys **by name only**, that `/` returns 200 with the landing carousel, and that an unknown path returns `307 → /login` — which is both the real gate and proof you are talking to this app and not a stale server from another checkout.
@@ -58,18 +58,18 @@ Run doctor first whenever anything looks off.
 ## Drive
 
 ```powershell
-node .claude/skills/verify-mila/control-mila.mjs get <path> [--save <name>] [--expect-unauthorized]
+node .codex/skills/verify-mila/control-mila.mjs get <path> [--save <name>] [--expect-unauthorized]
 ```
 
-**Run it from PowerShell.** Git Bash rewrites a leading-slash argument into a Windows path (`/blogs` → `C:/Program Files/Git/blogs`), so every route arrives wrong. Prefix `MSYS_NO_PATHCONV=1` if you must use bash.
+Commands work in PowerShell or Bash. On Windows Git Bash, prefix route commands with MSYS_NO_PATHCONV=1 to prevent leading-slash arguments becoming Windows filesystem paths.
 
 `get` prints status, `location`, content-type, and byte count, and follows no redirects (`redirect: 'manual'`) so a gate is observable rather than swallowed. `--save <name>` writes the response body plus a provenance header to `artifacts/<name>`.
 
 ### Signed-in requests (tier 2)
 
 ```powershell
-node .claude/skills/verify-mila/control-mila.mjs session
-node .claude/skills/verify-mila/control-mila.mjs get /blogs --as-admin
+node .codex/skills/verify-mila/control-mila.mjs session
+node .codex/skills/verify-mila/control-mila.mjs get /blogs --as-admin
 ```
 
 `session` signs in with the admin password and stores the auth cookies in `.session.json` (git-ignored). It builds them with the app's **own** `@supabase/ssr`, so the cookie name, `base64-` encoding, and 3180-byte chunking always match what the server expects. It prints the account email and `is_mila_admin`, never a token. `session --clear` deletes the file.
@@ -89,11 +89,11 @@ The harness refuses four things, by design:
 
 ### Rendered UI (tier 3)
 
-Drive the real browser with `claude-in-chrome`: `tabs_context_mcp` first, then a new tab at `http://127.0.0.1:3000`. Prefer accessible names and the stable handles each feature file lists (`#journey-photos`, `aria-label="Upload journey photos"`, button text) over CSS position.
+Use the available browser adapter and its documented tab discovery, then a new tab at `http://127.0.0.1:3000`. Prefer accessible names and the stable handles each feature file lists (`#journey-photos`, `aria-label="Upload journey photos"`, button text) over CSS position.
 
 ## Evidence
 
-Artifacts go to `.claude/skills/verify-mila/artifacts/<feature>/` (git-ignored). Each saved body carries a header with the method, URL, status, redirect target, and capture time.
+Artifacts go to `.codex/skills/verify-mila/artifacts/<feature>/` (git-ignored). Each saved body carries a header with the method, URL, status, redirect target, and capture time.
 
 Proof standards:
 
@@ -108,7 +108,7 @@ For logic that does not need the app running, the repo already ships offline che
 ## Cleanup
 
 ```powershell
-node .claude/skills/verify-mila/control-mila.mjs session --clear
+node .codex/skills/verify-mila/control-mila.mjs session --clear
 if ($mila) { taskkill /PID $mila /T /F }
 ```
 
@@ -121,3 +121,7 @@ Nothing else needs teardown: no fixtures, no rows, no uploads. Artifacts under `
 ## Helpers
 
 `control-mila.mjs` is the only helper. Zero dependencies, Node 22, invocations shown above.
+
+## Bash launch and cleanup
+
+The node commands also work in Bash. If port 3000 already has a server, run doctor and reuse it without teardown. Otherwise start npm run dev, record only that server's PID, and stop only that process when finished. On Unix, lsof -ti:3000 identifies listeners; never kill an existing listener merely because it owns the port. Clear the session with the same node ... session --clear command before stopping a server you started. PowerShell cleanup above stops the captured process tree.

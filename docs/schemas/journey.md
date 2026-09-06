@@ -1,7 +1,8 @@
 # Mila Next JS • Architecture Guide
 
-> _Single‑source‑of‑truth for how the pieces of **Mila Next JS** fit together and why
-> they were chosen._
+> Historical architecture snapshot. Follow [current project instructions](../PROJECT_INSTRUCTIONS.md) and the tracked code for current runtime, API, auth, schema, and checks. Do not apply example policies or assume the old test frameworks exist.
+
+> Historical design snapshot; not current operating instructions.
 
 ---
 

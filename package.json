@@ -9,8 +9,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "prepare-milas-month": "node scripts/prepare-milas-month.mjs"
+    "lint": "npm run check:agents && eslint",
+    "prepare-milas-month": "node scripts/prepare-milas-month.mjs",
+    "check:agents": "python scripts/sync-harness-skills.py --check"
   },
   "dependencies": {
     "@openai/chatkit-react": "^0.0.0",

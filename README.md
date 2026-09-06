@@ -45,7 +45,7 @@ OPENAI_CHATKIT_WORKFLOW_ID=""        # Workflow ID from OpenAI Agent Builder for
 SITE_URL=""                          # Used for backend or deployment config (sometimes Netlify/Vercel)
 NEXT_PUBLIC_SITE_URL=""              # Base URL for auth callbacks (e.g., https://yourapp.com)
 # --- Auth / Access Control ---
-NEXT_PUBLIC_ALLOWED_EMAIL=""         # Whitelist for allowed sign-in emails (comma-separated if multiple)
+NEXT_PUBLIC_ALLOWED_EMAIL=""         # Legacy setting; not an enforced allowlist
 NEXT_PUBLIC_ADMIN_EMAIL=""           # Email for admin account (grants elevated privileges)
 
 ## Chatbot Architecture
@@ -60,7 +60,7 @@ NEXT_PUBLIC_ADMIN_EMAIL=""           # Email for admin account (grants elevated 
   - Exchanges the workflow (`OPENAI_CHATKIT_WORKFLOW_ID`) for a ChatKit client secret
   - Guards on missing env vars and surfaces OpenAI API errors
 - Streaming API: `src/app/api/chat-stream/route.ts`
-  - Edge runtime, uses OpenAI Responses API streaming
+  - Node.js runtime, uses OpenAI Responses API streaming
   - File Search tool is included if `OPENAI_VECTOR_STORE_ID` is set
   - Emits SSE: token chunks (default), `event: done` with `{ conversationId, sources }`, and `event: error`
 
@@ -83,7 +83,7 @@ docs/                  # Long‑form docs, assets
 - `npm run dev`: Start dev server
 - `npm run build`: Production build
 - `npm run start`: Start built app
-- `npm run lint`: ESLint / Next lint
+- `npm run lint`: Shared agent synchronization check, then ESLint
 
 ## Troubleshooting
 

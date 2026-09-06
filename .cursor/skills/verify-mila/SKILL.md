@@ -21,7 +21,7 @@ Read [`features/README.md`](./features/README.md) before driving anything, then 
 | --- | --- | --- | --- |
 | **1 — anonymous** | none | `control-mila.mjs get` | Unattended |
 | **2 — signed-in requests** | minted by `session` | `control-mila.mjs get --as-admin` | Unattended |
-| **3 — rendered UI** | the user's real Chrome | `claude-in-chrome` MCP, read-only | Needs the user signed in and present |
+| **3 — rendered UI** | the user's real Chrome | available browser adapter, read-only | Needs the user signed in and present |
 
 Tier 2 proves gates, redirects, authorization, and any **server-rendered** response. It cannot prove anything the browser assembles after mount — the nav, galleries, the blogs list, letter bodies, modals. Those are tier 3, because the markup simply is not in the response. See the third bullet under Evidence.
 
@@ -29,7 +29,7 @@ A feature you could not reach is reported as **skipped with the unmet preconditi
 
 ## Launch
 
-```bash
+```powershell
 npm run dev
 ```
 
@@ -37,15 +37,15 @@ Ready when the log prints `✓ Ready in <n>s` and `http://localhost:3000`. First
 
 Record the PID so cleanup kills what this run started:
 
-```bash
-mila_pid=$(lsof -ti:3000)
+```powershell
+$mila = (Get-NetTCPConnection -LocalPort 3000 -State Listen).OwningProcess | Select-Object -Unique
 ```
 
 If port 3000 is already listening before you launch, **do not launch a second server and do not kill the existing one** — it may be the user's own session. Run `doctor` against it; if it passes, drive it and skip teardown.
 
 ## Doctor
 
-```bash
+```powershell
 node .cursor/skills/verify-mila/control-mila.mjs doctor
 ```
 
@@ -57,15 +57,17 @@ Run doctor first whenever anything looks off.
 
 ## Drive
 
-```bash
+```powershell
 node .cursor/skills/verify-mila/control-mila.mjs get <path> [--save <name>] [--expect-unauthorized]
 ```
+
+Commands work in PowerShell or Bash. On Windows Git Bash, prefix route commands with MSYS_NO_PATHCONV=1 to prevent leading-slash arguments becoming Windows filesystem paths.
 
 `get` prints status, `location`, content-type, and byte count, and follows no redirects (`redirect: 'manual'`) so a gate is observable rather than swallowed. `--save <name>` writes the response body plus a provenance header to `artifacts/<name>`.
 
 ### Signed-in requests (tier 2)
 
-```bash
+```powershell
 node .cursor/skills/verify-mila/control-mila.mjs session
 node .cursor/skills/verify-mila/control-mila.mjs get /blogs --as-admin
 ```
@@ -87,7 +89,7 @@ The harness refuses four things, by design:
 
 ### Rendered UI (tier 3)
 
-Drive the real browser with `claude-in-chrome`: `tabs_context_mcp` first, then a new tab at `http://127.0.0.1:3000`. Prefer accessible names and the stable handles each feature file lists (`#journey-photos`, `aria-label="Upload journey photos"`, button text) over CSS position.
+Use the available browser adapter and its documented tab discovery, then a new tab at `http://127.0.0.1:3000`. Prefer accessible names and the stable handles each feature file lists (`#journey-photos`, `aria-label="Upload journey photos"`, button text) over CSS position.
 
 ## Evidence
 
@@ -105,17 +107,21 @@ For logic that does not need the app running, the repo already ships offline che
 
 ## Cleanup
 
-```bash
+```powershell
 node .cursor/skills/verify-mila/control-mila.mjs session --clear
-if [ -n "$mila_pid" ]; then kill -9 "$mila_pid"; fi
+if ($mila) { taskkill /PID $mila /T /F }
 ```
 
 Clear the session first. `.session.json` holds a live admin session for the production project; leaving it on disk after a run is the one piece of state this skill creates.
 
-**Never kill by process name** — killing all `node` processes would match the user's other work. Use the captured PID from launch.
+`/T` kills the Turbopack child tree; killing the parent alone leaves port 3000 held. `-Unique` matters: port 3000 listens on both `0.0.0.0` and `[::]`, so the query returns the same PID twice and `taskkill` rejects the duplicated argument. **Never kill by process name** — `node.exe` matches the user's other work.
 
 Nothing else needs teardown: no fixtures, no rows, no uploads. Artifacts under `artifacts/` are **not** cleanup targets — they are the proof and they outlive the run.
 
 ## Helpers
 
 `control-mila.mjs` is the only helper. Zero dependencies, Node 22, invocations shown above.
+
+## Bash launch and cleanup
+
+The node commands also work in Bash. If port 3000 already has a server, run doctor and reuse it without teardown. Otherwise start npm run dev, record only that server's PID, and stop only that process when finished. On Unix, lsof -ti:3000 identifies listeners; never kill an existing listener merely because it owns the port. Clear the session with the same node ... session --clear command before stopping a server you started. PowerShell cleanup above stops the captured process tree.

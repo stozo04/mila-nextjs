@@ -31,7 +31,7 @@ If you cannot reproduce it, **say so and stop.** Ask me for the URL, the account
 
 Get to the actual cause and demonstrate it:
 
-- Read the real artifact — the DOM via `javascript_tool`, the actual response body, the actual database row. Not a summary, not an accessibility tree, not an inference from source.
+- Read the real artifact — the DOM through the available browser adapter, the actual response body, the actual database row. Not a summary, not an accessibility tree, not an inference from source.
 - Check the console for a real error before theorising about one.
 - Rule out the boring explanations first: stale cookies, a screenshot taken before the page settled, an old deploy, a different host, a dev-only overlay.
 - Trace it to the line. "Probably the loading flag" is a guess. "The list has zero children because X" is a cause.
@@ -66,8 +66,8 @@ Drive the feature file's steps and show the check that used to fail now passing,
 
 ```bash
 node .cursor/skills/verify-mila/control-mila.mjs session --clear
-mila_pid=$(lsof -ti:3000)
-if [ -n "$mila_pid" ]; then kill -9 "$mila_pid"; fi
+# Stop only the dev server this run started, using its captured PID.
+# Reused servers must remain running; see verify-mila cleanup for each shell.
 ```
 
 ## Guardrails
@@ -95,3 +95,5 @@ if [ -n "$mila_pid" ]; then kill -9 "$mila_pid"; fi
 ## The bug
 
 <!-- What did you see, where, and what did you expect instead? -->
+
+Use the active harness copy of verify-mila; paths shown here name the Cursor copy only for convenience. Reconcile and mirror feature-file changes across all three skill trees. On Windows Git Bash, use MSYS_NO_PATHCONV=1 for leading-slash route arguments.

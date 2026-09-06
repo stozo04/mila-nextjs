@@ -59,8 +59,8 @@ Read the DOM, not a summary of it. Check the actual value, the actual row, the a
 
 ```bash
 node .cursor/skills/verify-mila/control-mila.mjs session --clear
-mila_pid=$(lsof -ti:3000)
-if [ -n "$mila_pid" ]; then kill -9 "$mila_pid"; fi
+# Stop only the dev server this run started, using its captured PID.
+# Reused servers must remain running; see verify-mila cleanup for each shell.
 ```
 
 Evidence in `artifacts/` survives cleanup. It is the proof.
@@ -91,3 +91,5 @@ Evidence in `artifacts/` survives cleanup. It is the proof.
 ## The feature
 
 <!-- Describe it here. What should a person be able to do, and why? -->
+
+Use the active harness copy of verify-mila; paths shown here name the Cursor copy only for convenience. Reconcile and mirror feature-file changes across all three skill trees. On Windows Git Bash, use MSYS_NO_PATHCONV=1 for leading-slash route arguments.
