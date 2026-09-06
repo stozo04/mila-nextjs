@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  agentRules: false, // Shared framework guidance lives in docs/PROJECT_INSTRUCTIONS.md.
   images: {
     remotePatterns: [
       {

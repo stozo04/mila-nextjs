@@ -52,3 +52,6 @@ next-env.d.ts
 /.claude/skills/verify-mila/.session.json
 /.cursor/skills/verify-mila/artifacts/
 /.cursor/skills/verify-mila/.session.json
+
+/.codex/skills/verify-mila/artifacts/
+/.codex/skills/verify-mila/.session.json

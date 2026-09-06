@@ -1,5 +1,7 @@
 # Mila NextJS Architecture
 
+> Historical architecture snapshot. Follow [current project instructions](PROJECT_INSTRUCTIONS.md) and the tracked code for current runtime, API, auth, schema, and checks. Do not apply example policies or assume the old test frameworks exist.
+
 ## Overview
 
 Mila NextJS is a modern full-stack application for capturing and sharing parenting memories. The application is built with Next.js 15 (App Router) and integrates several key technologies:
