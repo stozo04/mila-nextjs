@@ -13,3 +13,12 @@ Reused the reference checker and 16 regression cases with remote-default resolut
 Validation: 16 checker cases pass, including both path slash forms, identical foreign references, source-preserving repair, and missing/drifted files. Sync passes, 19 files x 3. Root pointers and links checked, all 32 evidence moves verified against Git blobs, each helper passes node --check and four unsafe-request refusal cases, and all harness session/evidence ignore rules pass. npm run lint, next typegen, tsc --noEmit, and npm run build pass; .next/BUILD_ID exists. A real Next dev startup detected Codex, reached Ready, and preserved identical pointers without regenerating a block. Only this run's server was stopped and its port verified closed. Final diff inspected and git diff --check passes.
 
 Skipped: full live route/browser sweep, OAuth/admin sessions, monthly database checks, uploads, creation, publishing, TTS/chat calls, and deployment. No request-handling, UI, auth, or database behavior changed. Build/startup used non-secret placeholder public configuration and made no live application requests. Historical known feature findings remain documented; this audit does not claim them fixed. No merge, release or deployment performed.
+
+## Remote review follow-up
+
+Cursor Agent changed the npm check from python to python3. The latter prints a
+version on this Windows machine but crashes when running a script (missing
+encodings in its Scripts shim). Reproduced the failing npm command, then used
+Node, already required by npm, to select python on Windows and python3 elsewhere
+and forward the actual child exit status. npm run check:agents now passes on
+Windows; CI exercises the Linux command. No global Python install was changed.
