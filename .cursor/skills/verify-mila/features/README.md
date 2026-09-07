@@ -11,7 +11,7 @@ This directory is the maintained source for verifying the user-facing behavior o
 - Three tiers. **Tier 1** is anonymous `control-mila.mjs get`. **Tier 2** is `session` plus `get --as-admin`, which mints a real admin session from `MILA_ADMIN_*` and drives signed-in requests unattended — gates, redirects, authorization, and server-rendered responses. **Tier 3** is the available browser adapter against the user's signed-in Chrome, for anything the browser assembles after mount. A `200` from tier 2 proves authorization, not page content.
 - **Signed-in drives are read-only.** `--as-admin` refuses every non-GET, and refuses to combine with `--expect-unauthorized`. Clear the session with `session --clear` when the run ends.
 - Never drive an instance this run did not start, except an already-listening dev server that passes doctor — and then do not tear it down.
-- Use PowerShell or Bash; Windows Git Bash route commands require MSYS_NO_PATHCONV=1 to preserve leading slashes.
+- Use Bash or PowerShell; Windows Git Bash route commands require MSYS_NO_PATHCONV=1 to preserve leading slashes.
 
 ## Driving conventions
 
