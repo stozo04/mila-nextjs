@@ -29,19 +29,30 @@ A feature you could not reach is reported as **skipped with the unmet preconditi
 
 ## Launch
 
-```bash
-npm run dev
-```
-
-Ready when the log prints `✓ Ready in <n>s` and `http://localhost:3000`. First compile of a route adds a few seconds on top.
-
-Record the PID so cleanup kills what this run started:
+First check whether a server is already there. `curl` is the only probe that works everywhere:
 
 ```bash
-mila_pid=$(lsof -ti:3000)
+curl -sf -o /dev/null http://localhost:3000/ && echo "already listening"
 ```
 
-If port 3000 is already listening before you launch, **do not launch a second server and do not kill the existing one** — it may be the user's own session. Run `doctor` against it; if it passes, drive it and skip teardown.
+If port 3000 is already listening, **do not launch a second server and do not kill the existing one** — it may be the user's own session. Run `doctor` against it; if it passes, drive it and skip teardown.
+
+Otherwise launch it in the background, or the call blocks until it times out:
+
+```bash
+npm run dev > /tmp/mila-dev.log 2>&1 &
+mila_pid=$!
+```
+
+Ready when `/tmp/mila-dev.log` prints `✓ Ready in <n>s` and `http://localhost:3000`. First compile of a route adds a few seconds on top.
+
+Record the listener too, because `$mila_pid` is the `npm` wrapper and killing it alone leaves `next-server` holding the port:
+
+```bash
+mila_listener=$(fuser 3000/tcp 2>/dev/null | tr -d ' ' || lsof -ti:3000)
+```
+
+`fuser` comes first on purpose. On cloud Linux containers `lsof -ti:3000` returns nothing even while the server answers 200 — it is installed but cannot see the socket — and an empty PID makes cleanup silently skip teardown.
 
 ## Doctor
 
@@ -109,12 +120,21 @@ For logic that does not need the app running, the repo already ships offline che
 
 ```bash
 node .cursor/skills/verify-mila/control-mila.mjs session --clear
-if [ -n "$mila_pid" ]; then kill $mila_pid; fi
+kill $mila_listener $mila_pid 2>/dev/null
 ```
 
 Clear the session first. `.session.json` holds a live admin session for the production project; leaving it on disk after a run is the one piece of state this skill creates.
 
-On Unix, `lsof -ti:3000` identifies the listener; kill only the PID you recorded at launch. **Never kill by process name** — `node` matches the user's other work. On Windows, use PowerShell's `taskkill /PID $mila /T /F` where `$mila` is the recorded PID; `/T` kills the Turbopack child tree.
+Kill both PIDs you recorded at launch, and only those. The tree is `npm → sh → next dev → next-server`: killing `$mila_pid` alone leaves `next-server` serving on port 3000, and killing `$mila_listener` alone leaves the wrapper behind. **Never kill by process name** — `node` matches the user's other work.
+
+On Windows, record the PID with PowerShell instead and kill the tree with `/T`:
+
+```powershell
+$mila = (Get-NetTCPConnection -LocalPort 3000 -State Listen).OwningProcess | Select-Object -Unique
+taskkill /PID $mila /T /F
+```
+
+`-Unique` matters: port 3000 listens on both `0.0.0.0` and `[::]`, so the query returns the same PID twice and `taskkill` rejects the duplicated argument.
 
 Nothing else needs teardown: no fixtures, no rows, no uploads. Artifacts under `artifacts/` are **not** cleanup targets — they are the proof and they outlive the run.
 
