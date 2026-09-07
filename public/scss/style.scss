@@ -23,25 +23,76 @@
   background-color: white;
 }
 
-/* Styles for the button */
-button.btn.btn-primary.rounded-circle.p-3.shadow {
-  position: fixed; /* Ensures the button is positioned relative to the viewport */
-  bottom: 1rem; /* Positions the button 1rem from the bottom of the viewport */
-  right: 1rem; /* Positions the button 1rem from the right of the viewport */
-  left: auto; /* Removes any conflicting left positioning */
-  top: auto; /* Removes any conflicting top positioning */
-  width: 60px; /* Sets the width of the button to 60px */
-  height: 60px; /* Sets the height of the button to 60px */
-  padding: 10px; /* Reduces the padding to 10px */
-  font-size: 14px; /* Reduces the font size to 14px */
+.nav-action {
+  display: block;
+  width: 100%;
+  color: var(--bs-nav-link-color);
+  text-align: start;
 }
 
-/* Styles for the button's parent */
-.position-fixed.bottom-0.end-0.mb-4.me-4 {
-  width: auto; /* Allows the parent to adjust its width to fit the button */
-  height: auto; /* Allows the parent to adjust its height to fit the button */
-  left: auto; /* Removes any conflicting left positioning */
-  top: auto; /* Removes any conflicting top positioning */
+.chat-widget {
+  position: fixed;
+  z-index: 1050;
+}
+
+.chat-launcher {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  width: 60px;
+  height: 60px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.chat-panel {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 4.75rem);
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 6.75rem);
+  overflow: hidden;
+}
+
+.chat-close {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  margin: -0.5rem;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.chat-body {
+  height: min(25rem, calc(100dvh - 10rem));
+  min-height: 12rem;
+}
+
+.chat-messages {
+  min-height: 0;
+}
+
+.chat-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+}
+
+.chat-composer textarea {
+  min-width: 0;
+  min-height: 44px;
+  max-height: 128px;
+  resize: none;
+  border-radius: var(--bs-border-radius) 0 0 var(--bs-border-radius);
+  line-height: 1.35;
+}
+
+.chat-composer .btn {
+  border-radius: 0 var(--bs-border-radius) var(--bs-border-radius) 0;
 }
 
 .bg-primary {

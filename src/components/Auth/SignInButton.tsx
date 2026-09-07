@@ -1,6 +1,6 @@
 "use client";
 import { createBrowserClient } from '@supabase/ssr';
-import { FcGoogle } from 'react-icons/fc';
+import NavActionButton from '@/components/Shared/TopNav/NavActionButton';
 
 type Props = {
   label?: string;
@@ -29,9 +29,8 @@ export default function SignInButton({ label = 'Sign In', className }: Props) {
   };
 
   return (
-    <button onClick={handleSignIn} className={className ?? 'nav-link btn btn-link d-flex align-items-center gap-2'}>
+    <NavActionButton onClick={handleSignIn} className={className}>
       {label}
-    </button>
+    </NavActionButton>
   );
 }
-

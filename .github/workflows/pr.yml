@@ -23,3 +23,19 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.invalid
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+      - run: npx playwright install --with-deps chromium
+      - name: Start browser test server
+        run: |
+          npm run start -- -H 127.0.0.1 -p 3100 > /tmp/mila-nextjs.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl --noproxy '*' --fail --silent -H 'x-forwarded-proto: https' http://127.0.0.1:3100/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/mila-nextjs.log
+          exit 1
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.invalid
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: e2e-placeholder
+      - run: npm run test:e2e
