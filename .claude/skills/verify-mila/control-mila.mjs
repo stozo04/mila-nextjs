@@ -9,9 +9,8 @@
 //
 // Base URL defaults to http://127.0.0.1:3000; override with MILA_BASE_URL.
 //
-// Run it from PowerShell. Git Bash rewrites a leading-slash argument into a Windows
-// path, so every route arg arrives wrong;
-// prefix `MSYS_NO_PATHCONV=1` if you must use bash.
+// Run it from Bash or PowerShell. On Windows Git Bash, prefix route commands with
+// MSYS_NO_PATHCONV=1 to prevent leading-slash arguments becoming Windows paths.
 
 import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
