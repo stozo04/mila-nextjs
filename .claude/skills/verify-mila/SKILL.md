@@ -49,7 +49,8 @@ Ready when `/tmp/mila-dev.log` prints `✓ Ready in <n>s` and `http://localhost:
 Record the listener too, because `$mila_pid` is the `npm` wrapper and killing it alone leaves `next-server` holding the port:
 
 ```bash
-mila_listener=$(fuser 3000/tcp 2>/dev/null | tr -d ' ' || lsof -ti:3000)
+mila_listener=$(fuser 3000/tcp 2>/dev/null | tr -d ' ')
+mila_listener=${mila_listener:-$(lsof -ti:3000)}
 ```
 
 `fuser` comes first on purpose. On cloud Linux containers `lsof -ti:3000` returns nothing even while the server answers 200 — it is installed but cannot see the socket — and an empty PID makes cleanup silently skip teardown.
