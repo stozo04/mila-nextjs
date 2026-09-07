@@ -29,23 +29,35 @@ A feature you could not reach is reported as **skipped with the unmet preconditi
 
 ## Launch
 
-```powershell
-npm run dev
+First check whether a server is already there. `curl` is the only probe that works everywhere:
+
+```bash
+curl -sf -o /dev/null http://localhost:3000/ && echo "already listening"
 ```
 
-Ready when the log prints `✓ Ready in <n>s` and `http://localhost:3000`. First compile of a route adds a few seconds on top.
+If port 3000 is already listening, **do not launch a second server and do not kill the existing one** — it may be the user's own session. Run `doctor` against it; if it passes, drive it and skip teardown.
 
-Record the PID so cleanup kills what this run started:
+Otherwise launch it in the background, or the call blocks until it times out:
 
-```powershell
-$mila = (Get-NetTCPConnection -LocalPort 3000 -State Listen).OwningProcess | Select-Object -Unique
+```bash
+npm run dev > /tmp/mila-dev.log 2>&1 &
+mila_pid=$!
 ```
 
-If port 3000 is already listening before you launch, **do not launch a second server and do not kill the existing one** — it may be the user's own session. Run `doctor` against it; if it passes, drive it and skip teardown.
+Ready when `/tmp/mila-dev.log` prints `✓ Ready in <n>s` and `http://localhost:3000`. First compile of a route adds a few seconds on top.
+
+Record the listener too, because `$mila_pid` is the `npm` wrapper and killing it alone leaves `next-server` holding the port:
+
+```bash
+mila_listener=$(fuser 3000/tcp 2>/dev/null | tr -d ' ')
+mila_listener=${mila_listener:-$(lsof -ti:3000)}
+```
+
+`fuser` comes first on purpose. On cloud Linux containers `lsof -ti:3000` returns nothing even while the server answers 200 — it is installed but cannot see the socket — and an empty PID makes cleanup silently skip teardown. The fallback tests the captured value for emptiness on its own line for a reason: chaining `| tr -d ' ' || lsof -ti:3000` would test the exit status of the *pipeline*, which is `tr`'s, and `tr` succeeds on empty input, so the fallback would never run on a host without `fuser`.
 
 ## Doctor
 
-```powershell
+```bash
 node .codex/skills/verify-mila/control-mila.mjs doctor
 ```
 
@@ -57,17 +69,17 @@ Run doctor first whenever anything looks off.
 
 ## Drive
 
-```powershell
+```bash
 node .codex/skills/verify-mila/control-mila.mjs get <path> [--save <name>] [--expect-unauthorized]
 ```
 
-Commands work in PowerShell or Bash. On Windows Git Bash, prefix route commands with MSYS_NO_PATHCONV=1 to prevent leading-slash arguments becoming Windows filesystem paths.
+Commands work in Bash or PowerShell. On Windows Git Bash, prefix route commands with MSYS_NO_PATHCONV=1 to prevent leading-slash arguments becoming Windows filesystem paths.
 
 `get` prints status, `location`, content-type, and byte count, and follows no redirects (`redirect: 'manual'`) so a gate is observable rather than swallowed. `--save <name>` writes the response body plus a provenance header to `artifacts/<name>`.
 
 ### Signed-in requests (tier 2)
 
-```powershell
+```bash
 node .codex/skills/verify-mila/control-mila.mjs session
 node .codex/skills/verify-mila/control-mila.mjs get /blogs --as-admin
 ```
@@ -107,21 +119,26 @@ For logic that does not need the app running, the repo already ships offline che
 
 ## Cleanup
 
-```powershell
+```bash
 node .codex/skills/verify-mila/control-mila.mjs session --clear
-if ($mila) { taskkill /PID $mila /T /F }
+kill $mila_listener $mila_pid 2>/dev/null
 ```
 
 Clear the session first. `.session.json` holds a live admin session for the production project; leaving it on disk after a run is the one piece of state this skill creates.
 
-`/T` kills the Turbopack child tree; killing the parent alone leaves port 3000 held. `-Unique` matters: port 3000 listens on both `0.0.0.0` and `[::]`, so the query returns the same PID twice and `taskkill` rejects the duplicated argument. **Never kill by process name** — `node.exe` matches the user's other work.
+Kill both PIDs you recorded at launch, and only those. The tree is `npm → sh → next dev → next-server`: killing `$mila_pid` alone leaves `next-server` serving on port 3000, and killing `$mila_listener` alone leaves the wrapper behind. **Never kill by process name** — `node` matches the user's other work.
+
+On Windows, record the PID with PowerShell instead and kill the tree with `/T`:
+
+```powershell
+$mila = (Get-NetTCPConnection -LocalPort 3000 -State Listen).OwningProcess | Select-Object -Unique
+taskkill /PID $mila /T /F
+```
+
+`-Unique` matters: port 3000 listens on both `0.0.0.0` and `[::]`, so the query returns the same PID twice and `taskkill` rejects the duplicated argument.
 
 Nothing else needs teardown: no fixtures, no rows, no uploads. Artifacts under `artifacts/` are **not** cleanup targets — they are the proof and they outlive the run.
 
 ## Helpers
 
 `control-mila.mjs` is the only helper. Zero dependencies, Node 22, invocations shown above.
-
-## Bash launch and cleanup
-
-The node commands also work in Bash. If port 3000 already has a server, run doctor and reuse it without teardown. Otherwise start npm run dev, record only that server's PID, and stop only that process when finished. On Unix, lsof -ti:3000 identifies listeners; never kill an existing listener merely because it owns the port. Clear the session with the same node ... session --clear command before stopping a server you started. PowerShell cleanup above stops the captured process tree.
