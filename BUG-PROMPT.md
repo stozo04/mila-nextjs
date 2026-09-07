@@ -18,9 +18,9 @@ So: reproduce, diagnose, **prove**, then fix. In that order.
 
 Do not start from my description alone — I report symptoms, not causes.
 
-```powershell
+```bash
 npm run dev
-node .claude/skills/verify-mila/control-mila.mjs doctor
+node .cursor/skills/verify-mila/control-mila.mjs doctor
 ```
 
 State plainly what you observed, and where. **Say which environment**: local dev, or production at milagates.com. They differ — production may be running older code, and `localhost` and `127.0.0.1` have separate cookie jars.
@@ -31,7 +31,7 @@ If you cannot reproduce it, **say so and stop.** Ask me for the URL, the account
 
 Get to the actual cause and demonstrate it:
 
-- Read the real artifact — the DOM via `javascript_tool`, the actual response body, the actual database row. Not a summary, not an accessibility tree, not an inference from source.
+- Read the real artifact — the DOM through the available browser adapter, the actual response body, the actual database row. Not a summary, not an accessibility tree, not an inference from source.
 - Check the console for a real error before theorising about one.
 - Rule out the boring explanations first: stale cookies, a screenshot taken before the page settled, an old deploy, a different host, a dev-only overlay.
 - Trace it to the line. "Probably the loading flag" is a guess. "The list has zero children because X" is a cause.
@@ -64,10 +64,10 @@ If you are not fixing it this run: leave the step stating the intended behavior,
 
 Drive the feature file's steps and show the check that used to fail now passing, with evidence in `artifacts/`. Then clean up:
 
-```powershell
-node .claude/skills/verify-mila/control-mila.mjs session --clear
-$mila = (Get-NetTCPConnection -LocalPort 3000 -State Listen).OwningProcess | Select-Object -Unique
-if ($mila) { taskkill /PID $mila /T /F }
+```bash
+node .cursor/skills/verify-mila/control-mila.mjs session --clear
+# Stop only the dev server this run started, using its captured PID.
+# Reused servers must remain running; see verify-mila cleanup for each shell.
 ```
 
 ## Guardrails
@@ -95,3 +95,5 @@ if ($mila) { taskkill /PID $mila /T /F }
 ## The bug
 
 <!-- What did you see, where, and what did you expect instead? -->
+
+Use the active harness copy of verify-mila; paths shown here name the Cursor copy only for convenience. Reconcile and mirror feature-file changes across all three skill trees. On Windows Git Bash, use MSYS_NO_PATHCONV=1 for leading-slash route arguments.

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Verification harness for the Mila site. Zero dependencies, Node 22.
-// Two subcommands: `doctor` (is this instance worth driving?) and `get` (drive one route).
-// It never signs in and never sends a mutating request that could reach live Supabase.
+// doctor checks readiness, session manages admin cookies, and get reads routes.
+// Authenticated requests are read-only; anonymous rejection probes are explicit.
 //
 //   node .claude/skills/verify-mila/control-mila.mjs doctor
 //   node .claude/skills/verify-mila/control-mila.mjs get /blogs --save route-protection/blogs
@@ -10,7 +10,7 @@
 // Base URL defaults to http://127.0.0.1:3000; override with MILA_BASE_URL.
 //
 // Run it from PowerShell. Git Bash rewrites a leading-slash argument into a Windows
-// path (`/blogs` -> `C:/Program Files/Git/blogs`), so every route arg arrives wrong;
+// path, so every route arg arrives wrong;
 // prefix `MSYS_NO_PATHCONV=1` if you must use bash.
 
 import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';

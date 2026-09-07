@@ -28,8 +28,8 @@ Preconditions:
 - `years-create` needs the admin account. Do not submit the modal.
 - The live database currently holds 42 journey cards. Read only.
 
-- **Confirm the gate.** Open a year signed out. Run `node .claude/skills/verify-mila/control-mila.mjs get /my-journey/first-year --save journey-years/anonymous`. Status is `307` with `location: /login`.
-- **Confirm both legacy redirects.** Run `node .claude/skills/verify-mila/control-mila.mjs get /my-journey/birthday/birthday.html` and `... get /my-journey/first-year/my-first-year.html`. Each returns `308` with `location` set to the clean route.
+- **Confirm the gate.** Open a year signed out. Run `node .cursor/skills/verify-mila/control-mila.mjs get /my-journey/first-year --save journey-years/anonymous`. Status is `307` with `location: /login`.
+- **Confirm both legacy redirects.** Run `node .cursor/skills/verify-mila/control-mila.mjs get /my-journey/birthday/birthday.html` and `... get /my-journey/first-year/my-first-year.html`. Each returns `308` with `location` set to the clean route.
 - **Open the dropdown.** In a signed-in tab, choose **My Journey**. The menu lists exactly: Birthday, My First Year, One Year, Two Year, Three Year.
 - **Load a fixed year.** Choose **My First Year**. The heading reads `My First Year Journey` with the lead paragraph beneath it. Three cards render, each with a title, a message, and a **View** control.
 - **Page the cards.** Choose **Show More**. Three more cards append. The control disappears once every card for that year is visible.

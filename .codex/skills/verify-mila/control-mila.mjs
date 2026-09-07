@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 // Verification harness for the Mila site. Zero dependencies, Node 22.
-// Two subcommands: `doctor` (is this instance worth driving?) and `get` (drive one route).
-// It never signs in and never sends a mutating request that could reach live Supabase.
+// doctor checks readiness, session manages admin cookies, and get reads routes.
+// Authenticated requests are read-only; anonymous rejection probes are explicit.
 //
-//   node .claude/skills/verify-mila/control-mila.mjs doctor
-//   node .claude/skills/verify-mila/control-mila.mjs get /blogs --save route-protection/blogs
-//   node .claude/skills/verify-mila/control-mila.mjs get /api/journey/prepare-month --method POST --body '{}'
+//   node .codex/skills/verify-mila/control-mila.mjs doctor
+//   node .codex/skills/verify-mila/control-mila.mjs get /blogs --save route-protection/blogs
+//   node .codex/skills/verify-mila/control-mila.mjs get /api/journey/prepare-month --method POST --body '{}'
 //
 // Base URL defaults to http://127.0.0.1:3000; override with MILA_BASE_URL.
 //
 // Run it from PowerShell. Git Bash rewrites a leading-slash argument into a Windows
-// path (`/blogs` -> `C:/Program Files/Git/blogs`), so every route arg arrives wrong;
+// path, so every route arg arrives wrong;
 // prefix `MSYS_NO_PATHCONV=1` if you must use bash.
 
 import { readFileSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
@@ -179,7 +179,7 @@ async function session() {
 
 function loadCookieHeader() {
   if (!existsSync(SESSION_FILE)) {
-    console.error('no saved session. Run: node .claude/skills/verify-mila/control-mila.mjs session');
+    console.error('no saved session. Run: node .codex/skills/verify-mila/control-mila.mjs session');
     process.exit(1);
   }
   const { cookies } = JSON.parse(readFileSync(SESSION_FILE, 'utf8'));

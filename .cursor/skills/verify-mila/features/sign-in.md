@@ -27,19 +27,19 @@ Preconditions:
 - `doctor` exits 0. Its `anonymous session gate active` row already proves `gate-catchall`.
 - No session. If a browser is signed in, drive this with `control-mila.mjs`, which sends no cookies.
 
-- **Hit a protected path signed out.** Open `/blogs`. Run `node .claude/skills/verify-mila/control-mila.mjs get /blogs --save sign-in/blogs-anonymous`. Status is `307 Temporary Redirect` and `location: /login`.
+- **Hit a protected path signed out.** Open `/blogs`. Run `node .cursor/skills/verify-mila/control-mila.mjs get /blogs --save sign-in/blogs-anonymous`. Status is `307 Temporary Redirect` and `location: /login`.
 - **Confirm the whole protected set.** Repeat for each: `/sonograms`, `/gender-reveal`, `/baby-shower/houston`, `/my-journey/first-year`. Every one returns `307` with `location: /login`.
-- **Confirm the catch-all.** Open a path that does not exist. Run `node .claude/skills/verify-mila/control-mila.mjs get /__mila_probe_not_a_route`. Status is `307` with `location: /login` — not `404`. The gate runs before routing resolves.
-- **Confirm the public exemptions.** Run `node .claude/skills/verify-mila/control-mila.mjs get /` and `... get /privacy-policy`. Both return `200 OK` with no `location`.
-- **Load the sign-in page.** Open `/login`. Run `node .claude/skills/verify-mila/control-mila.mjs get /login --save sign-in/login`. Status is `200 OK` and the body contains `Continue with Google`.
+- **Confirm the catch-all.** Open a path that does not exist. Run `node .cursor/skills/verify-mila/control-mila.mjs get /__mila_probe_not_a_route`. Status is `307` with `location: /login` — not `404`. The gate runs before routing resolves.
+- **Confirm the public exemptions.** Run `node .cursor/skills/verify-mila/control-mila.mjs get /` and `... get /privacy-policy`. Both return `200 OK` with no `location`.
+- **Load the sign-in page.** Open `/login`. Run `node .cursor/skills/verify-mila/control-mila.mjs get /login --save sign-in/login`. Status is `200 OK` and the body contains `Continue with Google`.
 - **Confirm the API guards.** Run each of:
-  - `node .claude/skills/verify-mila/control-mila.mjs get /api/journey/prepare-month --method POST --body '{}' --expect-unauthorized`
-  - `node .claude/skills/verify-mila/control-mila.mjs get /api/blog/test-slug/publish --method POST --expect-unauthorized`
-  - `node .claude/skills/verify-mila/control-mila.mjs get /api/blog/test-slug/images --method POST --body '{}' --expect-unauthorized`
+  - `node .cursor/skills/verify-mila/control-mila.mjs get /api/journey/prepare-month --method POST --body '{}' --expect-unauthorized`
+  - `node .cursor/skills/verify-mila/control-mila.mjs get /api/blog/test-slug/publish --method POST --expect-unauthorized`
+  - `node .cursor/skills/verify-mila/control-mila.mjs get /api/blog/test-slug/images --method POST --body '{}' --expect-unauthorized`
 
   Each prints `401 Unauthorized` with body `{"error":"Sign in to continue."}` and the harness reports `PASS anonymous caller rejected before any write`.
-- **Prove the gate from the signed-in side.** Mint a session, then re-drive the same paths. Run `node .claude/skills/verify-mila/control-mila.mjs session`, which prints the account email and `is_mila_admin: true`, then `... get /blogs --as-admin`. Status is `200 OK` where the anonymous request was `307`. Repeat for `/sonograms`, `/gender-reveal`, `/baby-shower/houston`, `/my-journey/first-year`. The pair of results is the gate proof; neither status alone is.
-- **Drive the callback with no code.** Open `/auth/callback` with no query string. Run `node .claude/skills/verify-mila/control-mila.mjs get /auth/callback`. Status is `307` and `location` is the **absolute** URL `http://localhost:3000/login?error_message=Missing+authorization+code.` — safe to drive, it exchanges nothing and writes nothing.
+- **Prove the gate from the signed-in side.** Mint a session, then re-drive the same paths. Run `node .cursor/skills/verify-mila/control-mila.mjs session`, which prints the account email and `is_mila_admin: true`, then `... get /blogs --as-admin`. Status is `200 OK` where the anonymous request was `307`. Repeat for `/sonograms`, `/gender-reveal`, `/baby-shower/houston`, `/my-journey/first-year`. The pair of results is the gate proof; neither status alone is.
+- **Drive the callback with no code.** Open `/auth/callback` with no query string. Run `node .cursor/skills/verify-mila/control-mila.mjs get /auth/callback`. Status is `307` and `location` is the **absolute** URL `http://localhost:3000/login?error_message=Missing+authorization+code.` — safe to drive, it exchanges nothing and writes nothing.
 - **Complete a real sign-in.** Not drivable. Google OAuth needs an interactive consent screen and a real Google account. Report as skipped with this precondition; a signed-in Chrome is the tier-2 prerequisite for every other feature.
 - **Proof.** Keep every saved body. The gate proof is the status plus the `location` header together — a saved 6-byte redirect body alone proves nothing.
 

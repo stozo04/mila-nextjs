@@ -9,9 +9,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "npm run check:agents && eslint",
     "test:e2e": "playwright test",
-    "prepare-milas-month": "node scripts/prepare-milas-month.mjs"
+    "prepare-milas-month": "node scripts/prepare-milas-month.mjs",
+    "check:agents": "node -e \"const {spawnSync}=require('node:child_process'); const r=spawnSync(process.platform==='win32'?'python':'python3',['scripts/sync-harness-skills.py','--check'],{stdio:'inherit'}); if(r.error) console.error(r.error.message); process.exit(r.status??1)\""
   },
   "dependencies": {
     "@openai/chatkit-react": "^0.0.0",

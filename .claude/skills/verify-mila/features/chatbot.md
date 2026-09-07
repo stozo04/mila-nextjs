@@ -26,7 +26,7 @@ Preconditions:
 - **Never send a message.** Each submit calls `/api/chat-stream`, which bills the OpenAI Responses API and stores the conversation. `control-mila.mjs` refuses that route.
 
 - **Confirm the launcher ships.** Open `/`. Run `node .claude/skills/verify-mila/control-mila.mjs get / --save chatbot/home`, then search the saved body for `Open chat`. The launcher's `aria-label` is present in the server HTML.
-- **Open the panel.** In `claude-in-chrome`, open `http://127.0.0.1:3000/` and click the control named `Open chat`. A panel appears above the launcher at bottom-right, stays within the viewport, and is headed `Chat with me`. It shows the placeholder text `What would you like to know about me...` and a textarea placeheld `Type your message...`.
+- **Open the panel.** In the available browser adapter, open `http://127.0.0.1:3000/` and click the control named `Open chat`. A panel appears above the launcher at bottom-right, stays within the viewport, and is headed `Chat with me`. It shows the placeholder text `What would you like to know about me...` and a textarea placeheld `Type your message...`.
 - **Check the mobile composer.** At a narrow viewport, type a long draft without submitting it. The textarea wraps and grows to show the draft, the panel remains inside the viewport without overlapping the launcher, and the header close control has at least a 44 by 44 pixel hit target.
 - **Confirm Send is disabled when empty.** With the input empty, **Send** is disabled. Type a character; it enables. Clear it; it disables again. **Stop here — do not submit.**
 - **Close the panel.** Choose the `×` in the header. The panel dismisses and the launcher returns to its "Open chat" state. Reopen and close it with the launcher instead; both paths work.
