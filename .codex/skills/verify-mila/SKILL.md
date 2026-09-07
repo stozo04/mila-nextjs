@@ -53,7 +53,7 @@ mila_listener=$(fuser 3000/tcp 2>/dev/null | tr -d ' ')
 mila_listener=${mila_listener:-$(lsof -ti:3000)}
 ```
 
-`fuser` comes first on purpose. On cloud Linux containers `lsof -ti:3000` returns nothing even while the server answers 200 — it is installed but cannot see the socket — and an empty PID makes cleanup silently skip teardown.
+`fuser` comes first on purpose. On cloud Linux containers `lsof -ti:3000` returns nothing even while the server answers 200 — it is installed but cannot see the socket — and an empty PID makes cleanup silently skip teardown. The fallback tests the captured value for emptiness on its own line for a reason: chaining `| tr -d ' ' || lsof -ti:3000` would test the exit status of the *pipeline*, which is `tr`'s, and `tr` succeeds on empty input, so the fallback would never run on a host without `fuser`.
 
 ## Doctor
 
