@@ -46,7 +46,7 @@ export default function DraftLetterEditor({ slug, initialHtml, onSaved, onCancel
   const state = useEditorState({
     editor,
     selector: ({ editor: e }) => e && {
-      active: Object.fromEntries(toggles.map(t => [t.mark, e.isActive(t.mark)])),
+      active: Object.fromEntries(toggles.map(t => [t.mark, t.mark === 'heading' ? e.isActive('heading', { level: 2 }) : e.isActive(t.mark)])),
       canUndo: e.can().undo(),
       canRedo: e.can().redo(),
     },
