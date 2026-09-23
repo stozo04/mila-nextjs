@@ -34,6 +34,7 @@ Preconditions:
 - **Page the grid.** Choose **View More**. Three additional cards append. The control disappears once fewer letters remain than the visible count.
 - **Open a letter.** Choose **Read More** on the first card. The route becomes `/blogs/<slug>` and the letter renders — continue in [blog letter](./blog-letter.md).
 - **Check the admin controls.** In the admin tab, a green **Create Blog** button precedes the tag pills, and any draft letter's card carries a warning header reading `Draft · Needs publishing` with the line "Only you can see this letter." In a non-admin tab both are absent, and draft letters do not appear at all. **Do not open the Create Blog modal's submit path** — it writes to the live database.
+- **Dismiss the Create Blog modal with Cancel.** Choose **Create Blog**, then the footer **Cancel** (not the header X). Within half a second the modal is gone: no `.modal` element remains, `body` loses `modal-open`, and the page scrolls and responds to clicks. Reopen it and close with the X; same result. Repeat Cancel a few times — the 2026-09-23 defect was intermittent.
 - **Proof.** Screenshot the grid in the filtered and unfiltered states with the pill row visible, plus the saved anonymous-gate body.
 
 ## Gotchas
@@ -42,5 +43,6 @@ Preconditions:
 - **Search and tag filter compose with the limit, not with each other's counts.** The pill counts come from a separate query over all letters and do not update when a search narrows the grid. A pill reading `(12)` next to three visible cards is expected.
 - The **View More** control is shown whenever `blogs.length >= visibleCount`, so on an exact multiple of three it appears with nothing left to load. Pressing it then returns the same set. Do not report that as a paging bug without checking the total.
 - Draft visibility is enforced by RLS, not by the client. A non-admin session receives no draft rows at all, so "the badge is missing" and "the letter is hidden" look identical from the grid.
+- A closing react-bootstrap modal waits for `.modal`'s own opacity `transitionend`. Any CSS that animates `.modal`'s opacity (a `forwards` keyframe animation did until 2026-09-23) suppresses it; the library's fallback timer is then cancelled by the footer button's bubbling color `transitionend`, leaving an invisible modal over the page. Cancel fails; the X, which has no transition, usually works.
 - `Create Blog` is gated on `user.email === NEXT_PUBLIC_ADMIN_EMAIL`, a client-side comparison against a public env var — a different check from the `is_mila_admin` RPC used by the admin banner and every server route. They can disagree.
 - The date under each title is parsed with `new Date(blog.date)` and rendered in the browser's locale and time zone. A UTC-midnight date can display as the previous day west of UTC. The letter detail page parses the same value differently — see [blog letter](./blog-letter.md).
