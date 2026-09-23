@@ -81,6 +81,7 @@ Keep implementation details out of the map. Name only user paths, stable handles
 
 - [Blogs index](./blogs-index.md) covers the letter grid, tag filter pills, title search, View More paging, and the draft badge.
 - [Blog letter](./blog-letter.md) covers a single letter, the Listen narration, the publish control for a draft, and the image lightbox.
+- [Draft letter notes](./draft-letter-notes.md) covers typing and saving notes or letter text into a private draft before it is published.
 
 ### Galleries
 

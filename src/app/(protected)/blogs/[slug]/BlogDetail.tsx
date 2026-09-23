@@ -1,12 +1,17 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { notFound } from "next/navigation";
+import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import parse from 'html-react-parser';
 import Loading from '@/app/loading';
 import { normalizeYoutubeUrl } from "@/lib/youtube";
 import { Blog } from "@/types/blog";
+import { hasForeignMarkup } from "@/lib/letterHtml";
+
+// Only Steven ever opens the editor, so readers never download it.
+const DraftLetterEditor = dynamic(() => import("@/components/Blog/DraftLetterEditor"), { ssr: false });
 
 const fetchBlogData = async (slug: string) => {
   const { data, error } = await supabase
@@ -42,6 +47,7 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishNotice, setPublishNotice] = useState('');
   const [publishError, setPublishError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Load blog data
@@ -55,13 +61,14 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
       setIsAdmin(admin === true);
       setPublishNotice('');
       setPublishError('');
+      setIsEditing(false);
       setIsLoading(false);
     };
     loadBlog();
   }, [slug]);
 
   const handlePublish = async () => {
-    if (!isAdmin || !blog?.is_draft || isPublishing) return;
+    if (!isAdmin || !blog?.is_draft || isPublishing || isEditing) return;
     setIsPublishing(true);
     setPublishNotice('');
     setPublishError('');
@@ -76,6 +83,23 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
     } finally {
       setIsPublishing(false);
     }
+  };
+
+  const handleEdit = () => {
+    if (!blog) return;
+    setPublishNotice('');
+    setPublishError('');
+    if (hasForeignMarkup(blog.content)) {
+      setPublishError('This draft has formatting the editor cannot keep (images, embeds, or inline styles). Edit it in Supabase instead.');
+      return;
+    }
+    setIsEditing(true);
+  };
+
+  const handleDraftSaved = (saved: Blog) => {
+    setBlog(saved);
+    setIsEditing(false);
+    setPublishNotice('Draft saved.');
   };
 
   const handleListen = async () => {
@@ -147,9 +171,12 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
       {publishError && <p className="alert alert-danger" role="alert">{publishError}</p>}
       {/* Header with Listen control */}
       <div className={`blog-header letter-header mb-4${blog.is_draft && isAdmin ? ' has-publish' : ''}`}>
-        {blog.is_draft && isAdmin && <button className="btn btn-success publish-letter" onClick={handlePublish} disabled={isPublishing}>
-          {isPublishing ? 'Publishing…' : 'Publish Letter'}
-        </button>}
+        {blog.is_draft && isAdmin && <div className="draft-actions">
+          {!isEditing && <button className="btn btn-outline-primary" onClick={handleEdit} disabled={isPublishing}>Edit Draft</button>}
+          <button className="btn btn-success" onClick={handlePublish} disabled={isPublishing || isEditing}>
+            {isPublishing ? 'Publishing…' : 'Publish Letter'}
+          </button>
+        </div>}
         <h4 className="letter-greeting mb-0">My Precious Mila,</h4>
         <strong className="letter-date">{formatDate(blog.date)}</strong>
         <button
@@ -229,9 +256,13 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
       )}
 
       {/* Blog content */}
-      <div className="blog-content mb-4">
-        {parse(blog.content)}
-      </div>
+      {isEditing ? (
+        <DraftLetterEditor slug={slug} initialHtml={blog.content} onSaved={handleDraftSaved} onCancel={() => setIsEditing(false)} />
+      ) : (
+        <div className="blog-content mb-4">
+          {parse(blog.content)}
+        </div>
+      )}
 
       <div className="mt-5" style={{ padding: '0 10%' }}>
         <strong>With all the love in the world,</strong>
@@ -373,7 +404,7 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
         .letter-header.has-publish { grid-template-areas: 'publish publish' 'greeting greeting' 'date listen'; }
         .letter-greeting { grid-area: greeting; }
         .letter-date { grid-area: date; }
-        .letter-header .publish-letter { grid-area: publish; justify-self: end; }
+        .letter-header .draft-actions { grid-area: publish; justify-self: end; display: flex; flex-wrap: wrap; gap: 8px; }
         .letter-header .listen-button { grid-area: listen; justify-self: end; }
         @keyframes spin {
           0% { transform: rotate(0deg); }
