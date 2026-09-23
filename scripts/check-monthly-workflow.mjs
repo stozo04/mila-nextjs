@@ -46,6 +46,8 @@ try {
   const legacyRecords = await legacySnapshot();
   await db.exec(readFileSync(new URL('../supabase/migrations/20260902151602_canonical_monthly_slugs.sql', import.meta.url), 'utf8'));
   assert.deepEqual(await legacySnapshot(), legacyRecords);
+  await db.exec(readFileSync(new URL('../supabase/migrations/20260923150000_month_preview_lookahead.sql', import.meta.url), 'utf8'));
+  assert.deepEqual(await legacySnapshot(), legacyRecords);
   await db.exec("delete from journey_cards where slug='Legacy_3'; delete from blogs where slug='Legacy_3';");
 
   async function preview(date) {
@@ -78,6 +80,27 @@ try {
   await assert.rejects(preview('2023-05-29T12:00:00Z'), /birthday/);
   await assert.rejects(preview('2023-05-30T12:00:00Z'), /first month/);
 
+  // A fully prepared completed month looks ahead to the month in progress, and no further.
+  const addCard = slug => db.query("insert into journey_cards(title,message,slug,date,journey_type) values ('t','',$1,'','three_year')", [slug]);
+  const addBlog = slug => db.query("insert into blogs(title,slug,content,date,tag) values ('t',$1,'','2026-08-30','2026')", [slug]);
+  const lateSeptember = '2026-09-23T17:00:00Z';
+  await addCard('three-years-three-months');
+  assert.equal((await preview(lateSeptember)).slug, 'three-years-three-months');
+  await addBlog('three-years-three-months');
+  assert.deepEqual(await preview(lateSeptember), {
+    title: '3 Years 4 Months', slug: 'three-years-four-months', date: 'August 30 – September 30, 2026',
+    journey_type: 'three_year', section: 'third-year', milestone: '2026-09-30', period_start: '2026-08-30',
+    blog_title: '3 Years 4 Months Letter', tag: '2026',
+  });
+  await addCard('three-years-four-months');
+  await addBlog('three-years-four-months');
+  assert.equal((await preview(lateSeptember)).slug, 'three-years-four-months');
+  assert.equal((await preview('2026-09-30T05:00:00Z')).slug, 'three-years-five-months');
+  assert.equal((await preview('2026-01-15T12:00:00Z')).date, 'November 30 – December 30, 2025');
+  await addCard('two-years-seven-months'); await addBlog('two-years-seven-months');
+  assert.equal((await preview('2026-01-15T12:00:00Z')).date, 'December 30, 2025 – January 30, 2026');
+  await db.exec('delete from journey_cards; delete from blogs;');
+
   async function actAs(id, role = 'authenticated') {
     await db.exec(`reset role; set role ${role};`);
     await db.query("select set_config('request.jwt.claim.sub', $1, false)", [id]);
@@ -107,7 +130,8 @@ try {
   assert.equal(original.blogs[0].slug, plan.slug);
   for (const field of ['content', 'featured_image', 'detail_image', 'video_url']) assert.equal(original.blogs[0][field], '');
   assert.deepEqual(original.blogs[0].additional_images, []);
-  await assert.rejects(prepare('Do not overwrite'), /duplicate key/);
+  // The prepared month is now complete, so the preview has moved on and the old slug is stale.
+  await assert.rejects(prepare('Do not overwrite'), /milestone changed/);
   assert.deepEqual(await snapshot(), original);
 
   // A blog-only conflict must roll back the card insert, preserving the blog byte for byte.
@@ -629,6 +653,7 @@ const navCode = ts.transpileModule(navSource, { compilerOptions: { module: ts.Mo
 const navExports = {};
 let session = null, authChanged;
 const prepareMonthStub = () => null;
+const navActionStub = () => null;
 const navClient = {
   auth: {
     getSession: async () => ({ data: { session }, error: null }),
@@ -643,6 +668,7 @@ new Function('require', 'exports', navCode)(name => {
   if (name === 'next/navigation') return { useRouter: () => ({ push() {} }) };
   if (name === '@supabase/ssr') return { createBrowserClient: () => navClient };
   if (name === '@/components/Journey/PrepareMonth') return { default: prepareMonthStub };
+  if (name === './NavActionButton') return { default: navActionStub };
   if (name === '@/../public/images/icon-3-transparent.png') return { default: '/icon.png' };
   if (['next/link', 'next/image', '@/components/Auth/SignInButton'].includes(name)) return { default: () => null };
   throw new Error(`Unexpected navigation import: ${name}`);
@@ -664,7 +690,7 @@ session = { user: { id: 'steven' } }; authChanged('SIGNED_IN', session);
 renderNav(); await settle();
 navTree = renderNav();
 assert.ok(navTree.some(node => node.type === 'aside'));
-await navTree.find(node => node.type === 'button' && node.props.children === 'Logout').props.onClick();
+await navTree.find(node => node.type === navActionStub && node.props.children === 'Logout').props.onClick();
 assert.equal(renderNav().some(node => node.type === 'aside'), false);
 console.log('PASS: real top navigation shows one reused preparation action only to Steven, above the menu, and hides it for visitors, other users and logout.');
 

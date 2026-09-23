@@ -46,8 +46,9 @@ npm run prepare-milas-month -- --apply --expected-slug three-years-three-months 
 ```
 
 The message goes only to the journey card. Omitting it gives a blank message.
-The letter draft is always blank and private. The database determines the latest
-completed milestone, dates, section and word slug. If the milestone changes
+The letter draft is always blank and private. The database determines the
+milestone (the latest completed month, or the month in progress once that one has
+both records), dates, section and word slug. If the milestone changes
 between preview and apply, the command stops; preview again.
 
 For a skill or another process, avoid npm’s log preamble and invoke directly:

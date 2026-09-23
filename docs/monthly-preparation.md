@@ -8,7 +8,18 @@ navigation whenever he is signed in. Other users do not see the banner. It opens
 the same preparation modal used by the original journey action, with no duplicate
 button inside My Journey. It previews the most
 recently completed month using May 30, 2023 and America/Chicago. On September 2,
-2026 that is **3 Years 3 Months**, **July 30 – August 30, 2026**. February ends on
+2026 that is **3 Years 3 Months**, **July 30 – August 30, 2026**. Once that month
+has both its card and its letter, the preview looks ahead to the month in progress
+so its letter can be started early: on September 23, 2026 it is **3 Years 4
+Months**, **August 30 – September 30, 2026**. It never looks further ahead, and a
+partial pair keeps the completed month so the conflict surfaces
+(`20260923150000_month_preview_lookahead.sql`, approved and applied live on
+September 23, 2026 as `month_preview_lookahead`, Supabase version
+`20260923161628`, SHA256
+`BD709042BDEE333BCB1478B5DD3C6EA4B0BEA512AF7B1EEE75874C30EA637212`; card and
+blog row hashes and counts (43 and 69) were identical before and after, anon
+cannot execute either function, and security advisor findings were unchanged).
+February ends on
 its last valid day; March returns to the 30th. The milestone end date determines
 the letter’s date and year tag.
 
@@ -29,8 +40,10 @@ security advisor findings were unchanged. The first migration remains unchanged.
 An optional message fills the new journey card; omission leaves it blank. The
 matching letter is a private draft with empty content and media. Creating either
 record conflicts if its slug exists: both inserts roll back, leaving all existing
-records unchanged. Repeating the action never advances the target month. A stale
-preview must be reloaded after a milestone boundary.
+records unchanged. Preparing a completed month advances the next preview to the
+month in progress; preparing that one too leaves the preview there, and repeating
+it returns the conflict. A stale preview must be reloaded after a milestone
+boundary or after its month is prepared.
 
 Cards link to their existing `birthday/<slug>` folder in `mila_storage_bucket`.
 Steven can select or drop JPEG photos (.jpg or .jpeg), up to the bucket’s existing

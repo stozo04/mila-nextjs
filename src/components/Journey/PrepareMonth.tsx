@@ -56,7 +56,7 @@ export default function PrepareMonth() {
       <Modal.Header closeButton={!busy}><Modal.Title>Prepare Mila’s Month</Modal.Title></Modal.Header>
       <Form onSubmit={prepare}>
         <Modal.Body>
-          <p>Create the most recently completed monthly milestone and a private blank letter draft. If either already exists, nothing is created or changed.</p>
+          <p>Create the next monthly milestone and a private blank letter draft: the most recently completed month, or the month in progress once that one has its card and letter. If either already exists, nothing is created or changed.</p>
           {preview && <p><strong>{preview.title}</strong><br />{preview.date}<br />{preview.blog_title} · {preview.tag}</p>}
           {preview && <p>Slug (journey card and letter): <code>{preview.slug}</code></p>}
           <Form.Group controlId="monthly-message">

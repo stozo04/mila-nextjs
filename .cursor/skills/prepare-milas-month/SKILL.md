@@ -1,13 +1,13 @@
 ---
 name: prepare-milas-month
-description: Prepare Mila Gates's most recently completed monthly journey card and private letter draft through the headless Mila site command. Use when Steven explicitly asks to prepare Mila's month, optionally with a journey message.
+description: Prepare Mila Gates's next monthly journey card and private letter draft (the most recently completed month, or the month in progress once that one exists) through the headless Mila site command. Use when Steven explicitly asks to prepare Mila's month, optionally with a journey message.
 ---
 
 # Prepare Mila's Month
 
 Use the headless command in the Mila Next.js repository. Do not automate the website UI or duplicate the month calculation.
 
-The command always previews first. It returns the completed age, date range, canonical slug, and whether the journey card and letter already exist.
+The command always previews first. It returns the age, date range, canonical slug, and whether the journey card and letter already exist.
 
 - If the user asks only to check or preview, stop after the preview and report it.
 - If the user explicitly asks to prepare or create the month, run the preview, then apply using exactly the returned slug. Pass the user's optional tagline only as `--message` so it appears on the journey card, never the letter draft.

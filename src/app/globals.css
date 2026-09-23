@@ -13,12 +13,7 @@
     background-color: rgba(255, 255, 255, 0.95);
 }
 
-.modal {
-    opacity: 0;
-    animation: fadeIn 0.3s ease-out forwards;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
+/* Do not animate .modal's opacity here. Bootstrap's own .fade transition must
+   run on close: react-bootstrap waits for its transitionend, and without it a
+   footer .btn's transitionend can cancel the fallback timer, leaving an
+   invisible modal over the page. */
