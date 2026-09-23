@@ -168,10 +168,18 @@ try {
   await actAs(admin);
   assert.equal((await snapshot()).cards[0].message, '');
   assert.equal((await db.query("select * from storage.objects where name like 'birthday/%'")).rows.length, 1);
+  const draftHtml = '<p>First <strong>tooth</strong> 🦷</p>';
+  await actAs(reader);
+  assert.equal((await db.query('update blogs set content=$1 where slug=$2 and is_draft=true returning id', ['reader', plan.slug])).rows.length, 0);
+  await actAs(admin);
+  const beforeDraftSave = (await snapshot()).blogs[0];
+  const savedDraft = (await db.query('update blogs set content=$1 where slug=$2 and is_draft=true returning to_jsonb(blogs.*) as blog', [draftHtml, plan.slug])).rows.map(row => row.blog);
+  assert.deepEqual(savedDraft, [{ ...beforeDraftSave, content: draftHtml }]);
   const beforePublish = (await snapshot()).blogs[0];
   const published = (await db.query('update blogs set is_draft=false where slug=$1 and is_draft=true returning to_jsonb(blogs.*) as blog', [plan.slug])).rows.map(row => row.blog);
   assert.deepEqual(published, [{ ...beforePublish, is_draft: false }]);
   assert.equal((await db.query('update blogs set is_draft=false where slug=$1 and is_draft=true returning id', [plan.slug])).rows.length, 0);
+  assert.equal((await db.query('update blogs set content=$1 where slug=$2 and is_draft=true returning id', ['late edit', plan.slug])).rows.length, 0);
   await actAs(reader);
   assert.equal((await db.query('select * from blogs')).rows.length, 1);
   assert.equal((await db.query("update blogs set featured_image='reader', detail_image='reader' returning id")).rows.length, 0);
@@ -183,7 +191,7 @@ try {
   await db.query('update blogs set detail_image=$1 where slug=$2', [selectedUrl, plan.slug]);
   assert.deepEqual((await snapshot()).blogs[0], { ...beforeImages, featured_image: selectedUrl, detail_image: selectedUrl });
   assert.equal((await db.query('update blogs set featured_image=$1 where slug=$2 returning id', [selectedUrl, 'missing'])).rows.length, 0);
-  console.log('PASS: Chicago dates, February/leap years, year sections, atomic create-only conflicts, defaults, admin RLS, draft visibility, photo paths.');
+  console.log('PASS: Chicago dates, February/leap years, year sections, atomic create-only conflicts, defaults, admin RLS, draft visibility, admin-only draft text saves, photo paths.');
 } finally { await db.close(); }
 
 // Exercise the actual HTTP handlers with only their Supabase boundary substituted.
@@ -271,6 +279,45 @@ assert.equal((await publishHandlers.POST(publishRequest(), publishParams)).statu
 publishDbError = { message: 'Database unavailable' };
 assert.equal((await publishHandlers.POST(publishRequest(), publishParams)).status, 500);
 console.log('PASS: publish route and shared authorization reject unauthorized requests, update only the selected draft flag, and handle missing/published/error results.');
+
+const letterHtmlCode = ts.transpileModule(readFileSync(new URL('../src/lib/letterHtml.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+const letterHtml = {};
+new Function('exports', letterHtmlCode)(letterHtml);
+assert.equal(letterHtml.hasForeignMarkup(''), false);
+assert.equal(letterHtml.hasForeignMarkup('<h2>Month</h2><p><strong>b</strong> <em>i</em> <u>u</u> <s>s</s> 😊</p><ul><li>x</li></ul><ol><li>y</li></ol><blockquote><p>q</p></blockquote><p>a<br>b</p>'), false);
+for (const html of ['<img src="x">', '<iframe src="x"></iframe>', '<p style="color:red">x</p>', '<script>x</script>', '<p onclick="x">x</p>', '<a href="javascript:x">x</a>', '<div>x</div>', '<table></table>']) {
+  assert.equal(letterHtml.hasForeignMarkup(html), true, html);
+}
+const draftHandlers = {};
+const draftCode = ts.transpileModule(readFileSync(new URL('../src/app/api/blog/[slug]/draft/route.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+new Function('require', 'exports', draftCode)(name => name === '@/lib/letterHtml' ? letterHtml : serverExports, draftHandlers);
+const draftRequest = body => new Request('http://localhost/api/blog/three-years-three-months/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+const goodDraft = { html: '<p>First <strong>tooth</strong> 🦷</p>' };
+updates = []; queryFilters = []; publishDbError = null; matchingDraft = true;
+signedIn = false;
+assert.equal((await draftHandlers.POST(draftRequest(goodDraft), publishParams)).status, 401);
+signedIn = true; adminAllowed = false;
+assert.equal((await draftHandlers.POST(draftRequest(goodDraft), publishParams)).status, 403);
+adminAllowed = true;
+assert.equal((await draftHandlers.POST(draftRequest(goodDraft), { params: Promise.resolve({ slug: '../bad' }) })).status, 400);
+assert.equal((await draftHandlers.POST(new Request('http://localhost/api/blog/test/draft', { method: 'POST', headers: { Origin: 'https://other.example' } }), publishParams)).status, 403);
+for (const body of [null, {}, { html: 42 }, { html: 'a'.repeat(letterHtml.MAX_LETTER_HTML_LENGTH + 1) }, { html: '<img src="x">' }]) {
+  assert.equal((await draftHandlers.POST(draftRequest(body), publishParams)).status, 400);
+}
+assert.equal(updates.length, 0);
+const draftResponse = await draftHandlers.POST(draftRequest(goodDraft), publishParams);
+assert.equal(draftResponse.status, 200);
+assert.equal(draftResponse.headers.get('Cache-Control'), 'no-store');
+assert.deepEqual(updates, [{ content: goodDraft.html }]);
+assert.deepEqual(queryFilters, [['slug', 'three-years-three-months'], ['is_draft', true]]);
+assert.equal((await draftHandlers.POST(draftRequest({ html: '' }), publishParams)).status, 200);
+assert.deepEqual(updates[1], { content: '' });
+matchingDraft = false;
+assert.equal((await draftHandlers.POST(draftRequest(goodDraft), publishParams)).status, 409);
+publishDbError = { message: 'Database unavailable' };
+assert.equal((await draftHandlers.POST(draftRequest(goodDraft), publishParams)).status, 500);
+publishDbError = null; matchingDraft = true;
+console.log('PASS: draft save route rejects unauthorized/invalid/foreign-markup requests, updates only the selected draft text, and handles published/error results.');
 
 // A service-role client must reject drafts before looking up even cached audio.
 const audioHandlers = {};
@@ -596,6 +643,7 @@ const blogCode = ts.transpileModule(blogSource, { compilerOptions: { module: ts.
 const blogExports = {};
 let draftRow = { slug: 'three-years-three-months', title: 'Letter', date: '2026-08-30', content: 'A letter', is_draft: true };
 let publishFails = false, publishFetches = 0;
+const draftEditorStub = () => null;
 const blogClient = {
   rpc: async () => ({ data: adminAllowed }),
   from: () => ({ select: () => ({ eq: () => ({ single: async () => ({ data: { ...draftRow }, error: null }) }) }) }),
@@ -608,6 +656,8 @@ new Function('require', 'exports', 'fetch', blogCode)(name => {
   if (name === '@/lib/youtube') return { normalizeYoutubeUrl: () => null };
   if (name === 'html-react-parser') return { default: text => text };
   if (name === 'next/image' || name === '@/app/loading') return { default: () => null };
+  if (name === 'next/dynamic') return { default: () => draftEditorStub };
+  if (name === '@/lib/letterHtml') return letterHtml;
   throw new Error(`Unexpected blog import: ${name}`);
 }, blogExports, async (url, options) => {
   assert.equal(url, '/api/blog/three-years-three-months/publish');
@@ -630,11 +680,44 @@ assert.ok(publishButton(blogTree));
 assert.equal(blogTree.some(node => node.props?.className === 'alert alert-info'), false);
 assert.equal(blogTree.some(node => node.props?.children === 'Draft — visible only to Steven.'), false);
 const publishingControls = blogTree.find(node => node.props?.className === 'blog-header letter-header mb-4 has-publish');
-assert.equal(publishingControls.props.children[0], publishButton(blogTree));
+assert.equal(publishingControls.props.children[0].props.className, 'draft-actions');
+assert.ok(flatten(publishingControls.props.children[0]).includes(publishButton(blogTree)));
 assert.equal(publishingControls.props.children[1].props.className, 'letter-greeting mb-0');
 assert.equal(publishingControls.props.children[2].props.className, 'letter-date');
 assert.equal(publishingControls.props.children[3].props.className, 'listen-button');
 assert.equal(blogTree.find(node => node.props?.className === 'listen-button').props.disabled, true);
+// Edit Draft opens the editor in place of the body and locks publishing until it closes.
+const editButton = nodes => nodes.find(node => node.type === 'button' && node.props.children === 'Edit Draft');
+const editorNode = nodes => nodes.find(node => node.type === draftEditorStub);
+assert.ok(editButton(blogTree));
+assert.equal(editorNode(blogTree), undefined);
+editButton(blogTree).props.onClick();
+blogTree = renderBlog();
+assert.equal(editButton(blogTree), undefined);
+assert.equal(publishButton(blogTree).props.disabled, true);
+assert.equal(blogTree.some(node => node.props?.className === 'blog-content mb-4'), false);
+assert.equal(editorNode(blogTree).props.initialHtml, 'A letter');
+assert.equal(editorNode(blogTree).props.slug, 'three-years-three-months');
+editorNode(blogTree).props.onCancel();
+blogTree = renderBlog();
+assert.equal(editorNode(blogTree), undefined);
+assert.ok(blogTree.some(node => node.props?.className === 'blog-content mb-4'));
+editButton(blogTree).props.onClick();
+blogTree = renderBlog();
+editorNode(blogTree).props.onSaved({ ...draftRow, content: '<p><strong>Saved</strong></p>' });
+blogTree = renderBlog();
+assert.equal(editorNode(blogTree), undefined);
+assert.equal(blogTree.find(node => node.props?.className === 'blog-content mb-4').props.children, '<p><strong>Saved</strong></p>');
+assert.equal(blogTree.find(node => node.props?.role === 'status').props.children, 'Draft saved.');
+assert.equal(publishButton(blogTree).props.disabled, false);
+draftRow.content = '<p>x</p><img src="y">';
+blogTree = await loadBlog();
+editButton(blogTree).props.onClick();
+blogTree = renderBlog();
+assert.equal(editorNode(blogTree), undefined);
+assert.match(blogTree.find(node => node.props?.role === 'alert').props.children, /cannot keep/);
+draftRow.content = 'A letter';
+blogTree = await loadBlog();
 publishFails = true;
 await publishButton(blogTree).props.onClick();
 blogTree = renderBlog();
@@ -646,6 +729,8 @@ blogTree = renderBlog();
 assert.equal(publishButton(blogTree), undefined);
 assert.match(blogTree.find(node => node.props?.role === 'status').props.children, /Letter published/);
 assert.equal(publishFetches, 2);
+assert.equal(editButton(blogTree), undefined);
+console.log('PASS: real blog-detail Edit Draft opens/cancels/saves the editor and locks publishing while editing; foreign markup is refused.');
 console.log('PASS: real blog-detail publish control appears only for admin drafts, displays errors, and refreshes to the published view with success feedback.');
 
 const navSource = readFileSync(new URL('../src/components/Shared/TopNav/page.tsx', import.meta.url), 'utf8');

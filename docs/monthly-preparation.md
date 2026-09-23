@@ -80,8 +80,14 @@ flag with existing blogs remaining published, and protects monthly photo uploads
 with Storage RLS. The shared bucket remains public to preserve existing media
 URLs: knowing a photo URL still permits direct access. This is not a private-media
 migration. Draft letters are hidden from other users by RLS and excluded from the
-service-role audio endpoint. After filling a draft’s content using the existing
-Supabase editing workflow, Steven can open it and click **Publish Letter**. The
+service-role audio endpoint. Steven fills a draft on its letter page: **Edit
+Draft** opens a rich-text editor (bold, italic, underline, strikethrough,
+headings, lists, quotes, emoji) and **Save Draft** stores its HTML through
+`POST /api/blog/<slug>/draft`, which verifies his account and updates only a row
+that is still a draft. Notes and letter are the same text; he can save as often
+as he likes during the month. Markup the editor cannot represent (added through
+Supabase) makes it refuse to open rather than drop anything; the route rejects
+the same markup. No migration is needed. When ready, he clicks **Publish Letter**. The
 server verifies Steven’s account and updates only that draft’s `is_draft` flag.
 Success refreshes the page content from the returned database row and removes the
 publish button; errors leave a visible message. Published letters and non-admin
