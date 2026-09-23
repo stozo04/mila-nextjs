@@ -285,7 +285,7 @@ const letterHtml = {};
 new Function('exports', letterHtmlCode)(letterHtml);
 assert.equal(letterHtml.hasForeignMarkup(''), false);
 assert.equal(letterHtml.hasForeignMarkup('<h2>Month</h2><p><strong>b</strong> <em>i</em> <u>u</u> <s>s</s> 😊</p><ul><li>x</li></ul><ol><li>y</li></ol><blockquote><p>q</p></blockquote><p>a<br>b</p>'), false);
-for (const html of ['<img src="x">', '<iframe src="x"></iframe>', '<p style="color:red">x</p>', '<script>x</script>', '<p onclick="x">x</p>', '<a href="javascript:x">x</a>', '<div>x</div>', '<table></table>']) {
+for (const html of ['<img src="x">', '<iframe src="x"></iframe>', '<p style="color:red">x</p>', '<script>x</script>', '<p onclick="x">x</p>', '<a href="javascript:x">x</a>', '<div>x</div>', '<table></table>', '<h3>x</h3>']) {
   assert.equal(letterHtml.hasForeignMarkup(html), true, html);
 }
 const draftHandlers = {};

@@ -20,7 +20,7 @@ const toggles = [
   { label: 'Italic', icon: FaItalic, mark: 'italic', run: (e: Editor) => e.chain().focus().toggleItalic().run() },
   { label: 'Underline', icon: FaUnderline, mark: 'underline', run: (e: Editor) => e.chain().focus().toggleUnderline().run() },
   { label: 'Strikethrough', icon: FaStrikethrough, mark: 'strike', run: (e: Editor) => e.chain().focus().toggleStrike().run() },
-  { label: 'Heading', icon: FaHeading, mark: 'heading', run: (e: Editor) => e.chain().focus().toggleHeading({ level: 2 }).run() },
+  { label: 'Heading', icon: FaHeading, mark: 'heading', attrs: { level: 2 }, run: (e: Editor) => e.chain().focus().toggleHeading({ level: 2 }).run() },
   { label: 'Bullet list', icon: FaListUl, mark: 'bulletList', run: (e: Editor) => e.chain().focus().toggleBulletList().run() },
   { label: 'Numbered list', icon: FaListOl, mark: 'orderedList', run: (e: Editor) => e.chain().focus().toggleOrderedList().run() },
   { label: 'Quote', icon: FaQuoteRight, mark: 'blockquote', run: (e: Editor) => e.chain().focus().toggleBlockquote().run() },
@@ -30,7 +30,7 @@ export default function DraftLetterEditor({ slug, initialHtml, onSaved, onCancel
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const editor = useEditor({
-    extensions: [StarterKit.configure({ heading: { levels: [2, 3] }, link: { openOnClick: false } })],
+    extensions: [StarterKit.configure({ heading: { levels: [2] }, link: { openOnClick: false } })],
     content: initialHtml,
     immediatelyRender: false,
     autofocus: 'end',
@@ -46,7 +46,7 @@ export default function DraftLetterEditor({ slug, initialHtml, onSaved, onCancel
   const state = useEditorState({
     editor,
     selector: ({ editor: e }) => e && {
-      active: Object.fromEntries(toggles.map(t => [t.mark, t.mark === 'heading' ? e.isActive('heading', { level: 2 }) : e.isActive(t.mark)])),
+      active: Object.fromEntries(toggles.map(t => [t.mark, e.isActive(t.mark, 'attrs' in t ? t.attrs : undefined)])),
       canUndo: e.can().undo(),
       canRedo: e.can().redo(),
     },

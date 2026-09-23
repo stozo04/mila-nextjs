@@ -2,7 +2,7 @@
 // else would be silently dropped when the editor loads it, so it is refused.
 const EDITABLE_TAGS = new Set([
   'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'del',
-  'h2', 'h3', 'ul', 'ol', 'li', 'blockquote', 'a', 'code', 'pre', 'hr',
+  'h2', 'ul', 'ol', 'li', 'blockquote', 'a', 'code', 'pre', 'hr',
 ]);
 
 export const MAX_LETTER_HTML_LENGTH = 200_000;
