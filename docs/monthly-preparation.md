@@ -13,7 +13,13 @@ has both its card and its letter, the preview looks ahead to the month in progre
 so its letter can be started early: on September 23, 2026 it is **3 Years 4
 Months**, **August 30 – September 30, 2026**. It never looks further ahead, and a
 partial pair keeps the completed month so the conflict surfaces
-(`20260923150000_month_preview_lookahead.sql`). February ends on
+(`20260923150000_month_preview_lookahead.sql`, approved and applied live on
+September 23, 2026 as `month_preview_lookahead`, Supabase version
+`20260923161628`, SHA256
+`BD709042BDEE333BCB1478B5DD3C6EA4B0BEA512AF7B1EEE75874C30EA637212`; card and
+blog row hashes and counts (43 and 69) were identical before and after, anon
+cannot execute either function, and security advisor findings were unchanged).
+February ends on
 its last valid day; March returns to the 30th. The milestone end date determines
 the letter’s date and year tag.
 
