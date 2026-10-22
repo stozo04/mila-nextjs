@@ -4,17 +4,12 @@ const nextConfig: NextConfig = {
   agentRules: false, // Shared framework guidance lives in docs/PROJECT_INSTRUCTIONS.md.
   images: {
     remotePatterns: [
+      // Only the public bucket the app reads from. Every host the image optimizer
+      // will fetch from is attack surface (see the Oct 2026 sharp/librsvg advisory).
       {
         protocol: "https",
         hostname: "pawkklvezvrmtpqbztwb.supabase.co",
-      },
-      {
-        protocol: "https",
-        hostname: "picsum.photos",
-      },
-      {
-        protocol: "https",
-        hostname: "placekitten.com",
+        pathname: "/storage/v1/object/public/mila_storage_bucket/**",
       },
     ],
   },
