@@ -57,6 +57,3 @@ next-env.d.ts
 
 /.codex/skills/verify-mila/artifacts/
 /.codex/skills/verify-mila/.session.json
-
-# Third-party clones
-/projects/
