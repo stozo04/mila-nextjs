@@ -1,0 +1,63 @@
+# Search anything
+
+A signed-in visitor who opens `/` gets a full-screen, zoomable atlas of every photo of Mila instead of the carousel: the monthly journey photos, the sonograms, the baby shower and gender reveal galleries, and the fourteen homepage photos, scattered in a fresh random arrangement on every visit. Typing words such as "beach" or "birthday cake" lights up the matching photos where they sit, dims everything else, and flies the view to the best match. An **Include letters** switch adds matching monthly letters to the results as letter cards. Tapping any photo opens a large viewer with Previous and Next and a link to where that photo lives. Signed-out visitors still get the original carousel.
+
+## Sub-features
+
+- `atlas-signed-in` shows the atlas at `/` for any signed-in visitor, in place of the carousel.
+- `atlas-every-photo` places one tile for every indexed photo from all five collections.
+- `atlas-random` scatters the tiles in a new random arrangement on each visit.
+- `atlas-pan-zoom` pans on drag and zooms on scroll or pinch, with **Zoom in**, **Zoom out**, and **Reset view** buttons for keyboard users.
+- `search-box` accepts typed words in a field labelled `Search Mila's memories`.
+- `search-highlight` highlights matching photos in place, dims the rest, flies the view to the best match, and announces how many matched.
+- `search-waking` shows "Waking up Mila's memory…" while the first search after a quiet spell is slow.
+- `search-no-match` says "No close matches. Try different words." when nothing is similar enough.
+- `search-clear` restores the full atlas with **Clear**.
+- `search-letters` adds matching published letters as letter cards when **Include letters** is on. Off by default, and letters never appear in the atlas without a search.
+- `search-letter-open` opens the letter at `/blogs/<slug>` when a letter card is chosen.
+- `viewer-open` opens a tapped photo in a large viewer titled `Photo viewer`.
+- `viewer-paging` moves through the current matches with **Previous** and **Next**, or through every photo when nothing is searched.
+- `viewer-source` links to where the photo lives: the month's journey card, the sonogram, the baby shower or gender reveal page. Homepage photos have no link.
+- `search-gate` rejects an anonymous search request with 401.
+
+## How to get to it (user POV)
+
+- Sign in, then open `http://127.0.0.1:3000/`.
+- Choose the Mila brand image at the top left of any page while signed in.
+- Sign in from the home page; the sign-in callback returns to `/`.
+
+## Driving it with control-mila
+
+Preconditions:
+
+- `doctor` exits 0. A signed-in Chrome is needed for every atlas and viewer step. `session` is needed for the headless search read.
+- The search index must already hold photos. If **Build search index** has never been run, the atlas is empty and says so — see [search index](./search-index.md).
+- Searching is a read and costs nothing per call, but the first search after the server has been idle can take 10–20 seconds.
+- Use a desktop viewport. The atlas fills the space between the nav and the footer.
+
+- **Prove the gate.** Run `node .claude/skills/verify-mila/control-mila.mjs get "/api/search?q=beach" --expect-unauthorized --save search-anything/anonymous`. It returns `401` with `{"error":"Sign in to continue."}`.
+- **Prove signed-out `/` is unchanged.** Run `node .claude/skills/verify-mila/control-mila.mjs get / --save search-anything/home-anonymous`. Status is `200` and the body still holds 14 `carousel-item`s, exactly as in [home landing](./home-landing.md).
+- **Search headlessly.** Run `node .claude/skills/verify-mila/control-mila.mjs session`, then `... get "/api/search?q=sonogram" --as-admin --save search-anything/search-sonogram`. Status is `200 OK` with JSON whose `results` array is ordered best match first. Each item carries `kind` (`photo`), a `url`, a `collection`, and a `score`. The top results are from the `sonograms` collection. Repeat with `&letters=1` and confirm items with `kind` `letter` may now appear, each with a `slug` and `title`. With letters off, no item has `kind` `letter`.
+- **Open the atlas.** In a signed-in tab, open `/`. The carousel is gone. A region labelled `Mila's memories atlas. Drag to explore, scroll or pinch to zoom.` fills the page, with photo tiles scattered across it and the search field labelled `Search Mila's memories` above it.
+- **Check the arrangement is random.** Note where a recognisable photo sits, then reload. The tiles are in a different arrangement.
+- **Pan and zoom.** Drag inside the atlas; the tiles move with the pointer. Scroll to zoom in and out. Choose **Zoom in**, **Zoom out**, then **Reset view**; the last returns to the whole atlas.
+- **Search.** Type `sonogram` in the search field and press Enter. If the server was idle, "Waking up Mila's memory…" shows first. Then the sonogram images stay bright, the rest dim, the view moves to the best match, and a status line reads `N matches`.
+- **Check no-match copy.** Search for `zzqx`. The status reads "No close matches. Try different words." and nothing is highlighted.
+- **Clear.** Choose **Clear**. Every tile returns to full brightness and the view resets.
+- **Include letters.** Turn on the **Include letters** switch, then search `first birthday`. Letter cards showing a title, a month, and the letter's featured image appear among the highlighted photos. Turn the switch off; the letter cards disappear. With the search cleared, no letter cards are present whether or not the switch is on.
+- **Open a letter.** With letters included, choose a letter card. The route becomes `/blogs/<slug>` and that letter renders.
+- **Open the viewer.** Choose any highlighted photo. A dialog titled `Photo viewer` shows it large. **Previous** and **Next** step through the current matches in ranked order.
+- **Follow the source link.** For a monthly photo the viewer shows a link to its month. Choose it and the route becomes `/my-journey/<section>/<slug>`, the journey card that holds that photo. For a sonogram the link goes to `/sonograms/<id>`.
+- **Close the viewer.** Choose its close control or press Escape. Focus returns to the tile that opened it.
+- **Proof.** Screenshot the full atlas, a search with highlights and the match count, a search with letter cards included, and the open viewer with its source link. Save the anonymous `401`, the anonymous `/` body, and the headless search JSON.
+
+## Gotchas
+
+- **Never assert a tile's position.** The arrangement reshuffles on every visit by design. Assert tile counts, highlight state, and the match count instead.
+- The atlas, its tiles, and the search results are built in the browser. `GET /` as admin returns server HTML without them — assert the atlas in Chrome only.
+- The first search after an idle spell is slow because the server has to load the search model. Wait for the waking message to clear before calling a search broken. A second search right after should return within a couple of seconds.
+- An empty atlas with the message pointing to **Build search index** means nothing has been indexed yet. That is missing data, not a broken atlas.
+- A photo uploaded but never indexed is not in the atlas. New uploads are indexed automatically while the uploader runs, so check [search index](./search-index.md) before reporting a missing photo.
+- Letters only appear while a search is active and **Include letters** is on. Draft letters are never searchable.
+- Videos are not part of this feature yet. They arrive with the video upload tool and a later search update.
+- The photo links are Storage's public URLs, the same as the existing galleries. The page is private; the image files are not.

@@ -51,7 +51,7 @@ A known defect stays a failing check. It does not become the new expectation.
 
 Unattended sweep (tiers 1 and 2), in order: `site-meta` → `sign-in` → `home-landing`, then the signed-in half of `sign-in` (every gated path re-driven with `--as-admin`, expecting `200`) and the authenticated reads in `prepare-month` and `journey-card`. That is the complete set provable with no browser, and it is the regression floor for any change to `src/proxy.ts`, `src/utils/supabase/middleware.ts`, `src/utils/supabase/server.ts`, `next.config.ts`, or the root layout when the change affects request handling, rendering, auth, or routing. Agent-file generation settings alone use startup and pointer checks plus the required build/lint/type checks.
 
-Browser sweep (tier 3), in nav order: `site-chrome` → `sonograms` → `gender-reveal` → `baby-shower` → `blogs-index` → `blog-letter` → `journey-years` → `journey-card` → `chatbot`, then the admin pair `prepare-month` → `admin-password-setup`.
+Browser sweep (tier 3), in nav order: `search-anything` → `site-chrome` → `sonograms` → `gender-reveal` → `baby-shower` → `blogs-index` → `blog-letter` → `journey-years` → `journey-card` → `chatbot`, then the admin set `prepare-month` → `admin-password-setup` → `search-index`.
 
 ## Feature entry contract
 
@@ -68,7 +68,7 @@ Keep implementation details out of the map. Name only user paths, stable handles
 
 ### Public surface (tier 1 — drivable now)
 
-- [Home landing](./home-landing.md) covers the auto-playing photo carousel and the only two paths an anonymous visitor can load.
+- [Home landing](./home-landing.md) covers the signed-out auto-playing photo carousel and the only two paths an anonymous visitor can load.
 - [Sign in and route protection](./sign-in.md) covers Google OAuth, the OAuth callback, and the redirect gate on every protected and unknown path.
 - [Site metadata](./site-meta.md) covers `robots.txt`, `sitemap.xml`, the privacy policy, legacy URL redirects, and the 404 page.
 
@@ -82,6 +82,11 @@ Keep implementation details out of the map. Name only user paths, stable handles
 - [Blogs index](./blogs-index.md) covers the letter grid, tag filter pills, title search, View More paging, and the draft badge.
 - [Blog letter](./blog-letter.md) covers a single letter, the Listen narration, the publish control for a draft, and the image lightbox.
 - [Draft letter notes](./draft-letter-notes.md) covers typing and saving notes or letter text into a private draft before it is published.
+
+### Search
+
+- [Search anything](./search-anything.md) covers the signed-in home atlas of every photo, typed search with in-place highlights, the Include letters switch, and the photo viewer.
+- [Search index](./search-index.md) covers the admin page that builds the search index, its progress and resume, cleanup, and indexing photos right after upload.
 
 ### Galleries
 
