@@ -6,6 +6,7 @@ Steven's tool for keeping [search anything](./search-anything.md) complete. An a
 
 - `index-entry` shows a **Build search index** link in the admin banner, admin only.
 - `index-counts` lists each collection — Monthly journey, Sonograms, Baby shower, Gender reveal, Homepage, Letter photos, Letters — with `Indexed X of Y`.
+- `index-faces` adds a `Faces` row reading `Scanned X of Y photos`; **Start indexing** also finds faces in photos not yet scanned, for [people](./people.md).
 - `index-run` indexes everything not yet indexed on **Start indexing**, announcing `Indexing N of M`. Mutating — presence only.
 - `index-pause` stops after the current item on **Pause**. The next **Start indexing** carries on with what is left.
 - `index-cleanup` removes items whose photo has been deleted or whose letter was unpublished, and reports `Removed N`.

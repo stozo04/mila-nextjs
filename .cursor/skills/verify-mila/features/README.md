@@ -51,7 +51,7 @@ A known defect stays a failing check. It does not become the new expectation.
 
 Unattended sweep (tiers 1 and 2), in order: `site-meta` → `sign-in` → `home-landing`, then the signed-in half of `sign-in` (every gated path re-driven with `--as-admin`, expecting `200`) and the authenticated reads in `prepare-month` and `journey-card`. That is the complete set provable with no browser, and it is the regression floor for any change to `src/proxy.ts`, `src/utils/supabase/middleware.ts`, `src/utils/supabase/server.ts`, `next.config.ts`, or the root layout when the change affects request handling, rendering, auth, or routing. Agent-file generation settings alone use startup and pointer checks plus the required build/lint/type checks.
 
-Browser sweep (tier 3), in nav order: `search-anything` → `site-chrome` → `sonograms` → `gender-reveal` → `baby-shower` → `blogs-index` → `blog-letter` → `journey-years` → `journey-card` → `chatbot`, then the admin set `prepare-month` → `admin-password-setup` → `search-index`.
+Browser sweep (tier 3), in nav order: `search-anything` → `site-chrome` → `sonograms` → `gender-reveal` → `baby-shower` → `blogs-index` → `blog-letter` → `journey-years` → `journey-card` → `chatbot`, then the admin set `prepare-month` → `admin-password-setup` → `search-index` → `people`.
 
 ## Feature entry contract
 
@@ -87,6 +87,7 @@ Keep implementation details out of the map. Name only user paths, stable handles
 
 - [Search anything](./search-anything.md) covers the signed-in home atlas of every photo, typed search with in-place highlights, the Include letters switch, and the photo viewer.
 - [Search index](./search-index.md) covers the admin page that builds the search index, its progress and resume, cleanup, and indexing photos right after upload.
+- [People](./people.md) covers finding faces while indexing, naming and merging face groups on the admin People page, and hiding strangers.
 
 ### Galleries
 

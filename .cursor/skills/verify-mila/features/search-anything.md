@@ -21,6 +21,8 @@ A signed-in visitor who opens `/` gets a full-screen, zoomable atlas of every ph
 - `viewer-open` opens a tapped photo in a large viewer titled `Photo viewer`.
 - `viewer-paging` moves through the current matches with **Previous** and **Next**, or through every photo when nothing is searched.
 - `viewer-source` links to where the photo lives: the month's journey card, the sonogram, the baby shower or gender reveal page, or the letter that shows it. Homepage photos, months without a journey card, and letter photos no letter uses have no link.
+- `search-people` finds people by name: typing a named person, such as `Mila` or `steven`, highlights the photos they are in. Names match whole words regardless of case, several names find photos with all of them, and any other words narrow by scene, as in `Steven and Mila at the beach`. People come from [people](./people.md).
+- `viewer-people` lists who is in a photo under it in the viewer, as `In this photo: Mila · Steven`. Choosing a name closes the viewer and highlights every photo of that person, with a status reading `N photos of <name>`.
 - `search-gate` rejects an anonymous search request with 401.
 
 ## How to get to it (user POV)
@@ -56,6 +58,8 @@ Preconditions:
 - **Open a letter.** With letters included, choose a letter card. The route becomes `/blogs/<slug>` and that letter renders.
 - **Open the viewer.** Choose any highlighted photo. A dialog titled `Photo viewer` shows it large. **Previous** and **Next** step through the current matches in ranked order.
 - **Follow the source link.** For a monthly photo the viewer shows a link to its month. Choose it and the route becomes `/my-journey/<section>/<slug>`, the journey card that holds that photo. For a sonogram the link goes to `/sonograms/<id>`. For a letter photo it reads **Go to the letter** and goes to `/blogs/<slug>`.
+- **See who is in a photo.** Open a photo of a named person. Under it the viewer reads `In this photo:` followed by their names. Choose one; the viewer closes and that person's photos light up with the status `N photos of <name>`.
+- **Search by name.** Search `Mila`; her photos light up. Search `Mila and Steven`; only photos with both light up. Search `Mila cake`; photos of Mila with cake light up.
 - **Close the viewer.** Choose its close control or press Escape. Focus returns to the tile that opened it.
 - **Proof.** Screenshot the full atlas, a search with highlights and the match count, a search with letter cards included, and the open viewer with its source link. Save the anonymous `401`, the anonymous `/` body, and the headless search JSON.
 
