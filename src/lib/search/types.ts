@@ -11,6 +11,7 @@ export type IndexStatus = {
     letters: { key: string; title: string; content: string; hash: string }[];
   };
   orphans: string[];
+  faces: { scanned: number; total: number; pending: string[] }; // photos to scan for people
 };
 
 // One row for POST /api/search/index. Photos carry their preview; letters the hash of

@@ -23,6 +23,7 @@
     "@tiptap/react": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
     "@vercel/analytics": "^1.4.1",
+    "@vladmandic/human": "3.3.6",
     "ai": "^4.1.28",
     "bootstrap": "^5.3.3",
     "html-react-parser": "^5.2.2",

@@ -93,6 +93,7 @@ const NavMenu = () => {
           <span className="small fw-semibold">Steven’s admin tools</span>
           <div className="d-flex flex-wrap gap-2">
             <Link href="/admin/search-index" className="btn btn-outline-success rounded-pill">Build search index</Link>
+            <Link href="/admin/people" className="btn btn-outline-success rounded-pill">People</Link>
             <PrepareMonth />
           </div>
         </div>

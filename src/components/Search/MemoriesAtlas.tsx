@@ -13,7 +13,8 @@ import PhotoViewer, { type ViewerPhoto } from './PhotoViewer';
 
 type AtlasItem = { key: string; collection: PhotoCollection; thumb: string | null; color: string; width: number | null; height: number | null };
 type PlacedLetter = { result: LetterResult; tileIndex: number };
-type SearchState = { status: 'idle' | 'searching' | 'waking' | 'done' | 'error'; results: SearchResult[] };
+// `people` is set when the search was names alone, for the "N photos of Mila" status.
+type SearchState = { status: 'idle' | 'searching' | 'waking' | 'done' | 'error'; results: SearchResult[]; people?: string[] };
 
 const MAX_ZOOM = 4;
 const WAKING_AFTER_MS = 1500;
@@ -377,7 +378,7 @@ export default function MemoriesAtlas() {
       if (searchId.current !== id) return;
       if (!response.ok) throw new Error(result.error);
       const results = (result.results as SearchResult[]).filter(row => row.kind === 'letter' || items.some(item => item.key === row.key));
-      setSearch({ status: 'done', results });
+      setSearch({ status: 'done', results, people: result.people?.length && !result.scene ? result.people : undefined });
       showResults(results);
     } catch (error) {
       if (searchId.current !== id) return;
@@ -412,7 +413,9 @@ export default function MemoriesAtlas() {
     idle: '',
     searching: 'Searching…',
     waking: 'Waking up Mila’s memory…',
-    done: matchCount ? `${matchCount} ${matchCount === 1 ? 'match' : 'matches'}` : 'No close matches. Try different words.',
+    done: search.people
+      ? `${matchCount} ${matchCount === 1 ? 'photo' : 'photos'} of ${search.people.join(' and ')}`
+      : matchCount ? `${matchCount} ${matchCount === 1 ? 'match' : 'matches'}` : 'No close matches. Try different words.',
     error: 'Search is unavailable right now. Please try again.',
   }[search.status];
   const busy = search.status === 'searching' || search.status === 'waking';
@@ -446,7 +449,8 @@ export default function MemoriesAtlas() {
     <GlassZoomControls onZoomIn={() => zoomBy(1.5)} onZoomOut={() => zoomBy(1 / 1.5)} onReset={resetView} />
 
     {viewer && <PhotoViewer photos={viewer.photos} index={viewer.index} links={links}
-      onIndex={index => setViewer(current => current && { ...current, index })} onClose={() => setViewer(null)} />}
+      onIndex={index => setViewer(current => current && { ...current, index })} onClose={() => setViewer(null)}
+      onPerson={name => { setViewer(null); setQuery(name); void runSearch(name, includeLetters); }} />}
     <style jsx global>{`
       body.memories-fullscreen { overflow: hidden; }
       body.memories-fullscreen footer { display: none; }

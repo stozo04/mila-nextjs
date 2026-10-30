@@ -11,9 +11,10 @@ type StatusRow = {
 export async function GET() {
   const supabase = await authorizeAdmin();
   if (supabase instanceof Response) return supabase;
-  const { data, error } = await supabase.rpc('search_index_status');
-  if (error) return Response.json({ error: 'Unable to read the search index.' }, { status: 500 });
+  const [{ data, error }, scans] = await Promise.all([supabase.rpc('search_index_status'), supabase.rpc('face_scan_keys')]);
+  if (error || scans.error) return Response.json({ error: 'Unable to read the search index.' }, { status: 500 });
   const { photos, letters, indexed } = data as StatusRow;
+  const scanned = new Set(scans.data as string[]);
 
   const indexedHash = new Map(indexed.map(([key, hash]) => [key, hash]));
   const sources = [...photos.map(([key, collection]) => ({ key, collection })), ...SITE_PHOTOS];
@@ -32,6 +33,12 @@ export async function GET() {
       letters: pendingLetters.map(({ key, title, content, hash }) => ({ key, title, content, hash })),
     },
     orphans: indexed.map(([key]) => key).filter(key => !known.has(key)),
+    // Faces are found in indexed photos, so a photo is scanned after (or with) its indexing.
+    faces: {
+      scanned: sources.filter(source => scanned.has(source.key)).length,
+      total: sources.length,
+      pending: sources.filter(source => !scanned.has(source.key)).map(source => source.key),
+    },
   };
   return Response.json(status, { headers: { 'Cache-Control': 'no-store' } });
 }
@@ -81,7 +88,9 @@ export async function POST(request: Request) {
     const { data, error } = await supabase.from('search_items').delete().in('key', remove).select('thumb_path');
     if (error) return Response.json({ error: 'Unable to remove from the search index. Please retry.' }, { status: 500 });
     removed = data.length;
-    const thumbs = data.map(row => row.thumb_path).filter((path): path is string => !!path);
+    // A photo that left the index takes its faces with it.
+    const { data: faceThumbs } = await supabase.rpc('forget_photo_faces', { photo_keys: remove });
+    const thumbs = [...data.map(row => row.thumb_path), ...((faceThumbs as string[] | null) ?? [])].filter((path): path is string => !!path);
     // A thumbnail left behind is harmless; the row that pointed at it is gone.
     if (thumbs.length) await supabase.storage.from('mila_storage_bucket').remove(thumbs);
   }

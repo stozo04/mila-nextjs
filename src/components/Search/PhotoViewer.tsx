@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Modal } from 'react-bootstrap';
+import { supabase } from '@/lib/supabase';
 import { photoSource, photoUrl, type SourceLinks } from '@/lib/search/collections';
 
 export type ViewerPhoto = { key: string; width: number | null; height: number | null };
@@ -13,11 +15,22 @@ type Props = {
   links: SourceLinks;
   onIndex: (index: number) => void;
   onClose: () => void;
+  onPerson: (name: string) => void;
 };
 
-export default function PhotoViewer({ photos, index, links, onIndex, onClose }: Props) {
+export default function PhotoViewer({ photos, index, links, onIndex, onClose, onPerson }: Props) {
   const photo = photos[index];
+  const [people, setPeople] = useState<{ key: string; names: string[] }>({ key: '', names: [] });
+  useEffect(() => {
+    if (!photo) return;
+    let active = true;
+    supabase.rpc('photo_people', { photo_key: photo.key }).then(({ data }) => {
+      if (active) setPeople({ key: photo.key, names: ((data ?? []) as { name: string }[]).map(person => person.name).sort() });
+    });
+    return () => { active = false; };
+  }, [photo]);
   if (!photo) return null;
+  const names = people.key === photo.key ? people.names : [];
   const source = photoSource(photo.key, links);
   return <Modal show onHide={onClose} centered size="xl" aria-labelledby="photo-viewer-title"
     contentClassName="glass-viewer" backdropClassName="glass-viewer-backdrop"
@@ -33,6 +46,11 @@ export default function PhotoViewer({ photos, index, links, onIndex, onClose }: 
         sizes="(max-width: 1200px) 100vw, 1140px"
         style={{ width: '100%', height: 'auto', maxHeight: '72vh', objectFit: 'contain' }} />
     </Modal.Body>
+    {names.length > 0 && <div className="glass-viewer-people px-3 pt-2" aria-live="polite">
+      In this photo: {names.map((name, i) => <span key={name}>{i > 0 && <span aria-hidden="true" className="mx-1">·</span>}
+        <button type="button" className="btn btn-link p-0 align-baseline glass-viewer-person" onClick={() => onPerson(name)}>{name}</button>
+      </span>)}
+    </div>}
     <Modal.Footer className="justify-content-between">
       <div className="d-flex gap-2">
         <button type="button" className="btn glass-viewer-button" disabled={index === 0} onClick={() => onIndex(index - 1)}>Previous</button>
@@ -58,6 +76,9 @@ export default function PhotoViewer({ photos, index, links, onIndex, onClose }: 
       .glass-viewer-photo { background: rgba(84, 37, 55, 0.06); }
       .glass-viewer-photo img { display: block; margin: 0 auto; }
       .glass-viewer-count { color: rgba(84, 37, 55, 0.75); }
+      .glass-viewer-people { color: #542537; }
+      .glass-viewer-person { color: #c2185b; font-weight: 600; text-decoration: none; }
+      .glass-viewer-person:hover { text-decoration: underline; }
       .glass-viewer-button {
         border-radius: 999px;
         border: 1px solid rgba(194, 24, 91, 0.35);

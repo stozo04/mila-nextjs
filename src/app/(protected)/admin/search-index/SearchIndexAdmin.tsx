@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { NO_WEBGPU, canIndex, indexLetter, indexPhoto, loadIndexer, removeFromIndex } from '@/lib/search/browserIndexer';
+import { scanFaces } from '@/lib/people/browserFaces';
 import type { IndexStatus } from '@/lib/search/types';
 
 const megabytes = (bytes: number) => Math.round(bytes / 1e6);
@@ -33,7 +34,7 @@ export default function SearchIndexAdmin() {
     refresh().catch(error => setLoadError(error.message));
   }, [refresh]);
 
-  const remaining = status ? status.pending.photos.length + status.pending.letters.length + status.orphans.length : 0;
+  const remaining = status ? status.pending.photos.length + status.pending.letters.length + status.orphans.length + status.faces.pending.length : 0;
 
   async function start() {
     if (!status || running) return;
@@ -54,6 +55,8 @@ export default function SearchIndexAdmin() {
       const jobs = [
         ...status.pending.letters.map(letter => () => indexLetter(letter)),
         ...status.pending.photos.map(photo => () => indexPhoto(photo.key, photo.collection)),
+        // Faces last, so search works first; a photo's faces are found after it is indexed.
+        ...status.faces.pending.map(key => () => scanFaces(key)),
       ];
       if (jobs.length) {
         setProgress('Downloading the search model…');
@@ -97,6 +100,10 @@ export default function SearchIndexAdmin() {
         <span>{collection.label}</span>
         <span>Indexed {collection.indexed.toLocaleString()} of {collection.total.toLocaleString()}</span>
       </li>)}
+      <li className="list-group-item d-flex justify-content-between">
+        <span>Faces</span>
+        <span>Scanned {status.faces.scanned.toLocaleString()} of {status.faces.total.toLocaleString()} photos</span>
+      </li>
     </ul>}
     {status && <div className="d-flex flex-wrap align-items-center gap-2">
       <button type="button" className="btn btn-success" disabled={!supported || running || remaining === 0} onClick={() => void start()}>

@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import Gallery from '@/components/BabyShower/Gallery';
 import type { Blog } from '@/types/blog';
 import { canIndex, indexPhoto } from '@/lib/search/browserIndexer';
+import { scanFaces } from '@/lib/people/browserFaces';
 
 type LetterImages = Pick<Blog, 'featured_image' | 'detail_image'>;
 
@@ -107,6 +108,7 @@ export default function JourneyGallery({ slug }: { slug: string }) {
       setNotice(`${summary} Indexing ${indexed + 1} of ${paths.length} for search…`);
       try {
         await indexPhoto(path, 'journey');
+        await scanFaces(path);
         indexed++;
       } catch (error) {
         console.error('Search indexing failed:', error);
