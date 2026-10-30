@@ -55,7 +55,8 @@ function draw(bitmap: ImageBitmap, maxSide: number) {
 
 async function embedPhoto(url: string): Promise<PhotoEmbedding> {
   const { processor, model } = await load(0);
-  const response = await fetch(url);
+  // Revalidate: a photo replaced in Storage must not be read from a stale browser cache.
+  const response = await fetch(url, { cache: 'no-cache' });
   if (!response.ok) throw new Error(`Photo download failed (${response.status}).`);
   // createImageBitmap applies EXIF orientation, so phone photos come out upright.
   const bitmap = await createImageBitmap(await response.blob());
