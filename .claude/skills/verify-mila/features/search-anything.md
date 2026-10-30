@@ -1,11 +1,11 @@
 # Search anything
 
-A signed-in visitor who opens `/` gets a full-screen, zoomable atlas of every photo of Mila instead of the carousel: the monthly journey photos, the sonograms, the baby shower and gender reveal galleries, and the fourteen homepage photos, scattered in a fresh random arrangement on every visit. Typing words such as "beach" or "birthday cake" lights up the matching photos where they sit, dims everything else, and flies the view to the best match. An **Include letters** switch adds matching monthly letters to the results as letter cards. Tapping any photo opens a large viewer with Previous and Next and a link to where that photo lives. Signed-out visitors still get the original carousel.
+A signed-in visitor who opens `/` gets a full-screen, zoomable atlas of every photo of Mila instead of the carousel: the monthly journey photos, the sonograms, the baby shower and gender reveal galleries, the photos shown inside letters, and the fourteen homepage photos, scattered in a fresh random arrangement on every visit. Typing words such as "beach" or "birthday cake" lights up the matching photos where they sit, dims everything else, and flies the view to the best match. An **Include letters** switch adds matching monthly letters to the results as letter cards. Tapping any photo opens a large viewer with Previous and Next and a link to where that photo lives. Signed-out visitors still get the original carousel.
 
 ## Sub-features
 
 - `atlas-signed-in` shows the atlas at `/` for any signed-in visitor, in place of the carousel.
-- `atlas-every-photo` places one tile for every indexed photo from all five collections.
+- `atlas-every-photo` places one tile for every indexed photo from all six photo collections.
 - `atlas-random` scatters the tiles in a new random arrangement on each visit.
 - `atlas-pan-zoom` pans on drag and zooms on scroll or pinch, with **Zoom in**, **Zoom out**, and **Reset view** buttons for keyboard users.
 - `search-box` accepts typed words in a field labelled `Search Mila's memories`.
@@ -17,7 +17,7 @@ A signed-in visitor who opens `/` gets a full-screen, zoomable atlas of every ph
 - `search-letter-open` opens the letter at `/blogs/<slug>` when a letter card is chosen.
 - `viewer-open` opens a tapped photo in a large viewer titled `Photo viewer`.
 - `viewer-paging` moves through the current matches with **Previous** and **Next**, or through every photo when nothing is searched.
-- `viewer-source` links to where the photo lives: the month's journey card, the sonogram, the baby shower or gender reveal page. Homepage photos have no link.
+- `viewer-source` links to where the photo lives: the month's journey card, the sonogram, the baby shower or gender reveal page, or the letter that shows it. Homepage photos, months without a journey card, and letter photos no letter uses have no link.
 - `search-gate` rejects an anonymous search request with 401.
 
 ## How to get to it (user POV)
@@ -37,7 +37,7 @@ Preconditions:
 
 - **Prove the gate.** Run `node .claude/skills/verify-mila/control-mila.mjs get "/api/search?q=beach" --expect-unauthorized --save search-anything/anonymous`. It returns `401` with `{"error":"Sign in to continue."}`.
 - **Prove signed-out `/` is unchanged.** Run `node .claude/skills/verify-mila/control-mila.mjs get / --save search-anything/home-anonymous`. Status is `200` and the body still holds 14 `carousel-item`s, exactly as in [home landing](./home-landing.md).
-- **Search headlessly.** Run `node .claude/skills/verify-mila/control-mila.mjs session`, then `... get "/api/search?q=sonogram" --as-admin --save search-anything/search-sonogram`. Status is `200 OK` with JSON whose `results` array is ordered best match first. Each item carries `kind` (`photo`), a `url`, a `collection`, and a `score`. The top results are from the `sonograms` collection. Repeat with `&letters=1` and confirm items with `kind` `letter` may now appear, each with a `slug` and `title`. With letters off, no item has `kind` `letter`.
+- **Search headlessly.** Run `node .claude/skills/verify-mila/control-mila.mjs session`, then `... get "/api/search?q=sonogram" --as-admin --save search-anything/search-sonogram`. Status is `200 OK` with JSON whose `results` array is ordered best match first. Each item carries `kind` (`photo`), a `url`, a `collection` (`journey`, `sonograms`, `baby-shower`, `gender-reveal`, `letter-photos`, or `homepage`), and a `score`. The top results are from the `sonograms` collection. Repeat with `&letters=1` and confirm items with `kind` `letter` may now appear, each with a `slug` and `title`. With letters off, no item has `kind` `letter`.
 - **Open the atlas.** In a signed-in tab, open `/`. The carousel is gone. A region labelled `Mila's memories atlas. Drag to explore, scroll or pinch to zoom.` fills the page, with photo tiles scattered across it and the search field labelled `Search Mila's memories` above it.
 - **Check the arrangement is random.** Note where a recognisable photo sits, then reload. The tiles are in a different arrangement.
 - **Pan and zoom.** Drag inside the atlas; the tiles move with the pointer. Scroll to zoom in and out. Choose **Zoom in**, **Zoom out**, then **Reset view**; the last returns to the whole atlas.
@@ -47,7 +47,7 @@ Preconditions:
 - **Include letters.** Turn on the **Include letters** switch, then search `first birthday`. Letter cards showing a title, a month, and the letter's featured image appear among the highlighted photos. Turn the switch off; the letter cards disappear. With the search cleared, no letter cards are present whether or not the switch is on.
 - **Open a letter.** With letters included, choose a letter card. The route becomes `/blogs/<slug>` and that letter renders.
 - **Open the viewer.** Choose any highlighted photo. A dialog titled `Photo viewer` shows it large. **Previous** and **Next** step through the current matches in ranked order.
-- **Follow the source link.** For a monthly photo the viewer shows a link to its month. Choose it and the route becomes `/my-journey/<section>/<slug>`, the journey card that holds that photo. For a sonogram the link goes to `/sonograms/<id>`.
+- **Follow the source link.** For a monthly photo the viewer shows a link to its month. Choose it and the route becomes `/my-journey/<section>/<slug>`, the journey card that holds that photo. For a sonogram the link goes to `/sonograms/<id>`. For a letter photo it reads **Go to the letter** and goes to `/blogs/<slug>`.
 - **Close the viewer.** Choose its close control or press Escape. Focus returns to the tile that opened it.
 - **Proof.** Screenshot the full atlas, a search with highlights and the match count, a search with letter cards included, and the open viewer with its source link. Save the anonymous `401`, the anonymous `/` body, and the headless search JSON.
 

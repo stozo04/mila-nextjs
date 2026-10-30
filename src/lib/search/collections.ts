@@ -7,6 +7,7 @@ export const COLLECTIONS = [
   { id: 'baby-shower', label: 'Baby shower' },
   { id: 'gender-reveal', label: 'Gender reveal' },
   { id: 'homepage', label: 'Homepage' },
+  { id: 'letter-photos', label: 'Letter photos' },
   { id: 'letters', label: 'Letters' },
 ] as const;
 
@@ -40,17 +41,24 @@ function journeySection(journeyType: string) {
   return fixed[journeyType] ?? (/^\d+_year$/.test(journeyType) ? journeyType.replace('_', '-') : null);
 }
 
-export type JourneyCards = Map<string, string>; // slug -> journey_type
+export type SourceLinks = {
+  cards: Map<string, string>; // journey card slug -> journey_type
+  letterPhotos: Map<string, string>; // blog-photos/... -> slug of the letter that shows it
+};
 
-// Where a photo lives on the site, for the viewer's link. Homepage photos and months
-// without a journey card have none.
-export function photoSource(key: string, cards: JourneyCards): { href: string; label: string } | null {
+// Where a photo lives on the site, for the viewer's link. Homepage photos, months without
+// a journey card, and letter photos no letter uses have none.
+export function photoSource(key: string, { cards, letterPhotos }: SourceLinks): { href: string; label: string } | null {
   const sonogram = key.match(/^\/images\/sonograms\/sonogram-(\d+)\//);
   if (sonogram) return { href: `/sonograms/${sonogram[1]}`, label: `Go to Sonogram ${sonogram[1]}` };
   const [top, folder] = key.split('/');
   if (top === 'gender-reveal') return { href: '/gender-reveal', label: 'Go to the gender reveal' };
   if (top === 'baby-shower' && (folder === 'dallas' || folder === 'houston')) {
     return { href: `/baby-shower/${folder}`, label: `Go to the ${folder === 'dallas' ? 'Dallas' : 'Houston'} baby shower` };
+  }
+  if (top === 'blog-photos') {
+    const slug = letterPhotos.get(key);
+    return slug ? { href: `/blogs/${slug}`, label: 'Go to the letter' } : null;
   }
   if (top !== 'birthday') return null;
   if (folder === 'delivery-day') return { href: '/my-journey/birthday', label: "Go to Mila's birthday" };

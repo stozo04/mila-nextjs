@@ -5,7 +5,7 @@ Steven's tool for keeping [search anything](./search-anything.md) complete. An a
 ## Sub-features
 
 - `index-entry` shows a **Build search index** link in the admin banner, admin only.
-- `index-counts` lists each collection — Monthly journey, Sonograms, Baby shower, Gender reveal, Homepage, Letters — with `Indexed X of Y`.
+- `index-counts` lists each collection — Monthly journey, Sonograms, Baby shower, Gender reveal, Homepage, Letter photos, Letters — with `Indexed X of Y`.
 - `index-run` indexes everything not yet indexed on **Start indexing**, announcing `Indexing N of M`. Mutating — presence only.
 - `index-pause` stops after the current item on **Pause**. The next **Start indexing** carries on with what is left.
 - `index-cleanup` removes items whose photo has been deleted or whose letter was unpublished, and reports `Removed N`.
@@ -31,11 +31,11 @@ Preconditions:
 - **Prove the write guard.** Run `node .codex/skills/verify-mila/control-mila.mjs get /api/search/index --method POST --body '{}' --expect-unauthorized`. It returns `401` with `{"error":"Sign in to continue."}` before anything is written.
 - **Read the counts headlessly.** Run `node .codex/skills/verify-mila/control-mila.mjs session`, then `... get /api/search/index --as-admin --save search-index/status`. Status is `200 OK` with one entry per collection, each carrying `indexed` and `total`. Letters count only published letters.
 - **Find the entry point.** In the admin tab, the banner labelled `Mila's monthly preparation` holds a **Build search index** link beside **Prepare Mila's Month**. In a non-admin signed-in tab, the banner is absent.
-- **Open the page.** Choose **Build search index**. The route becomes `/admin/search-index` and the heading reads `Search index`. Each of the six collections shows `Indexed X of Y`, and the numbers match the headless read.
+- **Open the page.** Choose **Build search index**. The route becomes `/admin/search-index` and the heading reads `Search index`. Each of the seven collections shows `Indexed X of Y`, and the numbers match the headless read.
 - **Check the controls.** **Start indexing** is enabled when anything is left to index and disabled with "Everything is indexed." otherwise. **Do not press it.**
 - **Check the non-admin view.** In a non-admin signed-in tab, open `/admin/search-index`. The page reads "Only Steven can build the search index." with no counts and no controls.
 - **Check the uploader mentions indexing.** On any journey card in the admin tab, the help text under the uploader reads `JPEG only (.jpg or .jpeg) · up to 50 MB each · indexed for search after upload`. **Do not attach a file.**
-- **Proof.** Screenshot the banner link, the page with all six counts, and the non-admin message. Save the anonymous `307`, the `401`, and the status JSON. State plainly that indexing and uploads were not run.
+- **Proof.** Screenshot the banner link, the page with all seven counts, and the non-admin message. Save the anonymous `307`, the `401`, and the status JSON. State plainly that indexing and uploads were not run.
 
 ## Gotchas
 

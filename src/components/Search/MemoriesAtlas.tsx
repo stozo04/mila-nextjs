@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { COLLECTIONS, thumbUrl, type JourneyCards, type PhotoCollection } from '@/lib/search/collections';
+import { COLLECTIONS, thumbUrl, type PhotoCollection, type SourceLinks } from '@/lib/search/collections';
 import type { LetterResult, SearchResult } from '@/lib/search/types';
 import { LETTER_TILE, TILE, fitCamera, randomLayout, toScreen, toWorld, zoomAt, type Camera, type Layout, type Placed } from './atlasLayout';
 import PhotoViewer, { type ViewerPhoto } from './PhotoViewer';
@@ -40,7 +40,7 @@ export default function MemoriesAtlas() {
   const router = useRouter();
   const [items, setItems] = useState<AtlasItem[]>([]);
   const [layout, setLayout] = useState<Layout | null>(null);
-  const [cards, setCards] = useState<JourneyCards>(new Map());
+  const [links, setLinks] = useState<SourceLinks>({ cards: new Map(), letterPhotos: new Map() });
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [query, setQuery] = useState('');
   const [includeLetters, setIncludeLetters] = useState(false);
@@ -67,20 +67,24 @@ export default function MemoriesAtlas() {
   useEffect(() => {
     let active = true;
     (async () => {
-      const [atlas, journey] = await Promise.all([
+      const [atlas, journey, letterPhotos] = await Promise.all([
         supabase.rpc('search_atlas_items'),
         supabase.from('journey_cards').select('slug, journey_type'),
+        supabase.rpc('search_letter_photo_links'),
       ]);
       if (!active) return;
-      if (atlas.error || journey.error) {
-        console.error('Unable to load the atlas:', atlas.error ?? journey.error);
+      if (atlas.error || journey.error || letterPhotos.error) {
+        console.error('Unable to load the atlas:', atlas.error ?? journey.error ?? letterPhotos.error);
         setLoadState('error');
         return;
       }
       const loaded = (atlas.data as [string, PhotoCollection, string | null, string | null, number | null, number | null][])
         .map(([key, collection, thumb, color, width, height]) => ({ key, collection, thumb: thumb && thumbUrl(thumb), color: color ?? '#e9d5df', width, height }));
       const { width, height } = size.current;
-      setCards(new Map((journey.data ?? []).map(card => [card.slug, card.journey_type])));
+      setLinks({
+        cards: new Map((journey.data ?? []).map(card => [card.slug, card.journey_type])),
+        letterPhotos: new Map(Object.entries(letterPhotos.data as Record<string, string>)),
+      });
       setItems(loaded);
       setLayout(randomLayout(loaded.length, width && height ? width / height : 1.6));
       setLoadState('ready');
@@ -473,7 +477,7 @@ export default function MemoriesAtlas() {
       <button type="button" className="btn btn-light shadow-sm" onClick={resetView}>Reset view</button>
     </div>
 
-    {viewer && <PhotoViewer photos={viewer.photos} index={viewer.index} cards={cards}
+    {viewer && <PhotoViewer photos={viewer.photos} index={viewer.index} links={links}
       onIndex={index => setViewer(current => current && { ...current, index })} onClose={() => setViewer(null)} />}
     <style jsx>{`
       .memories-atlas:focus:not(:focus-visible) { outline: none; }

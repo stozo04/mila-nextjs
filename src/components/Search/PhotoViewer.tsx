@@ -3,22 +3,22 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Modal } from 'react-bootstrap';
-import { photoSource, photoUrl, type JourneyCards } from '@/lib/search/collections';
+import { photoSource, photoUrl, type SourceLinks } from '@/lib/search/collections';
 
 export type ViewerPhoto = { key: string; width: number | null; height: number | null };
 
 type Props = {
   photos: ViewerPhoto[];
   index: number;
-  cards: JourneyCards;
+  links: SourceLinks;
   onIndex: (index: number) => void;
   onClose: () => void;
 };
 
-export default function PhotoViewer({ photos, index, cards, onIndex, onClose }: Props) {
+export default function PhotoViewer({ photos, index, links, onIndex, onClose }: Props) {
   const photo = photos[index];
   if (!photo) return null;
-  const source = photoSource(photo.key, cards);
+  const source = photoSource(photo.key, links);
   return <Modal show onHide={onClose} centered size="xl" aria-labelledby="photo-viewer-title"
     onKeyDown={event => {
       if (event.key === 'ArrowLeft' && index > 0) onIndex(index - 1);
