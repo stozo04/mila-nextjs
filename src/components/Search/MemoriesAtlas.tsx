@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { COLLECTIONS, thumbUrl, type PhotoCollection, type SourceLinks } from '@/lib/search/collections';
 import type { LetterResult, SearchResult } from '@/lib/search/types';
-import { MATCH_SCALE, TILE, fitCamera, gridLayout, openingCamera, zoomAt, type Camera, type Layout } from './atlasLayout';
+import { MATCH_SCALE, TILE, globeAmount, globeZoom, gridLayout, openingCamera, wrapDelta, zoomAt, type Camera, type Layout } from './atlasLayout';
 import type { GlassAtlasRenderer } from './glass/types';
 import GlassSearchBar from './glass/GlassSearchBar';
 import GlassZoomControls from './glass/GlassZoomControls';
@@ -17,6 +17,8 @@ type SearchState = { status: 'idle' | 'searching' | 'waking' | 'done' | 'error';
 
 const MAX_ZOOM = 4;
 const WAKING_AFTER_MS = 1500;
+const SPIN_AFTER_MS = 1500; // the globe resumes spinning this long after the last touch
+const SPIN_SECONDS = 90; // one full turn of the globe
 const LABEL = 'Mila’s memories atlas. Drag to explore, scroll or pinch to zoom.';
 const NO_WEBGL = 'This browser can’t show Mila’s memories. Try the latest Chrome, Safari, or Edge.';
 const collectionLabel = (id: string) => COLLECTIONS.find(collection => collection.id === id)?.label ?? 'Photo';
@@ -48,6 +50,8 @@ export default function MemoriesAtlas() {
   const ranks = useRef(new Map<string, number>());
   const letters = useRef<PlacedLetter[]>([]);
   const flight = useRef(0);
+  const spin = useRef({ timer: 0, frame: 0 });
+  const layoutRef = useRef<Layout | null>(null);
   const searchId = useRef(0);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef({ moved: 0, startedAt: 0 });
@@ -111,6 +115,8 @@ export default function MemoriesAtlas() {
     };
   }, []);
 
+  useEffect(() => { layoutRef.current = layout; }, [layout]);
+
   const draw = useCallback(() => {
     const glass = renderer.current;
     if (!glass || !camera.current) return;
@@ -133,7 +139,7 @@ export default function MemoriesAtlas() {
       size.current = { width, height };
       renderer.current?.setSize(width, height, window.devicePixelRatio || 1);
       if (layout) {
-        minZoom.current = fitCamera(layout, width, height).zoom * 0.5;
+        minZoom.current = globeZoom(layout, width, height) * 0.85;
         camera.current ??= openingCamera(layout, width, height);
       }
       draw();
@@ -143,25 +149,59 @@ export default function MemoriesAtlas() {
   }, [layout, webgl, draw]);
 
   // ---- camera ------------------------------------------------------------------------
+  // At the globe, a short pause after the last touch starts a slow spin; any touch stops it.
+  // Spinning is panning sideways, since the globe's circumference is the grid's width.
+  const stopSpin = useCallback(() => {
+    clearTimeout(spin.current.timer);
+    cancelAnimationFrame(spin.current.frame);
+  }, []);
+
+  const scheduleSpin = useCallback(() => {
+    stopSpin();
+    const cam = camera.current;
+    const grid = layoutRef.current;
+    const { width, height } = size.current;
+    if (!cam || !grid || globeAmount(cam.zoom, grid, width, height) < 0.999) return;
+    spin.current.timer = window.setTimeout(() => {
+      let last = performance.now();
+      const step = (now: number) => {
+        const current = camera.current!;
+        camera.current = { ...current, x: current.x + (grid.width / SPIN_SECONDS) * ((now - last) / 1000) };
+        last = now;
+        draw();
+        spin.current.frame = requestAnimationFrame(step);
+      };
+      spin.current.frame = requestAnimationFrame(step);
+    }, SPIN_AFTER_MS);
+  }, [draw, stopSpin]);
+
+  useEffect(() => stopSpin, [stopSpin]);
+
   const moveCamera = useCallback((next: Camera) => {
     cancelAnimationFrame(flight.current);
     camera.current = next;
     draw();
-  }, [draw]);
+    scheduleSpin();
+  }, [draw, scheduleSpin]);
 
+  // The grid wraps, so a flight always takes the short way round to the target.
   const flyTo = useCallback((target: Camera) => {
     const from = camera.current;
-    if (!from) return;
+    const grid = layoutRef.current;
+    if (!from || !grid) return;
+    stopSpin();
     cancelAnimationFrame(flight.current);
+    const to = { ...target, x: from.x + wrapDelta(target.x, from.x, grid.width), y: from.y + wrapDelta(target.y, from.y, grid.height) };
     const started = performance.now();
     const step = (now: number) => {
       const t = easeInOut(Math.min(1, (now - started) / 700));
-      camera.current = { x: from.x + (target.x - from.x) * t, y: from.y + (target.y - from.y) * t, zoom: from.zoom * (target.zoom / from.zoom) ** t };
+      camera.current = { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t, zoom: from.zoom * (to.zoom / from.zoom) ** t };
       draw();
       if (t < 1) flight.current = requestAnimationFrame(step);
+      else scheduleSpin();
     };
     flight.current = requestAnimationFrame(step);
-  }, [draw]);
+  }, [draw, scheduleSpin, stopSpin]);
 
   const zoomBy = (factor: number) => {
     const cam = camera.current;
@@ -169,7 +209,11 @@ export default function MemoriesAtlas() {
     const { width, height } = size.current;
     flyTo(zoomAt(cam, factor, width / 2, height / 2, width, height, minZoom.current, MAX_ZOOM));
   };
-  const resetView = () => layout && flyTo(fitCamera(layout, size.current.width, size.current.height));
+  // Reset flies out to the globe, keeping whatever is in front of you facing you.
+  const resetView = () => {
+    const cam = camera.current;
+    if (cam && layout) flyTo({ ...cam, zoom: globeZoom(layout, size.current.width, size.current.height) });
+  };
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -222,6 +266,7 @@ export default function MemoriesAtlas() {
   };
 
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    stopSpin();
     // focusVisible: false keeps the keyboard outline off after a mouse or touch press.
     wrapRef.current?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -278,10 +323,14 @@ export default function MemoriesAtlas() {
     ranks.current = new Map(results.filter(row => row.kind === 'photo').map((row, rank) => [row.key, rank]));
     const best = results.find(row => row.kind === 'photo');
     const anchor = best && layout ? layout.positions[indexOf.get(best.key)!] : null;
+    // Distances on the wrapping grid: the nearest copy of each tile counts.
+    const offset = (at: { x: number; y: number }) => layout && anchor
+      ? { x: wrapDelta(at.x, anchor.x, layout.width), y: wrapDelta(at.y, anchor.y, layout.height) } : { x: 0, y: 0 };
+    const around = (at: { x: number; y: number }) => Math.hypot(offset(at).x, offset(at).y);
     // Letter cards take the places of the dimmed photos nearest the best match.
     const free = layout && anchor ? items.map((item, index) => ({ index, at: layout.positions[index] }))
       .filter(({ index }) => !ranks.current.has(items[index].key))
-      .sort((a, b) => Math.hypot(a.at.x - anchor.x, a.at.y - anchor.y) - Math.hypot(b.at.x - anchor.x, b.at.y - anchor.y)) : [];
+      .sort((a, b) => around(a.at) - around(b.at)) : [];
     letters.current = results.filter((row): row is LetterResult => row.kind === 'letter')
       .map((result, index) => ({ result, tileIndex: free[index]?.index ?? -1 })).filter(letter => letter.tileIndex >= 0);
     // No matches means nothing to highlight, so nothing dims either.
@@ -294,7 +343,9 @@ export default function MemoriesAtlas() {
     const first = results[0];
     const target = !layout || !first ? null : first.kind === 'letter' ? (letters.current[0] && layout.positions[letters.current[0].tileIndex]) : anchor;
     if (target && layout) {
-      const points = [target, ...letters.current.map(letter => layout.positions[letter.tileIndex])];
+      // Offsets from the target, so the frame stays together across the wrap.
+      const points = [target, ...letters.current.map(letter => layout.positions[letter.tileIndex])]
+        .map(point => ({ x: target.x + wrapDelta(point.x, target.x, layout.width), y: target.y + wrapDelta(point.y, target.y, layout.height) }));
       const xs = points.map(point => point.x);
       const ys = points.map(point => point.y);
       const spanX = Math.max(...xs) - Math.min(...xs) + TILE * MATCH_SCALE * 2;

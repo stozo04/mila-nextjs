@@ -24,16 +24,22 @@ function shuffle<T>(values: T[]) {
   return values;
 }
 
-/** A grid about as wide as the screen's aspect, filled row by row in a random order. */
+/** A grid about as wide as the screen's aspect, filled in a random order. The grid wraps,
+ *  so every row is full: when the photos don't divide evenly, a few rows hold one fewer,
+ *  spread through the grid and spaced a little wider. */
 export function gridLayout(count: number, aspect: number): Layout {
-  const columns = Math.max(1, Math.ceil(Math.sqrt(count * Math.max(aspect, 0.5))));
-  const rows = Math.max(1, Math.ceil(count / columns));
-  const cells = shuffle(Array.from({ length: count }, (_, index) => index));
-  const positions = cells.map(cell => ({
-    x: (cell % columns) * CELL + CELL / 2,
-    y: Math.floor(cell / columns) * CELL + CELL / 2,
-  }));
-  return { positions, columns, width: columns * CELL, height: rows * CELL };
+  const target = Math.max(1, Math.ceil(Math.sqrt(count * Math.max(aspect, 0.5))));
+  const rows = Math.max(1, Math.ceil(count / target));
+  const fewer = Math.floor(count / rows);
+  const extra = count % rows; // rows that hold one more than `fewer`
+  const columns = fewer + (extra ? 1 : 0);
+  const width = columns * CELL;
+  const slots: Placed[] = [];
+  for (let row = 0; row < rows; row++) {
+    const inRow = fewer + (Math.floor(((row + 1) * extra) / rows) > Math.floor((row * extra) / rows) ? 1 : 0);
+    for (let slot = 0; slot < inRow; slot++) slots.push({ x: ((slot + 0.5) * width) / inRow, y: row * CELL + CELL / 2 });
+  }
+  return { positions: shuffle(slots), columns, width, height: rows * CELL };
 }
 
 export function fitCamera(layout: Pick<Layout, 'width' | 'height'>, screenWidth: number, screenHeight: number): Camera {

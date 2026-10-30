@@ -1,17 +1,16 @@
 // WebGL glass tiles for the memories atlas. Every tile is one instance of a small quad drawn
 // twice: a shadow/glow pass, then the glass pass, so a neighbour's shadow never lands on a
-// tile. Thumbnails stream into two pooled texture arrays (128 px cells for most tiles,
-// 256 px cells for tiles that are large on screen and for letter cards), cell by cell.
+// tile. The grid lies on one sphere at every zoom (see atlasLayout): a few screens wide when
+// zoomed in, the whole globe when zoomed out, wrapping round in both directions. Thumbnails
+// stream into two pooled texture arrays (128 px cells for most tiles, 256 px cells for tiles
+// that are large on screen and for letter cards), cell by cell.
 import * as THREE from 'three';
-import { TILE, type Camera, type Layout } from '../atlasLayout';
+import { FLAT_CURVE, GLOBE_LATITUDE, MATCH_SCALE, TILE, globeAmount, globeRadius, wrapDelta, type Camera, type Layout } from '../atlasLayout';
 import type { GlassAtlasRenderer, GlassLetterCard, GlassPick, GlassTile } from './types';
 
 const FOV = 32;
 const FOCAL = 0.5 / Math.tan((FOV * Math.PI) / 360); // screen-height multiplier for the focal length
-// How far the grid falls away toward the screen edges. The fall levels off beyond CURVE_REACH
-// half-screens so far tiles keep sliding off screen instead of folding back toward the centre.
-const CURVE = 0.18;
-const CURVE_REACH = 1.4;
+const HORIZON_MARGIN = 0.02; // hide tiles this close to edge-on at the sphere's horizon
 const MARGIN = 0.2; // quad padding around a tile, in tile widths, for the shadow and glow
 const PAGE = 1024;
 const LO = { cell: 128, layers: 16 };
@@ -29,10 +28,12 @@ const vertexShader = /* glsl */ `
   in vec3 aHi;
   in vec3 aState; // dim, glow, scale
   uniform vec2 uCam;
-  uniform float uZoom;
-  uniform float uHalfMin;
-  uniform float uCurve;
-  uniform float uReach;
+  uniform vec2 uPeriod; // the grid's width and height: it wraps in both directions
+  uniform float uRadius;
+  uniform float uLatScale;
+  uniform float uGlobe;
+  uniform float uDistance;
+  uniform float uHorizon;
   uniform float uTile;
   uniform float uFocal;
   uniform float uPixelRatio;
@@ -48,17 +49,30 @@ const vertexShader = /* glsl */ `
     vLo = aLo;
     vHi = aHi;
     vState = aState;
-    vec2 world = aCenter + vLocal * uTile * aState.z;
-    // The grid curves, not the tile: each tile falls back as one flat piece from its centre,
-    // so its triangles stay coplanar and the photo has no seam along their shared edge.
-    vec2 fromCentre = (aCenter - uCam) * uZoom / uHalfMin;
-    float r2 = dot(fromCentre, fromCentre);
-    float fall = uCurve * r2 / (1.0 + r2 / (uReach * uReach)) * uHalfMin / uZoom;
-    // Edge smoothing width in tile units, from the tile's size on screen. Screen-space
-    // derivatives (fwidth) are unreliable along the quad's internal edge on some GPUs.
-    float distance = uFocal / uZoom;
-    vAa = 0.75 / (uTile * aState.z * uZoom * distance / (distance + fall) * uPixelRatio);
-    gl_Position = projectionMatrix * viewMatrix * vec4(world.x, -world.y, -fall, 1.0);
+    // The shortest way round to this tile from the camera, then its place on the sphere.
+    vec2 delta = mod(aCenter - uCam + 0.5 * uPeriod, uPeriod) - 0.5 * uPeriod;
+    float lon = delta.x / uRadius;
+    float lat = delta.y / uRadius * uLatScale;
+    vec3 n = vec3(sin(lon) * cos(lat), -sin(lat), cos(lon) * cos(lat));
+    if (abs(lon) >= 1.5707 || abs(lat) >= 1.5707 || n.z <= uHorizon) {
+      gl_Position = vec4(2.0, 2.0, 2.0, 1.0); // facing away: every vertex off screen
+      vAa = 1.0;
+      return;
+    }
+    // Tangent to the sphere, so tiles toward the edges turn away. The whole tile is one
+    // flat piece, so its two triangles stay coplanar and the photo has no seam.
+    vec3 centre = uRadius * n - vec3(0.0, 0.0, uRadius);
+    vec3 east = vec3(cos(lon), 0.0, -sin(lon));
+    vec3 south = vec3(-sin(lon) * sin(lat), -cos(lat), -cos(lon) * sin(lat));
+    float hx = mix(1.0, cos(lat), uGlobe);
+    vec2 local = vLocal * uTile * aState.z;
+    vec3 world = centre + east * local.x * hx + south * local.y * uLatScale;
+    // Edge smoothing width in tile units, from the tile's foreshortened size on screen.
+    // Screen-space derivatives (fwidth) are unreliable along the quad's internal edge.
+    float facing = max(dot(n, normalize(vec3(0.0, 0.0, uDistance) - centre)), 0.2);
+    float pixels = uTile * aState.z * uFocal / (uDistance - centre.z) * min(hx, uLatScale) * facing;
+    vAa = 0.75 / (pixels * uPixelRatio);
+    gl_Position = projectionMatrix * viewMatrix * vec4(world, 1.0);
   }
 `;
 
@@ -69,6 +83,7 @@ const fragmentShader = /* glsl */ `
   uniform sampler2DArray uHi;
   uniform vec4 uCells; // lo cell / page, hi cell / page, lo inset, hi inset
   uniform int uPass; // 0: shadow and glow, 1: glass
+  uniform float uGlobe;
   in vec2 vLocal;
   flat in vec3 vColor;
   flat in vec3 vLo;
@@ -108,7 +123,8 @@ const fragmentShader = /* glsl */ `
 
     if (uPass == 0) {
       // A rose-tinted shadow, so it reads as depth on the pink page rather than grey dirt.
-      float shadow = 0.2 * (1.0 - smoothstep(-0.06, 0.16, box(p - vec2(0.0, 0.045)))) * (1.0 - 0.75 * dim);
+      // Shadows fade on the globe, where a drop shadow onto the page would read wrongly.
+      float shadow = 0.2 * (1.0 - smoothstep(-0.06, 0.16, box(p - vec2(0.0, 0.045)))) * (1.0 - 0.75 * dim) * (1.0 - uGlobe);
       float halo = glow * (1.0 - smoothstep(0.0, 0.05 + 0.06 * glow, d)) * step(0.0, d);
       float alpha = halo + shadow * (1.0 - halo);
       outColor = vec4(PINK * halo + vec3(0.42, 0.12, 0.25) * shadow * (1.0 - halo), alpha);
@@ -183,7 +199,11 @@ class Pool {
   }
 }
 
-type Metrics = { x: Float32Array; y: Float32Array; size: Float32Array };
+// Where each tile landed in the last frame: projected centre, foreshortened size, and whether
+// it faces the camera. Typed arrays, refilled in place, so a spinning globe allocates nothing.
+type Metrics = { x: Float32Array; y: Float32Array; size: Float32Array; front: Uint8Array };
+const metricsFor = (count: number): Metrics =>
+  ({ x: new Float32Array(count), y: new Float32Array(count), size: new Float32Array(count), front: new Uint8Array(count) });
 
 function parseColor(hex: string) {
   const value = Number.parseInt(hex.replace('#', ''), 16);
@@ -228,10 +248,12 @@ export function createGlassRenderer(canvas: HTMLCanvasElement): GlassAtlasRender
 
   const uniforms = {
     uCam: { value: new THREE.Vector2() },
-    uZoom: { value: 1 },
-    uHalfMin: { value: 400 },
-    uCurve: { value: CURVE },
-    uReach: { value: CURVE_REACH },
+    uPeriod: { value: new THREE.Vector2(1, 1) },
+    uRadius: { value: 1 },
+    uLatScale: { value: 1 },
+    uGlobe: { value: 0 },
+    uDistance: { value: 1 },
+    uHorizon: { value: 0 },
     uTile: { value: TILE },
     uFocal: { value: 1 },
     uPixelRatio: { value: 1 },
@@ -258,6 +280,7 @@ export function createGlassRenderer(canvas: HTMLCanvasElement): GlassAtlasRender
 
   let tiles: GlassTile[] = [];
   let positions: Layout['positions'] = [];
+  let grid = { width: 1, height: 1 };
   let geometry: THREE.InstancedBufferGeometry | null = null;
   let meshes: THREE.Mesh[] = [];
   let attributes: Record<'aCenter' | 'aColor' | 'aLo' | 'aHi' | 'aState', THREE.InstancedBufferAttribute> | null = null;
@@ -266,7 +289,7 @@ export function createGlassRenderer(canvas: HTMLCanvasElement): GlassAtlasRender
   let easeStart = 0;
   let loSlot = new Int32Array(0);
   let hiSlot = new Int32Array(0);
-  let metrics: Metrics = { x: new Float32Array(0), y: new Float32Array(0), size: new Float32Array(0) };
+  let metrics = metricsFor(0);
   const loading = new Set<number>();
   const failed = new Set<string>();
   let inFlight = 0;
@@ -282,33 +305,65 @@ export function createGlassRenderer(canvas: HTMLCanvasElement): GlassAtlasRender
   let pending = 0;
   let disposed = false;
 
-  const halfMin = () => Math.min(width, height) / 2;
+  // The sphere for this frame, shared by the shader (as uniforms) and the CPU (pick, loading).
+  const sphere = { radius: 1, latScale: 1, globe: 0, distance: 1, focal: 1, horizon: 0 };
 
-  // Same projection as the vertex shader, for picking and for deciding what to load.
-  function project(x: number, y: number) {
-    const focal = height * FOCAL;
-    const distance = focal / cam.zoom;
-    const dx = (x - cam.x) * cam.zoom;
-    const dy = (y - cam.y) * cam.zoom;
-    const r2 = (dx * dx + dy * dy) / halfMin() ** 2;
-    const fall = CURVE * r2 / (1 + r2 / CURVE_REACH ** 2) * halfMin() / cam.zoom;
-    const k = distance / (distance + fall);
-    return { x: width / 2 + dx * k, y: height / 2 + dy * k, k };
+  function updateSphere() {
+    sphere.focal = height * FOCAL;
+    sphere.distance = sphere.focal / cam.zoom;
+    sphere.globe = globeAmount(cam.zoom, grid, width, height);
+    // Sized to the half-diagonal, so the sphere's edge never shows in a corner on any screen shape.
+    const flat = (Math.hypot(width, height) / 2 / cam.zoom) * FLAT_CURVE;
+    const globe = globeRadius(grid);
+    // Interpolating curvature, not radius, keeps the zoomed-in sphere from ballooning early.
+    sphere.radius = 1 / ((1 - sphere.globe) / flat + sphere.globe / globe);
+    sphere.latScale = 1 + (GLOBE_LATITUDE / (grid.height / 2 / globe) - 1) * sphere.globe;
+    // A tile faces the camera while cos(lon)cos(lat) clears the horizon seen from the camera.
+    sphere.horizon = sphere.radius / (sphere.distance + sphere.radius) + HORIZON_MARGIN;
+  }
+
+  // The shader's maths on the CPU for one tile, into these scalars (no allocation per tile).
+  const at = { lon: 0, lat: 0, nx: 0, ny: 0, nz: 0, cx: 0, cy: 0, cz: 0, hx: 1, front: false };
+  function locate(tile: number) {
+    const { radius, latScale, globe, horizon } = sphere;
+    at.lon = wrapDelta(positions[tile].x, cam.x, grid.width) / radius;
+    at.lat = (wrapDelta(positions[tile].y, cam.y, grid.height) / radius) * latScale;
+    const cosLat = Math.cos(at.lat);
+    at.nx = Math.sin(at.lon) * cosLat;
+    at.ny = -Math.sin(at.lat);
+    at.nz = Math.cos(at.lon) * cosLat;
+    at.front = Math.abs(at.lon) < 1.5707 && Math.abs(at.lat) < 1.5707 && at.nz > horizon;
+    at.cx = radius * at.nx;
+    at.cy = radius * at.ny;
+    at.cz = radius * at.nz - radius;
+    at.hx = 1 + (cosLat - 1) * globe;
+  }
+
+  // Camera at (0, 0, distance) looking down -z; three's y is up, the atlas's is down.
+  const screen = { x: 0, y: 0 };
+  function projectPoint(x: number, y: number, z: number) {
+    const k = sphere.focal / (sphere.distance - z);
+    screen.x = width / 2 + x * k;
+    screen.y = height / 2 - y * k;
   }
 
   function updateCamera() {
-    const focal = height * FOCAL;
-    const distance = focal / cam.zoom;
+    updateSphere();
     camera.aspect = width / height;
-    camera.position.set(cam.x, -cam.y, distance);
-    camera.near = distance * 0.05;
-    camera.far = distance * 4;
+    camera.position.set(0, 0, sphere.distance);
+    // The nearest point of the sphere is the z = 0 plane; the farthest visible is its horizon.
+    camera.near = sphere.distance * 0.25;
+    camera.far = sphere.distance + sphere.radius * 2.2;
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
     uniforms.uCam.value.set(cam.x, cam.y);
-    uniforms.uZoom.value = cam.zoom;
-    uniforms.uHalfMin.value = halfMin();
-    uniforms.uFocal.value = focal;
+    uniforms.uPeriod.value.set(grid.width, grid.height);
+    uniforms.uRadius.value = sphere.radius;
+    uniforms.uLatScale.value = sphere.latScale;
+    uniforms.uGlobe.value = sphere.globe;
+    uniforms.uDistance.value = sphere.distance;
+    uniforms.uHorizon.value = sphere.horizon;
+    uniforms.uFocal.value = sphere.focal;
   }
 
   function upload(pool: Pool, slot: number, draw: (context: CanvasRenderingContext2D, size: number) => void) {
@@ -368,17 +423,24 @@ export function createGlassRenderer(canvas: HTMLCanvasElement): GlassAtlasRender
     image.src = url;
   }
 
-  // Measures every tile on screen, marks the cells still in use, and starts the most central loads.
+  // Measures every tile on screen, marks the cells still in use, and starts the most central
+  // loads. Candidates go into reusable typed arrays: this runs every frame while the globe spins.
+  let candidates = new Int32Array(0);
+  let candidateDistance = new Float32Array(0);
   function schedule() {
-    const wanted: { tile: number; distance: number }[] = [];
+    let count = 0;
     for (let tile = 0; tile < tiles.length; tile++) {
-      const at = positions[tile];
-      const projected = project(at.x, at.y);
-      const size = TILE * cam.zoom * projected.k;
-      metrics.x[tile] = projected.x;
-      metrics.y[tile] = projected.y;
+      locate(tile);
+      metrics.front[tile] = at.front ? 1 : 0;
+      if (!at.front) { metrics.size[tile] = 0; continue; }
+      projectPoint(at.cx, at.cy, at.cz);
+      const facing = Math.max(0, at.nx * -at.cx + at.ny * -at.cy + at.nz * (sphere.distance - at.cz))
+        / Math.hypot(at.cx, at.cy, sphere.distance - at.cz);
+      const size = TILE * (sphere.focal / (sphere.distance - at.cz)) * Math.min(at.hx, sphere.latScale) * facing;
+      metrics.x[tile] = screen.x;
+      metrics.y[tile] = screen.y;
       metrics.size[tile] = size;
-      const visible = projected.x + size > 0 && projected.x - size < width && projected.y + size > 0 && projected.y - size < height;
+      const visible = screen.x + size > 0 && screen.x - size < width && screen.y + size > 0 && screen.y - size < height;
       if (!visible) continue;
       if (loSlot[tile] >= 0) lo.lastUsed[loSlot[tile]] = frame;
       if (hiSlot[tile] >= 0) hi.lastUsed[hiSlot[tile]] = frame;
@@ -386,13 +448,19 @@ export function createGlassRenderer(canvas: HTMLCanvasElement): GlassAtlasRender
       const needsHi = size >= HI_MIN_PX && hiSlot[tile] < 0 && !isCardTile(tile);
       const thumb = tiles[tile].thumb;
       if ((needsLo || needsHi) && thumb && !failed.has(thumb) && !loading.has(tile)) {
-        wanted.push({ tile, distance: Math.hypot(projected.x - width / 2, projected.y - height / 2) });
+        candidates[count] = tile;
+        candidateDistance[count] = Math.hypot(screen.x - width / 2, screen.y - height / 2);
+        count++;
       }
     }
-    wanted.sort((a, b) => a.distance - b.distance);
-    for (const { tile } of wanted) {
-      if (inFlight >= MAX_LOADS) break;
-      load(tile);
+    // Start the nearest few: a short selection beats sorting thousands every frame.
+    while (inFlight < MAX_LOADS && count > 0) {
+      let nearest = 0;
+      for (let index = 1; index < count; index++) if (candidateDistance[index] < candidateDistance[nearest]) nearest = index;
+      load(candidates[nearest]);
+      count--;
+      candidates[nearest] = candidates[count];
+      candidateDistance[nearest] = candidateDistance[count];
     }
   }
 
@@ -402,9 +470,9 @@ export function createGlassRenderer(canvas: HTMLCanvasElement): GlassAtlasRender
 
   function targetState(tile: number): [number, number, number] {
     if (!matches) return [0, 0, 1];
-    if (isCardTile(tile)) return [0, 0.6, 1.08];
+    if (isCardTile(tile)) return [0, 0.6, MATCH_SCALE];
     const rank = matches.get(tile);
-    return rank === undefined ? [1, 0, 1] : [0, rank === 0 ? 1 : 0.6, 1.08];
+    return rank === undefined ? [1, 0, 1] : [0, rank === 0 ? 1 : 0.6, MATCH_SCALE];
   }
 
   function retarget() {
@@ -509,7 +577,10 @@ export function createGlassRenderer(canvas: HTMLCanvasElement): GlassAtlasRender
       hi.owner.fill(-1);
       loSlot = new Int32Array(count).fill(-1);
       hiSlot = new Int32Array(count).fill(-1);
-      metrics = { x: new Float32Array(count), y: new Float32Array(count), size: new Float32Array(count) };
+      metrics = metricsFor(count);
+      candidates = new Int32Array(count);
+      candidateDistance = new Float32Array(count);
+      grid = { width: Math.max(1, layout.width), height: Math.max(1, layout.height) };
       loading.clear();
 
       const base = new THREE.PlaneGeometry(1 + MARGIN * 2, 1 + MARGIN * 2);
@@ -574,20 +645,42 @@ export function createGlassRenderer(canvas: HTMLCanvasElement): GlassAtlasRender
     },
 
     pick(screenX, screenY) {
+      updateSphere();
+      // The tile's four projected corners, tested as a convex quad (foreshortening included).
+      const corners = new Float32Array(8);
       const hit = (tile: number, scale: number) => {
-        const at = positions[tile];
-        const projected = project(at.x, at.y);
-        const half = (TILE * scale * cam.zoom * projected.k) / 2;
-        return Math.abs(screenX - projected.x) <= half && Math.abs(screenY - projected.y) <= half;
+        locate(tile);
+        if (!at.front) return false;
+        const cosLat = Math.cos(at.lat);
+        const east = [Math.cos(at.lon), 0, -Math.sin(at.lon)];
+        const south = [-Math.sin(at.lon) * Math.sin(at.lat), -cosLat, -Math.cos(at.lon) * Math.sin(at.lat)];
+        const half = (TILE * scale) / 2;
+        [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([u, v], corner) => {
+          const a = u * half * at.hx;
+          const b = v * half * sphere.latScale;
+          projectPoint(at.cx + east[0] * a + south[0] * b, at.cy + east[1] * a + south[1] * b, at.cz + east[2] * a + south[2] * b);
+          corners[corner * 2] = screen.x;
+          corners[corner * 2 + 1] = screen.y;
+        });
+        let sign = 0;
+        for (let corner = 0; corner < 4; corner++) {
+          const x0 = corners[corner * 2], y0 = corners[corner * 2 + 1];
+          const x1 = corners[((corner + 1) % 4) * 2], y1 = corners[((corner + 1) % 4) * 2 + 1];
+          const cross = (x1 - x0) * (screenY - y0) - (y1 - y0) * (screenX - x0);
+          if (cross === 0) continue;
+          if (sign === 0) sign = Math.sign(cross);
+          else if (Math.sign(cross) !== sign) return false;
+        }
+        return true;
       };
       if (matches) {
-        const card = cards.findIndex(c => hit(c.tileIndex, 1.08));
+        const card = cards.findIndex(c => hit(c.tileIndex, MATCH_SCALE));
         if (card >= 0) return { kind: 'letter', card } satisfies GlassPick;
       }
       let best: GlassPick = null;
       for (let tile = 0; tile < tiles.length; tile++) {
         const matched = !!matches?.has(tile);
-        if (hit(tile, matched ? 1.08 : 1)) {
+        if (hit(tile, matched ? MATCH_SCALE : 1)) {
           best = { kind: 'photo', index: tile };
           if (matched) break; // a lifted match sits on top of any neighbour it overlaps
         }
