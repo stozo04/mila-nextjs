@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { COLLECTIONS, thumbUrl, type PhotoCollection, type SourceLinks } from '@/lib/search/collections';
 import type { LetterResult, SearchResult } from '@/lib/search/types';
-import { MATCH_SCALE, TILE, fitCamera, gridLayout, zoomAt, type Camera, type Layout } from './atlasLayout';
+import { MATCH_SCALE, TILE, fitCamera, gridLayout, openingCamera, zoomAt, type Camera, type Layout } from './atlasLayout';
 import type { GlassAtlasRenderer } from './glass/types';
 import GlassSearchBar from './glass/GlassSearchBar';
 import GlassZoomControls from './glass/GlassZoomControls';
@@ -117,7 +117,7 @@ export default function MemoriesAtlas() {
     draw();
   }, [webgl, items, layout, draw]);
 
-  // Canvas size follows the container; the first measurement after data loads fits the camera.
+  // Canvas size follows the container; the first measurement after data loads opens on a random spot.
   useEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap || webgl !== 'ready') return;
@@ -126,9 +126,8 @@ export default function MemoriesAtlas() {
       size.current = { width, height };
       renderer.current?.setSize(width, height, window.devicePixelRatio || 1);
       if (layout) {
-        const fit = fitCamera(layout, width, height);
-        minZoom.current = fit.zoom * 0.5;
-        camera.current ??= fit;
+        minZoom.current = fitCamera(layout, width, height).zoom * 0.5;
+        camera.current ??= openingCamera(layout, width, height);
       }
       draw();
     });

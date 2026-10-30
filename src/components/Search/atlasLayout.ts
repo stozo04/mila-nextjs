@@ -41,7 +41,19 @@ export function fitCamera(layout: Pick<Layout, 'width' | 'height'>, screenWidth:
   return { x: layout.width / 2, y: layout.height / 2, zoom: Number.isFinite(zoom) && zoom > 0 ? zoom : 1 };
 }
 
-export const toScreen = (camera: Camera, x: number, y: number, width: number, height: number) =>
+/** A random spot zoomed in to show about `tiles` photos, kept inside the grid. A grid
+ *  that small already fits on screen just fits. */
+export function openingCamera(layout: Pick<Layout, 'width' | 'height'>, screenWidth: number, screenHeight: number, tiles = 12): Camera {
+  const fit = fitCamera(layout, screenWidth, screenHeight);
+  const zoom = Math.max(fit.zoom, Math.sqrt((screenWidth * screenHeight) / (tiles * CELL * CELL)));
+  const pick = (extent: number, screen: number) => {
+    const half = screen / 2 / zoom;
+    return half * 2 >= extent ? extent / 2 : half + Math.random() * (extent - half * 2);
+  };
+  return { x: pick(layout.width, screenWidth), y: pick(layout.height, screenHeight), zoom };
+}
+
+export const toScreen =(camera: Camera, x: number, y: number, width: number, height: number) =>
   ({ x: (x - camera.x) * camera.zoom + width / 2, y: (y - camera.y) * camera.zoom + height / 2 });
 
 export const toWorld = (camera: Camera, x: number, y: number, width: number, height: number) =>

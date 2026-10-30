@@ -78,7 +78,7 @@ const fragmentShader = /* glsl */ `
   out vec4 outColor;
 
   const float RADIUS = 0.18;
-  const float BEVEL = 0.13;
+  const float BEVEL = 0.08;
   const vec3 PINK = vec3(0.76, 0.094, 0.357);
 
   float box(vec2 p) {
@@ -118,13 +118,14 @@ const fragmentShader = /* glsl */ `
     float coverage = 1.0 - smoothstep(-aa, aa, d);
     if (coverage <= 0.0) discard;
 
-    // Lens: inside the bevel band the photo bends toward the rim, splitting slightly by colour.
+    // Lens: inside the bevel band the photo bends toward the rim. The colour split stays
+    // around a pixel at the very rim; wider, it read as a rainbow sheen across the photo.
     float e = clamp(1.0 + d / BEVEL, 0.0, 1.0);
     vec2 h = vec2(0.002, 0.0);
     vec2 n = normalize(vec2(box(p + h.xy) - box(p - h.xy), box(p + h.yx) - box(p - h.yx)) + 1e-6);
-    vec2 bend = -n * e * e * 0.07;
+    vec2 bend = -n * e * e * 0.04;
     vec2 uv = p + 0.5;
-    vec3 col = vec3(photo(uv + bend * 1.0).r, photo(uv + bend * 0.82).g, photo(uv + bend * 0.64).b);
+    vec3 col = vec3(photo(uv + bend).r, photo(uv + bend * 0.97).g, photo(uv + bend * 0.94).b);
 
     col = mix(col, vec3(1.0), 0.04); // a touch of milkiness from the glass body
     col *= 1.0 - 0.2 * smoothstep(0.2, 0.5, p.y) * e; // thicker glass reads darker at the bottom

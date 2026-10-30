@@ -6,9 +6,9 @@ A signed-in visitor who opens `/` gets a full-screen, zoomable atlas of every ph
 
 - `atlas-signed-in` shows the atlas at `/` for any signed-in visitor, in place of the carousel.
 - `atlas-every-photo` places one tile for every indexed photo from all six photo collections.
-- `atlas-random` lays the tiles out as a tidy grid in a new random order on each visit.
+- `atlas-random` lays the tiles out as a tidy grid in a new random order on each visit, and opens zoomed in on a random spot showing about a dozen photos.
 - `atlas-glass` draws each tile as 3D glass with WebGL: edge refraction, a glossy highlight, a bright rim, and a soft shadow, on a light pink background. A browser without WebGL 2 sees "This browser can't show Mila's memories. Try the latest Chrome, Safari, or Edge." instead of the atlas.
-- `atlas-pan-zoom` pans on drag and zooms on scroll or pinch, with **Zoom in**, **Zoom out**, and **Reset view** buttons for keyboard users.
+- `atlas-pan-zoom` pans on drag and zooms on scroll or pinch, with **Zoom in**, **Zoom out**, and **Reset view** buttons for keyboard users. **Reset view** shows the whole grid.
 - `search-box` accepts typed words in a field labelled `Search Mila's memories`, inside a glass search bar floating at the bottom centre of the atlas.
 - `search-highlight` highlights matching photos in place, dims the rest, flies the view to the best match, and announces how many matched.
 - `search-waking` shows "Waking up Mila's memory…" while the first search after a quiet spell is slow.
@@ -40,7 +40,8 @@ Preconditions:
 - **Prove signed-out `/` is unchanged.** Run `node .claude/skills/verify-mila/control-mila.mjs get / --save search-anything/home-anonymous`. Status is `200` and the body still holds 14 `carousel-item`s, exactly as in [home landing](./home-landing.md).
 - **Search headlessly.** Run `node .claude/skills/verify-mila/control-mila.mjs session`, then `... get "/api/search?q=sonogram" --as-admin --save search-anything/search-sonogram`. Status is `200 OK` with JSON whose `results` array is ordered best match first. Each item carries `kind` (`photo`), a `url`, a `collection` (`journey`, `sonograms`, `baby-shower`, `gender-reveal`, `letter-photos`, or `homepage`), and a `score`. The top results are from the `sonograms` collection. Repeat with `&letters=1` and confirm items with `kind` `letter` may now appear, each with a `slug` and `title`. With letters off, no item has `kind` `letter`.
 - **Open the atlas.** In a signed-in tab, open `/`. The carousel is gone. A region labelled `Mila's memories atlas. Drag to explore, scroll or pinch to zoom.` fills the page, with a grid of rounded glass photo tiles on a light pink background, and a glass search bar at the bottom centre holding the field labelled `Search Mila's memories` and the **Include letters** switch.
-- **Check the arrangement is random.** Note where a recognisable photo sits, then reload. The grid is the same shape but the photos are in a different order.
+- **Check the opening view.** Open `/`. The atlas starts zoomed in, with roughly 10–15 photos filling the view. Choose **Reset view**; the whole grid fits on screen.
+- **Check the arrangement is random.** Reload. The opening view lands on a different spot and the photos are in a different order.
 - **Check the glass.** Zoom in until a few tiles fill the screen. Each tile has rounded corners, a photo that bends slightly near its edges with faint colour fringes, a glossy highlight, and a soft shadow on the pink background.
 - **Pan and zoom.** Drag inside the atlas; the tiles move with the pointer. Scroll to zoom in and out. Choose **Zoom in**, **Zoom out**, then **Reset view**; the last returns to the whole atlas.
 - **Search.** Type `sonogram` in the search field and press Enter. If the server was idle, "Waking up Mila's memory…" shows first. Then the sonogram images stay bright, the rest dim, the view moves to the best match, and a status line reads `N matches`.
