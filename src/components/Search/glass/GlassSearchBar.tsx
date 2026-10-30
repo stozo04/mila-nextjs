@@ -83,6 +83,8 @@ export default function GlassSearchBar({ query, onQueryChange, onSubmit, onClear
         border-radius: 999px;
       }
       .glass-pill :global(.glass-icon) { flex: none; color: #c2185b; font-size: 1.1rem; }
+      /* Clear already does this; the browser's own search-field cross would be a second one. */
+      .glass-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
       .glass-input {
         flex: 1 1 140px;
         min-width: 0;

@@ -5,31 +5,22 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { COLLECTIONS, thumbUrl, type PhotoCollection, type SourceLinks } from '@/lib/search/collections';
 import type { LetterResult, SearchResult } from '@/lib/search/types';
-import { LETTER_TILE, TILE, fitCamera, randomLayout, toScreen, toWorld, zoomAt, type Camera, type Layout, type Placed } from './atlasLayout';
+import { MATCH_SCALE, TILE, fitCamera, gridLayout, zoomAt, type Camera, type Layout } from './atlasLayout';
+import type { GlassAtlasRenderer } from './glass/types';
+import GlassSearchBar from './glass/GlassSearchBar';
+import GlassZoomControls from './glass/GlassZoomControls';
 import PhotoViewer, { type ViewerPhoto } from './PhotoViewer';
 
 type AtlasItem = { key: string; collection: PhotoCollection; thumb: string | null; color: string; width: number | null; height: number | null };
-type PlacedLetter = { result: LetterResult; at: Placed };
+type PlacedLetter = { result: LetterResult; tileIndex: number };
 type SearchState = { status: 'idle' | 'searching' | 'waking' | 'done' | 'error'; results: SearchResult[] };
 
 const MAX_ZOOM = 4;
 const WAKING_AFTER_MS = 1500;
-const THUMB_MIN_PX = 24; // below this a tile is drawn as its average colour
-const MAX_THUMB_LOADS = 12;
-const ACCENT = '#c2185b';
 const LABEL = 'Mila’s memories atlas. Drag to explore, scroll or pinch to zoom.';
+const NO_WEBGL = 'This browser can’t show Mila’s memories. Try the latest Chrome, Safari, or Edge.';
 const collectionLabel = (id: string) => COLLECTIONS.find(collection => collection.id === id)?.label ?? 'Photo';
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
-
-function wrapText(context: CanvasRenderingContext2D, text: string, width: number, maxLines: number) {
-  const lines: string[] = [];
-  for (const word of text.split(/\s+/)) {
-    const last = lines.at(-1);
-    if (last !== undefined && context.measureText(`${last} ${word}`).width <= width) lines[lines.length - 1] = `${last} ${word}`;
-    else lines.push(word);
-  }
-  return lines.length > maxLines ? [...lines.slice(0, maxLines - 1), `${lines[maxLines - 1]}…`] : lines;
-}
 
 function letterDate(date: string) {
   const parsed = new Date(`${date}T12:00:00`);
@@ -42,6 +33,7 @@ export default function MemoriesAtlas() {
   const [layout, setLayout] = useState<Layout | null>(null);
   const [links, setLinks] = useState<SourceLinks>({ cards: new Map(), letterPhotos: new Map() });
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [webgl, setWebgl] = useState<'pending' | 'ready' | 'unsupported'>('pending');
   const [query, setQuery] = useState('');
   const [includeLetters, setIncludeLetters] = useState(false);
   const [search, setSearch] = useState<SearchState>({ status: 'idle', results: [] });
@@ -49,19 +41,16 @@ export default function MemoriesAtlas() {
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const renderer = useRef<GlassAtlasRenderer | null>(null);
   const size = useRef({ width: 0, height: 0 });
   const camera = useRef<Camera | null>(null);
   const minZoom = useRef(0.01);
-  const images = useRef(new Map<string, HTMLImageElement | 'loading' | 'error'>());
-  const loadingThumbs = useRef(0);
   const ranks = useRef(new Map<string, number>());
   const letters = useRef<PlacedLetter[]>([]);
-  const frame = useRef(0);
   const flight = useRef(0);
   const searchId = useRef(0);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef({ moved: 0, startedAt: 0 });
-  const data = useRef<{ items: AtlasItem[]; layout: Layout | null }>({ items: [], layout: null });
 
   // ---- data -------------------------------------------------------------------------
   useEffect(() => {
@@ -80,13 +69,14 @@ export default function MemoriesAtlas() {
       }
       const loaded = (atlas.data as [string, PhotoCollection, string | null, string | null, number | null, number | null][])
         .map(([key, collection, thumb, color, width, height]) => ({ key, collection, thumb: thumb && thumbUrl(thumb), color: color ?? '#e9d5df', width, height }));
-      const { width, height } = size.current;
+      // The grid follows the screen's shape; the renderer has not measured it yet.
+      const { width, height } = wrapRef.current?.getBoundingClientRect() ?? { width: 0, height: 0 };
       setLinks({
         cards: new Map((journey.data ?? []).map(card => [card.slug, card.journey_type])),
         letterPhotos: new Map(Object.entries(letterPhotos.data as Record<string, string>)),
       });
       setItems(loaded);
-      setLayout(randomLayout(loaded.length, width && height ? width / height : 1.6));
+      setLayout(gridLayout(loaded.length, width && height ? width / height : 1.6));
       setLoadState('ready');
     })().catch(error => {
       console.error('Unable to load the atlas:', error);
@@ -95,145 +85,63 @@ export default function MemoriesAtlas() {
     return () => { active = false; };
   }, []);
 
-  // ---- drawing ------------------------------------------------------------------------
-  // Redraws go through a ref so a thumbnail finishing late still draws with the latest state.
-  const drawRef = useRef<() => void>(() => {});
-  const render = useCallback(() => {
-    if (!frame.current) frame.current = requestAnimationFrame(() => drawRef.current());
+  // ---- renderer ----------------------------------------------------------------------
+  // three.js loads after the page so the signed-in home paints before the 3D code arrives.
+  useEffect(() => {
+    let active = true;
+    import('./glass/GlassRenderer').then(({ createGlassRenderer }) => {
+      if (!active || !canvasRef.current) return;
+      renderer.current = createGlassRenderer(canvasRef.current);
+      setWebgl(renderer.current ? 'ready' : 'unsupported');
+    }).catch(error => {
+      console.error('Unable to start the atlas renderer:', error);
+      if (active) setWebgl('unsupported');
+    });
+    return () => {
+      active = false;
+      renderer.current?.dispose();
+      renderer.current = null;
+    };
   }, []);
 
-  const requestThumb = useCallback((key: string, url: string) => {
-    if (images.current.has(key) || loadingThumbs.current >= MAX_THUMB_LOADS) return;
-    images.current.set(key, 'loading');
-    loadingThumbs.current++;
-    const image = new window.Image();
-    image.decoding = 'async';
-    image.onload = () => { images.current.set(key, image); loadingThumbs.current--; render(); };
-    image.onerror = () => { images.current.set(key, 'error'); loadingThumbs.current--; render(); };
-    image.src = url;
-  }, [render]);
-
   const draw = useCallback(() => {
-    frame.current = 0;
-    const canvas = canvasRef.current;
-    const cam = camera.current;
-    const { items: atlasItems, layout: atlasLayout } = data.current;
-    if (!canvas || !cam || !atlasLayout) return;
-    const { width, height } = size.current;
-    const context = canvas.getContext('2d')!;
-    const ratio = window.devicePixelRatio || 1;
-    context.setTransform(ratio, 0, 0, ratio, 0, 0);
-    context.clearRect(0, 0, width, height);
-
-    const searching = search.status === 'done' && (ranks.current.size > 0 || letters.current.length > 0);
-    const drawTile = (item: AtlasItem, at: Placed, scale: number, alpha: number) => {
-      const side = TILE * cam.zoom * scale;
-      const centre = toScreen(cam, at.x, at.y, width, height);
-      if (centre.x + side < 0 || centre.y + side < 0 || centre.x - side > width || centre.y - side > height) return;
-      const left = centre.x - side / 2;
-      const top = centre.y - side / 2;
-      context.globalAlpha = alpha;
-      const image = images.current.get(item.key);
-      if (side >= THUMB_MIN_PX && image instanceof HTMLImageElement) {
-        const crop = Math.min(image.naturalWidth, image.naturalHeight);
-        context.drawImage(image, (image.naturalWidth - crop) / 2, (image.naturalHeight - crop) / 2, crop, crop, left, top, side, side);
-      } else {
-        context.fillStyle = item.color;
-        context.fillRect(left, top, side, side);
-        if (side >= THUMB_MIN_PX && item.thumb && alpha > 0.5) requestThumb(item.key, item.thumb);
-      }
-      return { left, top, side };
-    };
-
-    atlasItems.forEach((item, index) => {
-      if (!searching || !ranks.current.has(item.key)) drawTile(item, atlasLayout.positions[index], 1, searching ? 0.12 : 1);
-    });
-    if (searching) {
-      atlasItems.forEach((item, index) => {
-        const rank = ranks.current.get(item.key);
-        if (rank === undefined) return;
-        const box = drawTile(item, atlasLayout.positions[index], 1.12, 1);
-        if (!box) return;
-        context.globalAlpha = 1;
-        context.strokeStyle = ACCENT;
-        context.lineWidth = rank === 0 ? 4 : 2;
-        context.strokeRect(box.left, box.top, box.side, box.side);
-      });
-      for (const { result, at } of letters.current) {
-        const side = LETTER_TILE * cam.zoom;
-        const centre = toScreen(cam, at.x, at.y, width, height);
-        const left = centre.x - side / 2;
-        const top = centre.y - side / 2;
-        context.globalAlpha = 1;
-        context.fillStyle = '#fff7fa';
-        context.fillRect(left, top, side, side);
-        if (side >= 48) {
-          const image = result.image ? images.current.get(`letter:${result.slug}`) : undefined;
-          const hasImage = image instanceof HTMLImageElement;
-          if (hasImage) {
-            const crop = Math.min(image.naturalWidth, image.naturalHeight * (1 / 0.55));
-            context.drawImage(image, (image.naturalWidth - crop) / 2, 0, crop, crop * 0.55, left, top, side, side * 0.55);
-          } else if (result.image && image === undefined) requestThumb(`letter:${result.slug}`, result.image);
-          const fontSize = Math.max(9, Math.min(20, side * 0.1));
-          const pad = Math.max(4, side * 0.06);
-          context.save();
-          context.beginPath();
-          context.rect(left, top, side, side);
-          context.clip();
-          context.fillStyle = ACCENT;
-          context.font = `600 ${fontSize * 0.8}px system-ui, sans-serif`;
-          let y = top + (hasImage ? side * 0.55 : 0) + pad + fontSize * 0.8;
-          context.fillText(`Letter · ${letterDate(result.date)}`, left + pad, y, side - pad * 2);
-          context.fillStyle = '#542537';
-          context.font = `600 ${fontSize}px system-ui, sans-serif`;
-          for (const line of wrapText(context, result.title, side - pad * 2, hasImage ? 2 : 4)) {
-            y += fontSize * 1.25;
-            context.fillText(line, left + pad, y);
-          }
-          context.restore();
-        }
-        context.strokeStyle = ACCENT;
-        context.lineWidth = 3;
-        context.strokeRect(left, top, side, side);
-      }
-    }
-    context.globalAlpha = 1;
-  }, [search.status, requestThumb]);
+    const glass = renderer.current;
+    if (!glass || !camera.current) return;
+    glass.setCamera(camera.current);
+    glass.render();
+  }, []);
 
   useEffect(() => {
-    drawRef.current = draw;
-    data.current = { items, layout };
-    render();
-  }, [draw, items, layout, render]);
+    if (webgl !== 'ready' || !layout) return;
+    renderer.current!.setTiles(items.map(({ key, color, thumb }) => ({ key, color, thumb })), layout);
+    draw();
+  }, [webgl, items, layout, draw]);
 
   // Canvas size follows the container; the first measurement after data loads fits the camera.
   useEffect(() => {
     const wrap = wrapRef.current;
-    const canvas = canvasRef.current;
-    if (!wrap || !canvas) return;
+    if (!wrap || webgl !== 'ready') return;
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       size.current = { width, height };
-      const ratio = window.devicePixelRatio || 1;
-      canvas.width = Math.round(width * ratio);
-      canvas.height = Math.round(height * ratio);
+      renderer.current?.setSize(width, height, window.devicePixelRatio || 1);
       if (layout) {
         const fit = fitCamera(layout, width, height);
         minZoom.current = fit.zoom * 0.5;
         camera.current ??= fit;
       }
-      render();
+      draw();
     });
     observer.observe(wrap);
     return () => observer.disconnect();
-  }, [layout, render]);
+  }, [layout, webgl, draw]);
 
   // ---- camera ------------------------------------------------------------------------
   const moveCamera = useCallback((next: Camera) => {
     cancelAnimationFrame(flight.current);
     camera.current = next;
-    render();
-  }, [render]);
+    draw();
+  }, [draw]);
 
   const flyTo = useCallback((target: Camera) => {
     const from = camera.current;
@@ -243,11 +151,11 @@ export default function MemoriesAtlas() {
     const step = (now: number) => {
       const t = easeInOut(Math.min(1, (now - started) / 700));
       camera.current = { x: from.x + (target.x - from.x) * t, y: from.y + (target.y - from.y) * t, zoom: from.zoom * (target.zoom / from.zoom) ** t };
-      render();
+      draw();
       if (t < 1) flight.current = requestAnimationFrame(step);
     };
     flight.current = requestAnimationFrame(step);
-  }, [render]);
+  }, [draw]);
 
   const zoomBy = (factor: number) => {
     const cam = camera.current;
@@ -276,7 +184,7 @@ export default function MemoriesAtlas() {
   const readingOrder = useCallback(() => {
     if (!layout) return [];
     return items.map((item, index) => ({ item, at: layout.positions[index] }))
-      .sort((a, b) => Math.round(a.at.y / 100) - Math.round(b.at.y / 100) || a.at.x - b.at.x)
+      .sort((a, b) => a.at.y - b.at.y || a.at.x - b.at.x)
       .map(({ item }) => item);
   }, [items, layout]);
 
@@ -289,15 +197,16 @@ export default function MemoriesAtlas() {
   }, [items, readingOrder, search]);
 
   const openAt = (screenX: number, screenY: number) => {
-    const cam = camera.current;
-    if (!cam || !layout) return;
-    const { width, height } = size.current;
-    const point = toWorld(cam, screenX, screenY, width, height);
-    const hit = (at: Placed, side: number) => Math.abs(point.x - at.x) <= side / 2 && Math.abs(point.y - at.y) <= side / 2;
-    const letter = letters.current.find(({ at }) => hit(at, LETTER_TILE));
-    if (letter) return router.push(`/blogs/${letter.result.slug}`);
-    const index = items.findIndex((item, i) => hit(layout.positions[i], ranks.current.has(item.key) ? TILE * 1.12 : TILE));
-    if (index >= 0) openPhoto(items[index].key);
+    const hit = renderer.current?.pick(screenX, screenY);
+    if (!hit) return;
+    if (hit.kind === 'letter') {
+      const letter = letters.current[hit.card];
+      if (letter) router.push(`/blogs/${letter.result.slug}`);
+      return;
+    }
+    // A tile covered by a letter card is the card's, never the hidden photo's.
+    if (letters.current.some(letter => letter.tileIndex === hit.index)) return;
+    if (items[hit.index]) openPhoto(items[hit.index].key);
   };
 
   // ---- pointer gestures ----------------------------------------------------------------
@@ -357,6 +266,48 @@ export default function MemoriesAtlas() {
   }
 
   // ---- search ------------------------------------------------------------------------
+  const showResults = (results: SearchResult[]) => {
+    const glass = renderer.current;
+    const indexOf = new Map(items.map((item, index) => [item.key, index]));
+    ranks.current = new Map(results.filter(row => row.kind === 'photo').map((row, rank) => [row.key, rank]));
+    const best = results.find(row => row.kind === 'photo');
+    const anchor = best && layout ? layout.positions[indexOf.get(best.key)!] : null;
+    // Letter cards take the places of the dimmed photos nearest the best match.
+    const free = layout && anchor ? items.map((item, index) => ({ index, at: layout.positions[index] }))
+      .filter(({ index }) => !ranks.current.has(items[index].key))
+      .sort((a, b) => Math.hypot(a.at.x - anchor.x, a.at.y - anchor.y) - Math.hypot(b.at.x - anchor.x, b.at.y - anchor.y)) : [];
+    letters.current = results.filter((row): row is LetterResult => row.kind === 'letter')
+      .map((result, index) => ({ result, tileIndex: free[index]?.index ?? -1 })).filter(letter => letter.tileIndex >= 0);
+    // No matches means nothing to highlight, so nothing dims either.
+    glass?.setMatches(results.length ? new Map([...ranks.current].map(([key, rank]) => [indexOf.get(key)!, rank])) : null);
+    glass?.setLetterCards(letters.current.map(({ result, tileIndex }) => ({
+      tileIndex, title: result.title, caption: `Letter · ${letterDate(result.date)}`, image: result.image,
+    })));
+
+    // Fly to the best match close enough to see it, keeping any letter cards in frame too.
+    const first = results[0];
+    const target = !layout || !first ? null : first.kind === 'letter' ? (letters.current[0] && layout.positions[letters.current[0].tileIndex]) : anchor;
+    if (target && layout) {
+      const points = [target, ...letters.current.map(letter => layout.positions[letter.tileIndex])];
+      const xs = points.map(point => point.x);
+      const ys = points.map(point => point.y);
+      const spanX = Math.max(...xs) - Math.min(...xs) + TILE * MATCH_SCALE * 2;
+      const spanY = Math.max(...ys) - Math.min(...ys) + TILE * MATCH_SCALE * 2;
+      const { width, height } = size.current;
+      const zoom = Math.min(260 / TILE, (width * 0.9) / spanX, (height * 0.7) / spanY);
+      flyTo({ x: (Math.max(...xs) + Math.min(...xs)) / 2, y: (Math.max(...ys) + Math.min(...ys)) / 2, zoom: Math.min(MAX_ZOOM, Math.max(minZoom.current, zoom)) });
+    }
+    draw();
+  };
+
+  const clearResults = () => {
+    ranks.current = new Map();
+    letters.current = [];
+    renderer.current?.setMatches(null);
+    renderer.current?.setLetterCards([]);
+    draw();
+  };
+
   async function runSearch(text: string, withLetters: boolean) {
     const id = ++searchId.current;
     setSearch({ status: 'searching', results: [] });
@@ -369,43 +320,19 @@ export default function MemoriesAtlas() {
       if (searchId.current !== id) return;
       if (!response.ok) throw new Error(result.error);
       const results = (result.results as SearchResult[]).filter(row => row.kind === 'letter' || items.some(item => item.key === row.key));
-      ranks.current = new Map(results.filter(row => row.kind === 'photo').map((row, rank) => [row.key, rank]));
-
-      const best = results[0];
-      const bestPhoto = results.find(row => row.kind === 'photo');
-      const photoAt = (key: string) => layout!.positions[items.findIndex(item => item.key === key)];
-      const anchor = bestPhoto ? photoAt(bestPhoto.key) : { x: layout!.width / 2, y: layout!.height / 2 };
-      // Letter cards take the empty cells nearest the best photo, so they sit among the matches.
-      const nearest = [...layout!.spare].sort((a, b) => Math.hypot(a.x - anchor.x, a.y - anchor.y) - Math.hypot(b.x - anchor.x, b.y - anchor.y));
-      letters.current = results.filter((row): row is LetterResult => row.kind === 'letter').map((row, index) => ({ result: row, at: nearest[index] })).filter(letter => letter.at);
       setSearch({ status: 'done', results });
-
-      // Fly to the best match close enough to see it, but keep any letter cards in frame too.
-      const target = best?.kind === 'letter' ? letters.current[0]?.at : best && photoAt(best.key);
-      if (target) {
-        const points = [target, ...letters.current.map(letter => letter.at)];
-        const xs = points.map(point => point.x);
-        const ys = points.map(point => point.y);
-        const spanX = Math.max(...xs) - Math.min(...xs) + LETTER_TILE * 2;
-        const spanY = Math.max(...ys) - Math.min(...ys) + LETTER_TILE * 2;
-        const { width, height } = size.current;
-        const zoom = Math.min(220 / TILE, (width * 0.9) / spanX, (height * 0.75) / spanY);
-        flyTo({ x: (Math.max(...xs) + Math.min(...xs)) / 2, y: (Math.max(...ys) + Math.min(...ys)) / 2, zoom: Math.min(MAX_ZOOM, Math.max(minZoom.current, zoom)) });
-      }
+      showResults(results);
     } catch (error) {
       if (searchId.current !== id) return;
       console.error('Search failed:', error);
-      ranks.current = new Map();
-      letters.current = [];
+      clearResults();
       setSearch({ status: 'error', results: [] });
     } finally {
       clearTimeout(waking);
-      render();
     }
   }
 
-  function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function submit() {
     const text = query.trim();
     if (text && layout) void runSearch(text, includeLetters);
   }
@@ -413,8 +340,7 @@ export default function MemoriesAtlas() {
   function clear() {
     searchId.current++;
     setQuery('');
-    ranks.current = new Map();
-    letters.current = [];
+    clearResults();
     setSearch({ status: 'idle', results: [] });
     resetView();
   }
@@ -433,36 +359,22 @@ export default function MemoriesAtlas() {
     error: 'Search is unavailable right now. Please try again.',
   }[search.status];
   const busy = search.status === 'searching' || search.status === 'waking';
+  const overlay = webgl === 'unsupported' ? <p role="alert">{NO_WEBGL}</p>
+    : loadState === 'loading' || webgl === 'pending' ? <p><span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />Loading Mila’s memories…</p>
+    : loadState === 'error' ? <p role="alert">Unable to load Mila’s memories. Please reload the page.</p>
+    : !items.length ? <p>Nothing is searchable yet. Steven can add photos with <strong>Build search index</strong>.</p>
+    : null;
 
-  return <div className="flex-grow-1 d-flex flex-column position-relative" style={{ minHeight: 'calc(100vh - 140px)', background: '#fdf7fa' }}>
-    <form role="search" className="position-absolute top-0 start-50 translate-middle-x mt-3 px-3 w-100" style={{ maxWidth: 720, zIndex: 2 }} onSubmit={submit}>
-      <div className="bg-white shadow-sm rounded-4 p-2 d-flex flex-wrap align-items-center gap-2">
-        <input type="search" className="form-control border-0 flex-grow-1" style={{ minWidth: 180 }} aria-label="Search Mila’s memories"
-          placeholder="Try “beach” or “birthday cake”" value={query} maxLength={200} onChange={event => setQuery(event.target.value)} />
-        <button type="submit" className="btn btn-primary rounded-pill" disabled={!layout || !query.trim() || busy}>Search</button>
-        {(search.status !== 'idle' || query) && <button type="button" className="btn btn-outline-secondary rounded-pill" onClick={clear}>Clear</button>}
-        <div className="form-check form-switch mb-0 ms-1">
-          <input className="form-check-input" type="checkbox" role="switch" id="include-letters" checked={includeLetters} onChange={event => toggleLetters(event.target.checked)} />
-          <label className="form-check-label" htmlFor="include-letters">Include letters</label>
-        </div>
-      </div>
-      <div className="text-center mt-2"><p role="status" aria-live="polite" className="d-inline-block fw-semibold mb-0 px-3 rounded-pill"
-        style={{ color: '#542537', background: statusText ? 'rgba(255, 255, 255, 0.92)' : 'transparent' }}>{statusText}</p></div>
-    </form>
-
+  return <div className="memories flex-grow-1 d-flex flex-column position-relative" style={{ minHeight: 'calc(100vh - 140px)' }}>
     <div ref={wrapRef} role="region" aria-label={LABEL} tabIndex={0} className="memories-atlas flex-grow-1 position-relative"
       style={{ touchAction: 'none', cursor: 'grab', outlineOffset: -3 }}
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={event => pointers.current.delete(event.pointerId)}
       onKeyDown={onKeyDown}>
       <canvas ref={canvasRef} aria-hidden="true" className="position-absolute top-0 start-0 w-100 h-100" />
-      {loadState !== 'ready' || !items.length ? <div className="position-absolute top-50 start-50 translate-middle text-center px-3" style={{ color: '#542537' }}>
-        {loadState === 'loading' ? <p><span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />Loading Mila’s memories…</p>
-          : loadState === 'error' ? <p role="alert">Unable to load Mila’s memories. Please reload the page.</p>
-          : <p>Nothing is searchable yet. Steven can add photos with <strong>Build search index</strong>.</p>}
-      </div> : null}
+      {overlay && <div className="position-absolute top-50 start-50 translate-middle text-center px-3" style={{ color: '#542537' }}>{overlay}</div>}
     </div>
 
-    {search.status === 'done' && matchCount > 0 && <ol className="list-unstyled position-absolute bottom-0 start-0 m-3 mb-0" style={{ zIndex: 2 }} aria-label="Matches">
+    {search.status === 'done' && matchCount > 0 && <ol className="list-unstyled position-absolute top-0 start-0 m-3" style={{ zIndex: 3 }} aria-label="Matches">
       {search.results.slice(0, 50).map((result, index) => <li key={result.key}>
         <button type="button" className="btn btn-light visually-hidden-focusable"
           onClick={() => (result.kind === 'letter' ? router.push(`/blogs/${result.slug}`) : openPhoto(result.key))}>
@@ -471,17 +383,17 @@ export default function MemoriesAtlas() {
       </li>)}
     </ol>}
 
-    <div className="position-absolute bottom-0 end-0 m-3 d-flex flex-column gap-2" style={{ zIndex: 2 }}>
-      <button type="button" className="btn btn-light shadow-sm" aria-label="Zoom in" onClick={() => zoomBy(1.5)}>+</button>
-      <button type="button" className="btn btn-light shadow-sm" aria-label="Zoom out" onClick={() => zoomBy(1 / 1.5)}>−</button>
-      <button type="button" className="btn btn-light shadow-sm" onClick={resetView}>Reset view</button>
-    </div>
+    <GlassSearchBar query={query} onQueryChange={setQuery} onSubmit={submit} onClear={clear}
+      showClear={search.status !== 'idle' || !!query} includeLetters={includeLetters} onIncludeLettersChange={toggleLetters}
+      busy={busy} disabled={!layout || webgl !== 'ready'} status={statusText} />
+    <GlassZoomControls onZoomIn={() => zoomBy(1.5)} onZoomOut={() => zoomBy(1 / 1.5)} onReset={resetView} />
 
     {viewer && <PhotoViewer photos={viewer.photos} index={viewer.index} links={links}
       onIndex={index => setViewer(current => current && { ...current, index })} onClose={() => setViewer(null)} />}
     <style jsx>{`
+      .memories { background: radial-gradient(120% 90% at 50% 0%, #fff7fa 0%, #fbe6ee 55%, #f5d6e2 100%); }
       .memories-atlas:focus:not(:focus-visible) { outline: none; }
-      .memories-atlas:focus-visible { outline: 3px solid ${ACCENT}; }
+      .memories-atlas:focus-visible { outline: 3px solid #c2185b; }
     `}</style>
   </div>;
 }

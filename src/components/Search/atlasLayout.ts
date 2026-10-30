@@ -1,16 +1,17 @@
-// Geometry for the memories atlas: a jittered grid with items shuffled into random
-// cells, and a camera that maps world units to screen pixels.
+// Geometry for the memories atlas: a tidy grid with items shuffled into random cells, and a
+// camera that maps world units to screen pixels at the grid's plane.
 
 export const CELL = 100;
-export const TILE = 80;
-export const LETTER_TILE = 90; // the size of a highlighted photo, so cards never cover their neighbours
+export const TILE = 88; // rounded glass tile; the rest of the cell is the gap between tiles
+export const MATCH_SCALE = 1.08; // matched tiles lift slightly toward the viewer
 
 export type Placed = { x: number; y: number }; // tile centre, world units
-export type Camera = { x: number; y: number; zoom: number }; // world point at the screen centre
+// The world point at the screen centre, and pixels per world unit at the grid's plane.
+export type Camera = { x: number; y: number; zoom: number };
 
 export type Layout = {
-  positions: Placed[]; // one per photo, same order as the items
-  spare: Placed[]; // empty cells, for letter cards that appear with a search
+  positions: Placed[]; // one per item, same order as the items
+  columns: number;
   width: number;
   height: number;
 };
@@ -23,20 +24,20 @@ function shuffle<T>(values: T[]) {
   return values;
 }
 
-export function randomLayout(count: number, aspect: number): Layout {
-  const cells = Math.ceil(count * 1.12) + 24; // gaps keep it airy and leave room for letters
-  const columns = Math.max(1, Math.ceil(Math.sqrt(cells * Math.max(aspect, 0.5))));
-  const rows = Math.ceil(cells / columns);
-  const jitter = (CELL - TILE) / 2;
-  const centres = shuffle(Array.from({ length: columns * rows }, (_, cell) => ({
-    x: (cell % columns) * CELL + CELL / 2 + (Math.random() * 2 - 1) * jitter,
-    y: Math.floor(cell / columns) * CELL + CELL / 2 + (Math.random() * 2 - 1) * jitter,
-  })));
-  return { positions: centres.slice(0, count), spare: centres.slice(count), width: columns * CELL, height: rows * CELL };
+/** A grid about as wide as the screen's aspect, filled row by row in a random order. */
+export function gridLayout(count: number, aspect: number): Layout {
+  const columns = Math.max(1, Math.ceil(Math.sqrt(count * Math.max(aspect, 0.5))));
+  const rows = Math.max(1, Math.ceil(count / columns));
+  const cells = shuffle(Array.from({ length: count }, (_, index) => index));
+  const positions = cells.map(cell => ({
+    x: (cell % columns) * CELL + CELL / 2,
+    y: Math.floor(cell / columns) * CELL + CELL / 2,
+  }));
+  return { positions, columns, width: columns * CELL, height: rows * CELL };
 }
 
 export function fitCamera(layout: Pick<Layout, 'width' | 'height'>, screenWidth: number, screenHeight: number): Camera {
-  const zoom = Math.min(screenWidth / layout.width, screenHeight / layout.height) * 0.95;
+  const zoom = Math.min(screenWidth / layout.width, screenHeight / layout.height) * 0.92;
   return { x: layout.width / 2, y: layout.height / 2, zoom: Number.isFinite(zoom) && zoom > 0 ? zoom : 1 };
 }
 
