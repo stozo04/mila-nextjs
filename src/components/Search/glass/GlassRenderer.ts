@@ -127,15 +127,13 @@ const fragmentShader = /* glsl */ `
     vec2 uv = p + 0.5;
     vec3 col = vec3(photo(uv + bend).r, photo(uv + bend * 0.97).g, photo(uv + bend * 0.94).b);
 
-    col = mix(col, vec3(1.0), 0.04); // a touch of milkiness from the glass body
-    col *= 1.0 - 0.2 * smoothstep(0.2, 0.5, p.y) * e; // thicker glass reads darker at the bottom
+    col *= 1.0 - 0.08 * smoothstep(0.2, 0.5, p.y) * e; // thicker glass reads a little darker at the bottom
     col = mix(col, col * 0.78, smoothstep(-0.014, 0.0, d)); // dark contact line at the very edge
 
     vec2 light = normalize(vec2(-0.6, -0.8));
-    float sheen = 0.16 * smoothstep(0.75, -0.7, p.x + p.y) * (1.0 - smoothstep(-0.15, 0.45, p.y));
-    float streak = 0.3 * exp(-pow((p.x + p.y + 0.52) * 13.0, 2.0)) * smoothstep(0.15, -0.35, p.y);
-    float rim = pow(e, 3.0) * (0.22 + 0.4 * max(dot(n, light), 0.0));
-    col += vec3(sheen + streak + rim);
+    // Only the glass edge catches light; the photo itself stays clear (a full sheen washed it out).
+    float rim = pow(e, 4.0) * (0.06 + 0.18 * max(dot(n, light), 0.0));
+    col += vec3(rim);
 
     float grey = dot(col, vec3(0.299, 0.587, 0.114));
     col = mix(col, vec3(grey), 0.85 * dim);
