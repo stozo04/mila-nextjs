@@ -41,6 +41,34 @@ export function fitCamera(layout: Pick<Layout, 'width' | 'height'>, screenWidth:
   return { x: layout.width / 2, y: layout.height / 2, zoom: Number.isFinite(zoom) && zoom > 0 ? zoom : 1 };
 }
 
+// ---- the surface: one sphere for every zoom level ----------------------------------------
+// Zoomed in, the grid lies on a sphere a few screens wide, so it curves away toward the
+// screen's edges. Zooming out grows the sphere into the globe, whose circumference is the
+// grid's width, so spinning the globe and panning sideways are the same motion. The grid
+// wraps in both directions, so the camera is never clamped.
+
+export const GLOBE_FILL = 0.8; // the globe's diameter as a share of the screen's shorter side
+export const GLOBE_LATITUDE = (75 * Math.PI) / 180; // rows span ±75° on the globe; the poles stay empty
+export const FLAT_CURVE = 1.6; // zoomed in: the screen's half-width spans 1/FLAT_CURVE radians of the sphere
+const FLAT_ABOVE_GLOBE = 2.5; // fully flat-and-curved from this many times the globe's zoom
+
+export const globeRadius = (layout: Pick<Layout, 'width'>) => layout.width / (2 * Math.PI);
+
+/** The zoom at which the whole grid is the globe, filling GLOBE_FILL of the screen. */
+export const globeZoom = (layout: Pick<Layout, 'width'>, screenWidth: number, screenHeight: number) =>
+  (GLOBE_FILL * Math.min(screenWidth, screenHeight)) / (2 * globeRadius(layout));
+
+/** 0 when zoomed in on the curved grid, 1 when fully the globe, eased in between. */
+export function globeAmount(zoom: number, layout: Pick<Layout, 'width'>, screenWidth: number, screenHeight: number) {
+  const globe = globeZoom(layout, screenWidth, screenHeight);
+  const t = Math.min(1, Math.max(0, Math.log((globe * FLAT_ABOVE_GLOBE) / zoom) / Math.log(FLAT_ABOVE_GLOBE)));
+  return t * t * (3 - 2 * t);
+}
+
+/** The shortest way round from `from` to `to` on a loop of length `period`. */
+export const wrapDelta = (to: number, from: number, period: number) =>
+  ((((to - from) % period) + period * 1.5) % period) - period / 2;
+
 /** A random spot zoomed in to show about `tiles` photos, kept inside the grid. A grid
  *  that small already fits on screen just fits. */
 export function openingCamera(layout: Pick<Layout, 'width' | 'height'>, screenWidth: number, screenHeight: number, tiles = 12): Camera {
