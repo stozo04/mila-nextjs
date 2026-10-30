@@ -85,6 +85,13 @@ export default function MemoriesAtlas() {
     return () => { active = false; };
   }, []);
 
+  // The atlas takes the whole window: styles keyed to this class float the site nav as a
+  // glass pill and hide the footer, only while the atlas is mounted.
+  useEffect(() => {
+    document.body.classList.add('memories-fullscreen');
+    return () => document.body.classList.remove('memories-fullscreen');
+  }, []);
+
   // ---- renderer ----------------------------------------------------------------------
   // three.js loads after the page so the signed-in home paints before the 3D code arrives.
   useEffect(() => {
@@ -364,7 +371,7 @@ export default function MemoriesAtlas() {
     : !items.length ? <p>Nothing is searchable yet. Steven can add photos with <strong>Build search index</strong>.</p>
     : null;
 
-  return <div className="memories flex-grow-1 d-flex flex-column position-relative" style={{ minHeight: 'calc(100vh - 140px)' }}>
+  return <div className="memories flex-grow-1 d-flex flex-column position-relative" style={{ minHeight: 0 }}>
     <div ref={wrapRef} role="region" aria-label={LABEL} tabIndex={0} className="memories-atlas flex-grow-1 position-relative"
       style={{ touchAction: 'none', cursor: 'grab', outlineOffset: -3 }}
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={event => pointers.current.delete(event.pointerId)}
@@ -389,6 +396,27 @@ export default function MemoriesAtlas() {
 
     {viewer && <PhotoViewer photos={viewer.photos} index={viewer.index} links={links}
       onIndex={index => setViewer(current => current && { ...current, index })} onClose={() => setViewer(null)} />}
+    <style jsx global>{`
+      body.memories-fullscreen { overflow: hidden; }
+      body.memories-fullscreen footer { display: none; }
+      body.memories-fullscreen .site-nav { position: relative; z-index: 20; height: 0; padding: 0; background: transparent !important; }
+      body.memories-fullscreen .site-nav > .container-fluid {
+        position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+        width: min(1100px, calc(100% - 32px)); padding: 4px 8px 4px 16px; border-radius: 28px;
+        background: rgba(255, 255, 255, 0.55); border: 1px solid rgba(255, 255, 255, 0.7);
+        -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 30px rgba(194, 24, 91, 0.16);
+      }
+      body.memories-fullscreen .site-nav .navbar-brand { height: 40px; width: auto; padding: 0; }
+      body.memories-fullscreen .site-nav .nav-link { color: #542537; }
+      body.memories-fullscreen .site-nav .nav-link:hover, body.memories-fullscreen .site-nav .nav-link:focus-visible { color: #c2185b; }
+      body.memories-fullscreen .site-nav .navbar-toggler { border: 0; }
+      body.memories-fullscreen .site-nav .dropdown-menu {
+        background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(255, 255, 255, 0.7); border-radius: 16px;
+        -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
+        box-shadow: 0 10px 30px rgba(194, 24, 91, 0.16);
+      }
+    `}</style>
     <style jsx>{`
       .memories { background: radial-gradient(120% 90% at 50% 0%, #fff7fa 0%, #fbe6ee 55%, #f5d6e2 100%); }
       .memories-atlas:focus:not(:focus-visible) { outline: none; }

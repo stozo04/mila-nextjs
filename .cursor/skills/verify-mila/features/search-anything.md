@@ -4,7 +4,7 @@ A signed-in visitor who opens `/` gets a full-screen, zoomable atlas of every ph
 
 ## Sub-features
 
-- `atlas-signed-in` shows the atlas at `/` for any signed-in visitor, in place of the carousel.
+- `atlas-signed-in` shows the atlas at `/` for any signed-in visitor, in place of the carousel. The atlas fills the whole window: the footer is hidden and the site menu floats over it as a glass pill (see [site chrome](./site-chrome.md)).
 - `atlas-every-photo` places one tile for every indexed photo from all six photo collections.
 - `atlas-random` lays the tiles out as a tidy grid in a new random order on each visit, and opens zoomed in on a random spot showing about a dozen photos.
 - `atlas-glass` draws each tile as 3D glass with WebGL: edge refraction, a glossy highlight, a bright rim, and a soft shadow, on a light pink background. A browser without WebGL 2 sees "This browser can't show Mila's memories. Try the latest Chrome, Safari, or Edge." instead of the atlas.

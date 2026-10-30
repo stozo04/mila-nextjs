@@ -98,7 +98,7 @@ const NavMenu = () => {
         </div>
       </aside>
     )}
-    <nav className="navbar navbar-expand-lg bg-body-tertiary">
+    <nav className="site-nav navbar navbar-expand-lg bg-body-tertiary">
       <div className="container-fluid d-flex justify-content-between align-items-center">
         <Link href="/">
           <Image src={milaBrand} alt="Mila Gates" className="navbar-brand" />

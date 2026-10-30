@@ -1,6 +1,6 @@
 # Site chrome
 
-The top nav is the site's spine: it shows a brand image, a donate link, and — only once a Supabase session resolves — the section links, two dropdowns, and Logout. Signed-out visitors get a single Sign In control. Steven additionally gets an admin banner above the nav. A footer with a copyright line and a privacy link sits on every page.
+The top nav is the site's spine: it shows a brand image, a donate link, and — only once a Supabase session resolves — the section links, two dropdowns, and Logout. Signed-out visitors get a single Sign In control. Steven additionally gets an admin banner above the nav. A footer with a copyright line and a privacy link sits on every page except the signed-in home, where the [search anything](./search-anything.md) atlas fills the window and the nav floats over it as a glass pill.
 
 ## Sub-features
 
@@ -12,6 +12,7 @@ The top nav is the site's spine: it shows a brand image, a donate link, and — 
 - `chrome-logout` signs out and routes to `/login`.
 - `chrome-toggler` collapses the menu behind a hamburger below the `lg` breakpoint.
 - `chrome-footer` shows the year, the Gates Company link, and **Privacy Policy**.
+- `chrome-glass-home` turns the nav into a floating glass pill over the atlas on the signed-in home and hides the footer there. Same links, dropdowns, and Logout; the admin banner stays across the top for Steven.
 
 ## How to get to it (user POV)
 
@@ -32,7 +33,8 @@ Preconditions:
 - **Check mobile nav alignment.** Below the `lg` breakpoint, open the hamburger and compare the left edge and text alignment of every top-level item. Sign In when signed out, and Logout when signed in, align with the link items rather than centering inside the menu.
 - **Open each dropdown.** Choose **Baby Shower**, then **My Journey**. Each expands; the first lists Houston and Dallas, the second lists Birthday, My First Year, One Year, Two Year, Three Year. Assert the item text, then close without navigating.
 - **Check the admin banner.** In the admin account's tab, the region labelled `Mila's monthly preparation` sits above the nav, reading "Steven's admin tools" with a **Prepare Mila's Month** button. In a non-admin signed-in tab it is absent. Do not press the button here — see [prepare month](./prepare-month.md).
-- **Confirm the footer.** On any page, the footer shows the current year, a **Gates Company** link to `https://www.stevengates.io`, and a **Privacy Policy** link to `/privacy-policy`. The footer is server-rendered and *is* present in the saved body.
+- **Check the glass nav on the signed-in home.** In a signed-in tab, open `/`. There is no grey nav bar and no footer: the atlas fills the window, and a rounded translucent pill floats at the top holding the brand, the section links, both dropdowns, and Logout. Open **My Journey**; its menu drops below the pill over the atlas. Choose **Blogs**; on `/blogs` the normal nav bar and footer are back. For Steven, the `Mila's monthly preparation` banner still spans the top, with the pill just below it.
+- **Confirm the footer.** On any page other than the signed-in home, the footer shows the current year, a **Gates Company** link to `https://www.stevengates.io`, and a **Privacy Policy** link to `/privacy-policy`. The footer is server-rendered and *is* present in the saved body.
 - **Log out.** Not drivable — it ends the user's real Google session in their own browser and no scripted sign-in exists to restore it. Report as skipped with that precondition.
 - **Proof.** Screenshot the nav in each session state with the brand visible, plus the saved server body for the SSR baseline.
 

@@ -13,7 +13,7 @@ export default function GlassZoomControls({ onZoomIn, onZoomOut, onReset }: Prop
       .glass-zoom {
         position: absolute;
         right: 16px;
-        bottom: 24px;
+        bottom: 96px; /* clear of the chat launcher in the corner */
         z-index: 3;
         display: flex;
         flex-direction: column;
@@ -40,7 +40,7 @@ export default function GlassZoomControls({ onZoomIn, onZoomOut, onReset }: Prop
       .glass-zoom-button:hover { transform: scale(1.05); }
       .glass-zoom-button:focus-visible { outline: 3px solid #c2185b; outline-offset: 2px; }
       /* On phones the search bar takes the full bottom edge. */
-      @media (max-width: 575.98px) { .glass-zoom { top: 16px; bottom: auto; flex-direction: row; } }
+      @media (max-width: 575.98px) { .glass-zoom { top: 88px; bottom: auto; flex-direction: row; } } /* below the glass nav pill */
       @media (prefers-reduced-motion: reduce) {
         .glass-zoom-button { transition: none; }
         .glass-zoom-button:hover { transform: none; }

@@ -127,8 +127,8 @@ export default function GlassSearchBar({ query, onQueryChange, onSubmit, onClear
         outline-offset: 2px;
       }
       @media (max-width: 575.98px) {
-        /* Full width: on phones the zoom controls move to the top-right corner. */
-        .glass-search { bottom: 16px; }
+        /* The zoom controls move to the top on phones; the right edge is left for the chat launcher. */
+        .glass-search { bottom: 16px; left: 16px; transform: none; width: calc(100% - 104px); }
         .glass-pill { border-radius: 24px; padding: 8px 8px 8px 14px; }
         .glass-switch { order: 5; }
       }
