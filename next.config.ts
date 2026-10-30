@@ -20,6 +20,8 @@ const nextConfig: NextConfig = {
     // against the function's 250 MB cap.
     "/api/search/**": [
       "./node_modules/onnxruntime-node/{package.json,dist/*.js}",
+      // ...and requires onnxruntime-common's CommonJS build, not the ESM one the tracer saw.
+      "./node_modules/onnxruntime-common/dist/cjs/**",
       "./node_modules/onnxruntime-node/bin/napi-v6/linux/x64/{onnxruntime_binding.node,libonnxruntime.so.1}",
     ],
   },
