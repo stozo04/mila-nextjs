@@ -78,6 +78,15 @@ Site / Access
 - Returns `202 { pending: true }` when nearing timeout; client retries.
 - Caches final MP3 in Supabase `blog_audio` as base64; serves cached bytes on subsequent requests.
 
+### Search anything
+- Signed-in `/` renders `src/components/Search/MemoriesAtlas.tsx` (canvas atlas, search, viewer); signed-out `/` keeps `src/components/Home/LandingCarousel.tsx`.
+- Model: EmbeddingGemma 2 (`onnx-community/embeddinggemma-2-ONNX`), one 768-dimension space for text and images.
+- Queries: `GET /api/search` embeds the text on the server (`src/lib/search/textEmbedder.ts`, Transformers.js on onnxruntime-node, text-only q4) and ranks with the `match_search_photos` / `match_search_letters` RPCs. A cold start downloads the model to `/tmp` (~10 s).
+- Indexing: Steven's browser embeds photos and letters in a Web Worker (`src/lib/search/indexer.worker.ts`; WebGPU only, q4: every quantized build needs an operator the WebAssembly runtime lacks), uploads a thumbnail to `search/thumbs/` in `mila_storage_bucket`, and saves rows through `POST /api/search/index`. `/admin/search-index` catches up and cleans up; the journey uploader indexes new photos right after upload.
+- Data: `search_items` (pgvector) with RLS: signed-in read, admin write. Migrations `supabase/migrations/20261030*_search_*.sql`.
+- Match thresholds in `src/app/api/search/route.ts` were calibrated on Mila's own photos and letters; recalibrate there if results feel too loose or too strict.
+- `next.config.ts` traces onnxruntime-node's linux/x64 binaries into `/api/search` by hand (the tracer cannot follow Transformers.js's `createRequire`), and `.npmrc` skips its CUDA download.
+
 ### Auth & Routing
 - Route gate: `src/proxy.ts`
   - Normalizes URLs (strip trailing slash), enforces HTTPS in production, strips `www.`

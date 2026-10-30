@@ -38,7 +38,7 @@ const BASE = (process.env.MILA_BASE_URL || 'http://127.0.0.1:3000').replace(/\/$
 
 // Every route handler that writes to Supabase. `get` refuses these outright unless
 // --expect-unauthorized says the point IS to prove the server rejects an anonymous caller.
-const MUTATING = [/^\/api\/journey\/prepare-month$/, /^\/api\/blog\/[^/]+\/publish$/, /^\/api\/blog\/[^/]+\/images$/];
+const MUTATING = [/^\/api\/journey\/prepare-month$/, /^\/api\/blog\/[^/]+\/publish$/, /^\/api\/blog\/[^/]+\/images$/, /^\/api\/search\/index$/];
 
 // Endpoints where a plain GET is itself the damage. The audio route runs on the
 // SERVICE ROLE key: it bypasses RLS, bills OpenAI TTS per uncached blog, and upserts

@@ -40,7 +40,7 @@ Preconditions:
 ## Gotchas
 
 - **There is no staging index.** Start indexing and the uploader both write to production, so they are verified by presence and guards only.
-- Indexing runs in Steven's browser, not on the server. The first run downloads the photo model, roughly 100 MB, before **Indexing 1 of M** appears. A long first pause is the download, not a hang.
+- Indexing runs in Steven's browser, not on the server. The first run downloads the search model, roughly 285 MB, before **Indexing 1 of M** appears, and the page shows the download progress. The browser keeps it, so later runs start straight away. A long first pause is the download, not a hang.
 - Closing the tab mid-run loses nothing already indexed. Reopening the page shows the smaller remaining count, and **Start indexing** carries on from there.
 - The Homepage and Sonograms collections are built into the site rather than uploaded, so their totals only change when the site's code changes.
 - A count of `Indexed X of Y` where X is below Y after an upload means indexing failed or the tab was closed during it. Running the page catches it up. It is not a lost photo.

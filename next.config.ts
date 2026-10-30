@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
     // follow, so without this the search route deploys without its inference engine. Only
     // the linux/x64 CPU binaries: Vercel has no GPU, and every platform together is ~300 MB
     // against the function's 250 MB cap.
-    "/api/search/**": [
+    "/api/search": [
       "./node_modules/onnxruntime-node/{package.json,dist/*.js}",
       // ...and requires onnxruntime-common's CommonJS build, not the ESM one the tracer saw.
       "./node_modules/onnxruntime-common/dist/cjs/**",
@@ -27,7 +27,7 @@ const nextConfig: NextConfig = {
   },
   outputFileTracingExcludes: {
     // sharp's tracer pulls in every libvips build; Vercel's Node runtime is glibc x64.
-    "/api/search/**": [
+    "/api/search": [
       "./node_modules/@img/sharp-libvips-linuxmusl-*/**",
       "./node_modules/@img/sharp-linuxmusl-*/**",
       "./node_modules/@img/sharp-wasm32/**",

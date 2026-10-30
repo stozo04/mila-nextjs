@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Gallery from '@/components/BabyShower/Gallery';
 import type { Blog } from '@/types/blog';
+import { canIndex, indexPhoto } from '@/lib/search/browserIndexer';
 
 type LetterImages = Pick<Blog, 'featured_image' | 'detail_image'>;
 
@@ -80,26 +81,41 @@ export default function JourneyGallery({ slug }: { slug: string }) {
     uploadingRef.current = true;
     setUploading(true);
     setNotice('');
-    let uploaded = 0;
+    const paths: string[] = [];
+    let summary = '';
     try {
       for (const file of Array.from(files)) {
-        setNotice(`Uploading ${uploaded + 1} of ${total}`);
+        setNotice(`Uploading ${paths.length + 1} of ${total}`);
         if (file.type !== 'image/jpeg' || !/\.jpe?g$/i.test(file.name) || file.size === 0 || file.size > 50 * 1024 * 1024) {
           throw new Error(`${file.name}: choose a .jpg or .jpeg JPEG photo up to 50 MB.`);
         }
         const path = `birthday/${slug}/${crypto.randomUUID()}.jpg`;
         const { error } = await supabase.storage.from('mila_storage_bucket').upload(path, file, { upsert: false, contentType: file.type });
         if (error) throw new Error(`${file.name}: ${error.message}`);
-        uploaded++;
+        paths.push(path);
       }
-      setNotice(`${uploaded} uploaded, 0 failed.`);
+      summary = `${paths.length} uploaded, 0 failed.`;
     } catch (error) {
-      setNotice(`${uploaded} uploaded, 1 failed, ${total - uploaded - 1} not attempted. ${error instanceof Error ? error.message : 'Upload failed.'} Select only the remaining photos to retry.`);
+      summary = `${paths.length} uploaded, 1 failed, ${total - paths.length - 1} not attempted. ${error instanceof Error ? error.message : 'Upload failed.'} Select only the remaining photos to retry.`;
     } finally {
-      if (uploaded) setRevision(value => value + 1);
-      setUploading(false);
-      uploadingRef.current = false;
+      if (paths.length) setRevision(value => value + 1);
     }
+    // Upload results stand on their own; indexing follows and never changes those counts.
+    let indexed = 0;
+    const indexable = paths.length > 0 && await canIndex();
+    for (const path of indexable ? paths : []) {
+      setNotice(`${summary} Indexing ${indexed + 1} of ${paths.length} for search…`);
+      try {
+        await indexPhoto(path, 'journey');
+        indexed++;
+      } catch (error) {
+        console.error('Search indexing failed:', error);
+      }
+    }
+    setNotice(!paths.length ? summary : indexed === paths.length ? `${summary} ${indexed} indexed for search.`
+      : `${summary} ${indexed} indexed for search, ${paths.length - indexed} not indexed. Build search index will catch them up.`);
+    setUploading(false);
+    uploadingRef.current = false;
   }
 
   return <>
@@ -110,7 +126,7 @@ export default function JourneyGallery({ slug }: { slug: string }) {
       <label htmlFor="journey-photos" className="form-label">Drop JPEG photos here or choose files below</label>
       <input id="journey-photos" className="form-control photo-file-input" type="file" multiple accept=".jpg,.jpeg,image/jpeg" aria-describedby="journey-photo-help"
         disabled={uploading} onChange={event => { void upload(event.target.files); event.target.value = ''; }} />
-      <p id="journey-photo-help" className="small mt-2 mb-2">JPEG only (.jpg or .jpeg) · up to 50 MB each</p>
+      <p id="journey-photo-help" className="small mt-2 mb-2">JPEG only (.jpg or .jpeg) · up to 50 MB each · indexed for search after upload</p>
       <p className="mb-0 fw-semibold" role="status" aria-live="polite" aria-atomic="true">{notice}</p>
     </section>}
     <Gallery folder={`birthday/${slug}`} limit={3} key={`${slug}-${revision}`}
