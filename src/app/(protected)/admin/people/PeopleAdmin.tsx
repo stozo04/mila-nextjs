@@ -51,6 +51,13 @@ export default function PeopleAdmin() {
     load(showHidden).catch(failure => setLoadError(failure.message));
   }, [load, showHidden]);
 
+  // Done messages fade after a few seconds; progress and errors stay until replaced.
+  useEffect(() => {
+    if (!notice || notice.startsWith('Matching…')) return;
+    const timer = setTimeout(() => setNotice(current => current === notice ? '' : current), 6000);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
   const loadFaces = useCallback(async (query: string) => {
     const response = await fetch(`/api/people/faces?${query}`, { cache: 'no-store' });
     const result = await response.json().catch(() => ({}));
@@ -245,8 +252,6 @@ export default function PeopleAdmin() {
           {list.can_undo && <button type="button" className="btn btn-outline-secondary" disabled={busy} onClick={() => void undoMatch()}>Undo last match</button>}
         </div>}
 
-        <p role="status" aria-live="polite" className="fw-semibold mb-2">{notice}</p>
-        {error && <p role="alert" className="text-danger">{error}</p>}
 
         <datalist id="people-names">{list.people.map(person => <option key={person.id} value={person.name} />)}</datalist>
 
@@ -358,7 +363,6 @@ export default function PeopleAdmin() {
               </li>)}
             </ul>
           </>}
-        {error && <p role="alert" className="text-danger mt-2 mb-0">{error}</p>}
       </Modal.Body>
       {picked.size > 0 && <Modal.Footer className="justify-content-start">
         <form className="d-flex flex-wrap align-items-center gap-2 w-100" onSubmit={event => { event.preventDefault(); void movePicked(); }}>
@@ -378,6 +382,16 @@ export default function PeopleAdmin() {
       </Modal.Footer>}
     </Modal>}
 
+    {/* Messages float at the top of the window, above any open group, so they show wherever
+        Steven has scrolled to. */}
+    <div className="people-toast" aria-live="polite">
+      <p role="status" className={`fw-semibold mb-0${notice ? ' people-toast-show' : ''}`}>{notice}</p>
+      {error && <p role="alert" className="people-toast-show people-toast-error mb-0">
+        {error}
+        <button type="button" className="btn-close btn-sm ms-2 align-middle" aria-label="Dismiss" onClick={() => setError('')} />
+      </p>}
+    </div>
+
     <style jsx global>{`
       .people { color: #542537; }
       .people .btn-primary { background: #c2185b; border-color: #c2185b; }
@@ -393,6 +407,10 @@ export default function PeopleAdmin() {
       .people-pile-face { position: relative; display: inline-block; border-radius: 12px; box-shadow: 0 0 0 2px #fff; }
       .people-thumb { border-radius: 12px; object-fit: cover; background: #f3d3e0; }
       .people-face-pick { cursor: pointer; }
+      .people-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 2000; width: max-content; max-width: calc(100vw - 32px); display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+      .people-toast p { display: none; }
+      .people-toast .people-toast-show { display: block; pointer-events: auto; padding: 10px 16px; border-radius: 999px; background: #fff7fa; color: #542537; border: 1px solid #f3d3e0; box-shadow: 0 6px 24px rgba(84, 37, 55, 0.18); }
+      .people-toast .people-toast-error { color: #a4161a; border-color: #f1aeb5; background: #fff5f5; }
     `}</style>
   </main>;
 }

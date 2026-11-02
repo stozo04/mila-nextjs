@@ -11,7 +11,9 @@ export async function GET(request: Request) {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const ids = (value: unknown, min: number) => Array.isArray(value) && value.length >= min && value.length <= 200 && value.every(id => typeof id === 'string' && UUID.test(id));
+const ids = (value: unknown, min: number, max = 200) => Array.isArray(value) && value.length >= min && value.length <= max && value.every(id => typeof id === 'string' && UUID.test(id));
+// Select all in a big group sends every face at once.
+const FACES_MAX = 5000;
 const name = (value: unknown) => typeof value === 'string' && value.trim().length >= 1 && value.trim().length <= 60;
 
 function validAction(body: PeopleAction | null) {
@@ -19,8 +21,8 @@ function validAction(body: PeopleAction | null) {
     case 'name': return ids(body.group_ids, 1) && name(body.name);
     case 'merge': return ids(body.group_ids, 2);
     case 'remove-face': return UUID.test(String(body.face_id));
-    case 'remove-faces': return ids(body.face_ids, 1);
-    case 'move-faces': return ids(body.face_ids, 1) && name(body.name);
+    case 'remove-faces': return ids(body.face_ids, 1, FACES_MAX);
+    case 'move-faces': return ids(body.face_ids, 1, FACES_MAX) && name(body.name);
     case 'hide': return ids(body.group_ids, 1) && typeof body.hidden === 'boolean';
     case 'rename': return UUID.test(String(body.person_id)) && name(body.name);
     case 'unname': return UUID.test(String(body.person_id));
