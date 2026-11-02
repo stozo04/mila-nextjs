@@ -7,6 +7,7 @@ import { Modal } from 'react-bootstrap';
 import type { FaceDetail, PeopleAction, PeopleList } from '@/lib/people/types';
 
 const PAGE = 60;
+const NEW_PERSON = ' new'; // the Move to list's "New person…"; names are trimmed, so none starts with a space
 const plural = (count: number, one: string, many = `${one}s`) => `${count.toLocaleString()} ${count === 1 ? one : many}`;
 
 // Thumbnails are already small; the image optimizer would only add cost.
@@ -31,7 +32,8 @@ export default function PeopleAdmin() {
   const [visible, setVisible] = useState(PAGE);
   const [open, setOpen] = useState<Open | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set()); // faces ticked in the open group or person
-  const [moveTo, setMoveTo] = useState('');
+  const [moveTo, setMoveTo] = useState(''); // a named person's name, or NEW_PERSON
+  const [newName, setNewName] = useState('');
   const busyRef = useRef(false);
 
   const load = useCallback(async (hidden: boolean) => {
@@ -86,6 +88,7 @@ export default function PeopleAdmin() {
     setOpen({ title, query, faces: null, error: '' });
     setPicked(new Set());
     setMoveTo('');
+    setNewName('');
     try {
       const faces = await loadFaces(query);
       setOpen(current => current?.query === query ? { ...current, faces } : current);
@@ -116,11 +119,13 @@ export default function PeopleAdmin() {
 
   async function movePicked() {
     const faceIds = [...picked];
-    const name = moveTo.trim();
+    const name = (moveTo === NEW_PERSON ? newName : moveTo).trim();
     if (!faceIds.length || !name || !await act({ action: 'move-faces', face_ids: faceIds, name },
       `Moved ${plural(faceIds.length, 'face')} to ${name}.`)) return;
     dropFaces(faceIds);
-    setMoveTo('');
+    // A new person is now in the list; choose them, so moving more faces to them is one step.
+    if (moveTo === NEW_PERSON) setMoveTo(name);
+    setNewName('');
   }
 
   function pick(faceId: string, on: boolean) {
@@ -283,9 +288,16 @@ export default function PeopleAdmin() {
       {picked.size > 0 && <Modal.Footer className="justify-content-start">
         <form className="d-flex flex-wrap align-items-center gap-2 w-100" onSubmit={event => { event.preventDefault(); void movePicked(); }}>
           <span className="fw-semibold me-1">{picked.size.toLocaleString()} selected</span>
-          <input className="form-control form-control-sm" style={{ maxWidth: 220 }} list="people-names" aria-label="Move the selected faces to"
-            placeholder="Move to (name)" value={moveTo} maxLength={80} disabled={busy} onChange={event => setMoveTo(event.target.value)} />
-          <button type="submit" className="btn btn-sm btn-primary" disabled={busy || !moveTo.trim()}>Move</button>
+          <select className="form-select form-select-sm" style={{ maxWidth: 220 }} aria-label="Move the selected faces to"
+            value={moveTo} disabled={busy} onChange={event => setMoveTo(event.target.value)}>
+            <option value="" disabled>Move to…</option>
+            {list?.people.map(person => <option key={person.id} value={person.name}>{person.name}</option>)}
+            <option value={NEW_PERSON}>New person…</option>
+          </select>
+          {moveTo === NEW_PERSON && <input className="form-control form-control-sm" style={{ maxWidth: 200 }} aria-label="New person’s name"
+            placeholder="Name" value={newName} maxLength={80} disabled={busy} autoFocus onChange={event => setNewName(event.target.value)} />}
+          <button type="submit" className="btn btn-sm btn-primary"
+            disabled={busy || !moveTo || (moveTo === NEW_PERSON && !newName.trim())}>Move</button>
           <button type="button" className="btn btn-sm btn-outline-danger ms-auto" disabled={busy} onClick={() => void removePicked()}>Not these people</button>
         </form>
       </Modal.Footer>}
