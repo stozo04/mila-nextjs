@@ -15,7 +15,9 @@ Steven teaches the site who's who. While the search index builds, his browser fi
 - `people-move-face` moves faces to the right person from an opened group or person: each face has a checkbox, a **Select all** box picks them all, and a bar showing `N selected` offers a **Move to** list of everyone already named, A to Z, ending with **New person…**, plus **Move**. Choosing a person adds the faces to them; choosing **New person…** shows a name field, and the faces become that new person (a name already in use joins that person instead). The same bar's **Not these people** takes the selected faces out together, as one new unnamed group. Moved faces leave the open list at once.
 - `people-hide` hides a group of strangers with **Hide**; a **Show hidden** switch brings hidden groups back.
 - `people-rename` renames a person; `people-unname` turns a person back into an unnamed group with **Remove name**.
-- `people-auto` puts newly scanned faces that closely match a named person straight into that person; less certain ones wait in the unnamed groups.
+- `people-auto` puts newly scanned faces that closely match a named person straight into that person; less certain ones wait in the unnamed groups. New scans use the same vote as `people-match`.
+- `people-match` learns from the faces Steven has already named. **Match with named people** (shown once someone is named, with the count of unnamed faces) looks at each unnamed, unhidden face's five most similar named faces in other photos. When at least three of them are found, at least 80% of their weight (by similarity) is one person, and the closest is at least 0.6 alike, the face joins that person; every other face stays where it was, for Steven. Faces are judged one by one, so a mixed group splits correctly. Progress reads `Matching… X of Y faces`, then `Matched N faces to M people; K left for you.`
+- `people-match-undo` puts back the last match: **Undo last match** returns every face it moved to the group it came from (recreating a group that had emptied). It shows until the next match or until Steven changes a matched face himself.
 - `people-gate` sends anonymous visitors to sign-in, shows non-admins "Only Steven can manage people.", and rejects anonymous people writes with 401.
 
 ## How to get to it (user POV)
@@ -29,7 +31,7 @@ Preconditions:
 
 - `doctor` exits 0. The page needs the admin account in a signed-in Chrome.
 - Faces must already be scanned. If the `Faces` row on [search index](./search-index.md) reads `Scanned 0 of Y photos`, the page says so and has no groups.
-- **Naming, merging, removing, hiding, and renaming all write to the live database. Never press Save, Merge, Not this person, Move, Not these people, Hide, or Remove name.** Verify presence and the guards only.
+- **Naming, merging, removing, hiding, and renaming all write to the live database. Never press Save, Merge, Not this person, Move, Not these people, Hide, Remove name, Match with named people, or Undo last match.** Verify presence and the guards only.
 
 - **Prove the page gate.** Run `node .claude/skills/verify-mila/control-mila.mjs get /admin/people --save people/anonymous`. Status is `307` with `location: /login`.
 - **Prove the write guard.** Run `node .claude/skills/verify-mila/control-mila.mjs get /api/people --method POST --body '{}' --expect-unauthorized`. It returns `401` with `{"error":"Sign in to continue."}` before anything is written.
@@ -37,6 +39,7 @@ Preconditions:
 - **Find the entry point.** In the admin tab, the banner holds a **People** link beside **Build search index**. In a non-admin signed-in tab the banner is absent.
 - **Open the page.** Choose **People**. The route becomes `/admin/people`, the heading reads `People`, named people come first with name and photo count, then unnamed groups as piles of face thumbnails, biggest first.
 - **Check the controls.** Each unnamed group has a name field with **Save** and a **Hide** button; groups have checkboxes, and **Merge** enables once two or more are checked. **Do not press any of them.**
+- **Check matching.** With someone named and unnamed faces left, **Match with named people** shows with the unnamed face count. **Do not press it**, nor **Undo last match** if shown.
 - **Open a group.** Choose a group's pile. Its faces show, each beside its photo, each with a checkbox and **Not this person**. **Do not press it.** Tick one face: the bar reads `1 selected` with a **Move to** list (named people, then **New person…**), **Move** (disabled until a person is chosen, or a name typed for a new person), and **Not these people**. **Do not press either.** Untick it and close the popup.
 - **Check the non-admin view.** In a non-admin signed-in tab, open `/admin/people`. The page reads "Only Steven can manage people." with no faces and no controls.
 - **Proof.** Screenshot the banner link, the page with named people and groups, and an opened group. Save the anonymous `307`, the `401`, and the list JSON. State plainly that nothing was named, merged, removed, or hidden.
@@ -48,4 +51,5 @@ Preconditions:
 - Babies change fast. Expect Mila as several groups at first (newborn, baby, toddler); merging them is the designed fix, not a defect.
 - Group membership comes from similarity, so a group can hold a wrong face. **Not this person**, or selecting faces and choosing **Move**, is the designed fix.
 - Hidden groups are still scanned and stored; hiding only removes them from the list and from search.
+- The match rule was calibrated on Steven's own labels (November 2026: 33 people, 2,370 named faces). Leaving each face's own photo out, faces meeting the rule were named correctly 564 of 567 times; faces that missed it only about 70% of the time, which is why they are left for Steven. About 70% of the then-unnamed faces met it.
 - Face data is stored in Supabase behind sign-in, alongside the search index, and never leaves Steven's accounts.
