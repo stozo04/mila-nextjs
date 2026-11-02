@@ -19,6 +19,9 @@ const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 type Person = { id: string; name: string };
 
+// Everyday words that start a family name (and: Andre, cry: Crystal); never read as a name.
+const SHORT_WORDS = new Set(['and', 'all', 'the', 'for', 'she', 'her', 'his', 'cry', 'fin', 'eat', 'are', 'was']);
+
 // What a person can be called in a search: the whole name, and for a name like
 // "PawPaw (Mike Gates)" the part before the brackets and the part inside them too.
 // A short form shared by two people names neither of them.
@@ -48,10 +51,16 @@ function splitPeople(query: string, people: Person[]) {
     if (!found.includes(person)) found.push(person);
     rest = rest.replace(pattern, '$1 ');
   }
-  // Then part of a name ("pawpa" for PawPaw): a leftover word of four letters or more that
-  // only one person's name contains. Shorter words ("and" in Andre) are too often scene words.
-  rest = rest.replace(/[\p{L}\p{N}]{4,}/gu, word => {
-    const owners = people.filter(person => person.name.toLowerCase().includes(word.toLowerCase()));
+  // Then part of a name, when it fits only one person: a word of four letters or more inside
+  // their name ("pawpa"), or three letters starting a word of it ("paw", "kat"). Everyday
+  // three-letter words that start a name ("cry" for Crystal) stay scene words.
+  rest = rest.replace(/[\p{L}\p{N}]{3,}/gu, word => {
+    const part = word.toLowerCase();
+    if (part.length === 3 && SHORT_WORDS.has(part)) return word;
+    const owners = people.filter(person => {
+      const name = person.name.toLowerCase();
+      return part.length > 3 ? name.includes(part) : name.split(/[^\p{L}\p{N}]+/u).some(piece => piece.startsWith(part));
+    });
     if (owners.length !== 1) return word;
     if (!found.includes(owners[0])) found.push(owners[0]);
     return ' ';
