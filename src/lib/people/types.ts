@@ -31,6 +31,8 @@ export type PeopleAction =
   | { action: 'name'; group_ids: string[]; name: string } // typing an existing name joins that person
   | { action: 'merge'; group_ids: string[] }
   | { action: 'remove-face'; face_id: string } // "Not this person"
+  | { action: 'remove-faces'; face_ids: string[] } // "Not these people": together, as one new group
+  | { action: 'move-faces'; face_ids: string[]; name: string } // to that person; a new name creates them
   | { action: 'hide'; group_ids: string[]; hidden: boolean }
   | { action: 'rename'; person_id: string; name: string }
   | { action: 'unname'; person_id: string }; // "Remove name"

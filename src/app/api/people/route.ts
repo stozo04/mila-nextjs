@@ -19,6 +19,8 @@ function validAction(body: PeopleAction | null) {
     case 'name': return ids(body.group_ids, 1) && name(body.name);
     case 'merge': return ids(body.group_ids, 2);
     case 'remove-face': return UUID.test(String(body.face_id));
+    case 'remove-faces': return ids(body.face_ids, 1);
+    case 'move-faces': return ids(body.face_ids, 1) && name(body.name);
     case 'hide': return ids(body.group_ids, 1) && typeof body.hidden === 'boolean';
     case 'rename': return UUID.test(String(body.person_id)) && name(body.name);
     case 'unname': return UUID.test(String(body.person_id));

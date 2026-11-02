@@ -30,6 +30,8 @@ export default function PeopleAdmin() {
   const [renaming, setRenaming] = useState<{ id: string; value: string } | null>(null);
   const [visible, setVisible] = useState(PAGE);
   const [open, setOpen] = useState<Open | null>(null);
+  const [picked, setPicked] = useState<Set<string>>(new Set()); // faces ticked in the open group or person
+  const [moveTo, setMoveTo] = useState('');
   const busyRef = useRef(false);
 
   const load = useCallback(async (hidden: boolean) => {
@@ -82,6 +84,8 @@ export default function PeopleAdmin() {
 
   async function openFaces(title: string, query: string) {
     setOpen({ title, query, faces: null, error: '' });
+    setPicked(new Set());
+    setMoveTo('');
     try {
       const faces = await loadFaces(query);
       setOpen(current => current?.query === query ? { ...current, faces } : current);
@@ -91,9 +95,40 @@ export default function PeopleAdmin() {
     }
   }
 
+  // Faces that moved leave the open list at once.
+  function dropFaces(faceIds: string[]) {
+    const gone = new Set(faceIds);
+    setOpen(current => current && { ...current, faces: current.faces?.filter(face => !gone.has(face.id)) ?? null });
+    setPicked(current => new Set([...current].filter(id => !gone.has(id))));
+  }
+
   async function removeFace(faceId: string) {
     if (!open || !await act({ action: 'remove-face', face_id: faceId }, 'Moved the face out.')) return;
-    setOpen(current => current && { ...current, faces: current.faces?.filter(face => face.id !== faceId) ?? null });
+    dropFaces([faceId]);
+  }
+
+  async function removePicked() {
+    const faceIds = [...picked];
+    if (!faceIds.length || !await act({ action: 'remove-faces', face_ids: faceIds },
+      `Moved ${plural(faceIds.length, 'face')} out, together as a new group.`)) return;
+    dropFaces(faceIds);
+  }
+
+  async function movePicked() {
+    const faceIds = [...picked];
+    const name = moveTo.trim();
+    if (!faceIds.length || !name || !await act({ action: 'move-faces', face_ids: faceIds, name },
+      `Moved ${plural(faceIds.length, 'face')} to ${name}.`)) return;
+    dropFaces(faceIds);
+    setMoveTo('');
+  }
+
+  function pick(faceId: string, on: boolean) {
+    setPicked(current => {
+      const next = new Set(current);
+      if (on) next.add(faceId); else next.delete(faceId);
+      return next;
+    });
   }
 
   function nameGroup(groupId: string) {
@@ -217,21 +252,43 @@ export default function PeopleAdmin() {
         </section>
       </>}
 
-    {open && <Modal show onHide={() => setOpen(null)} size="lg" scrollable aria-labelledby="people-faces-title">
+    {open && <Modal show onHide={() => setOpen(null)} size="lg" scrollable className="people" aria-labelledby="people-faces-title">
       <Modal.Header closeButton><Modal.Title id="people-faces-title" className="h5">{open.title}</Modal.Title></Modal.Header>
       <Modal.Body>
         {open.error ? <p role="alert" className="text-danger">{open.error}</p>
           : !open.faces ? <p><span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />Loading faces…</p>
           : !open.faces.length ? <p>No faces left here.</p>
-          : <ul className="list-unstyled d-flex flex-column gap-2 mb-0">
-            {open.faces.map(face => <li key={face.id} className="d-flex align-items-center gap-3">
-              <Thumb src={face.thumb} size={64} alt="Face" />
-              <Thumb src={face.photo_thumb} size={96} alt="The photo it is in" />
-              <button type="button" className="btn btn-sm btn-outline-danger ms-auto" disabled={busy} onClick={() => void removeFace(face.id)}>Not this person</button>
-            </li>)}
-          </ul>}
+          : <>
+            <div className="form-check mb-3">
+              <input className="form-check-input" type="checkbox" id="people-select-all" disabled={busy}
+                checked={picked.size === open.faces.length}
+                onChange={event => setPicked(event.target.checked ? new Set(open.faces!.map(face => face.id)) : new Set())} />
+              <label className="form-check-label" htmlFor="people-select-all">Select all</label>
+            </div>
+            <ul className="list-unstyled d-flex flex-column gap-2 mb-0">
+              {open.faces.map((face, index) => <li key={face.id} className="d-flex align-items-center gap-3">
+                {/* The whole row ticks its face, so long lists go quickly. */}
+                <label className="d-flex align-items-center gap-3 people-face-pick">
+                  <input type="checkbox" className="form-check-input m-0" aria-label={`Select face ${index + 1}`} disabled={busy}
+                    checked={picked.has(face.id)} onChange={event => pick(face.id, event.target.checked)} />
+                  <Thumb src={face.thumb} size={64} alt="Face" />
+                  <Thumb src={face.photo_thumb} size={96} alt="The photo it is in" />
+                </label>
+                <button type="button" className="btn btn-sm btn-outline-danger ms-auto" disabled={busy} onClick={() => void removeFace(face.id)}>Not this person</button>
+              </li>)}
+            </ul>
+          </>}
         {error && <p role="alert" className="text-danger mt-2 mb-0">{error}</p>}
       </Modal.Body>
+      {picked.size > 0 && <Modal.Footer className="justify-content-start">
+        <form className="d-flex flex-wrap align-items-center gap-2 w-100" onSubmit={event => { event.preventDefault(); void movePicked(); }}>
+          <span className="fw-semibold me-1">{picked.size.toLocaleString()} selected</span>
+          <input className="form-control form-control-sm" style={{ maxWidth: 220 }} list="people-names" aria-label="Move the selected faces to"
+            placeholder="Move to (name)" value={moveTo} maxLength={80} disabled={busy} onChange={event => setMoveTo(event.target.value)} />
+          <button type="submit" className="btn btn-sm btn-primary" disabled={busy || !moveTo.trim()}>Move</button>
+          <button type="button" className="btn btn-sm btn-outline-danger ms-auto" disabled={busy} onClick={() => void removePicked()}>Not these people</button>
+        </form>
+      </Modal.Footer>}
     </Modal>}
 
     <style jsx global>{`
@@ -248,6 +305,7 @@ export default function PeopleAdmin() {
       .people-pile { display: flex; align-items: center; }
       .people-pile-face { position: relative; display: inline-block; border-radius: 12px; box-shadow: 0 0 0 2px #fff; }
       .people-thumb { border-radius: 12px; object-fit: cover; background: #f3d3e0; }
+      .people-face-pick { cursor: pointer; }
     `}</style>
   </main>;
 }
