@@ -11,6 +11,7 @@ Every path except `/` and `/privacy-policy` requires a Supabase session; without
 - `login-oauth` starts Google OAuth with `prompt=consent` and a `redirectTo` of `<origin>/auth/callback`.
 - `auth-callback` exchanges the `code` query parameter for a session and redirects to `next` or `/`.
 - `auth-callback-error` redirects to `/auth/auth-code-error` with `error_message` when the exchange fails, and to `/login` when `code` is missing entirely.
+- `auth-error-page` explains a failed sign-in at `/auth/auth-code-error` in plain words, with **Try signing in again** (to `/login`), **Go to the home page**, and the technical message tucked under **Error details**. A sign-in that started on one address and finished on another (a preview link, or a different browser) gets its own explanation.
 - `api-guard` makes the three admin API routes answer 401 to an anonymous caller before any write.
 
 ## How to get to it (user POV)
@@ -19,6 +20,7 @@ Every path except `/` and `/privacy-policy` requires a Supabase session; without
 - Open `http://127.0.0.1:3000/login` directly.
 - Choose **Sign In** in the top nav while signed out.
 - Choose **Logout** in the top nav, which routes to `/login`.
+- Land on `/auth/auth-code-error` when Google sign-in fails partway, for example after starting it on a preview link.
 
 ## Driving it with control-mila
 
@@ -40,6 +42,7 @@ Preconditions:
   Each prints `401 Unauthorized` with body `{"error":"Sign in to continue."}` and the harness reports `PASS anonymous caller rejected before any write`.
 - **Prove the gate from the signed-in side.** Mint a session, then re-drive the same paths. Run `node .claude/skills/verify-mila/control-mila.mjs session`, which prints the account email and `is_mila_admin: true`, then `... get /blogs --as-admin`. Status is `200 OK` where the anonymous request was `307`. Repeat for `/sonograms`, `/gender-reveal`, `/baby-shower/houston`, `/my-journey/first-year`. The pair of results is the gate proof; neither status alone is.
 - **Drive the callback with no code.** Open `/auth/callback` with no query string. Run `node .claude/skills/verify-mila/control-mila.mjs get /auth/callback`. Status is `307` and `location` is the **absolute** URL `http://localhost:3000/login?error_message=Missing+authorization+code.` — safe to drive, it exchanges nothing and writes nothing.
+- **Read the sign-in error page.** Run `node .claude/skills/verify-mila/control-mila.mjs get "/auth/auth-code-error?error_message=invalid+request%3A+both+auth+code+and+code+verifier+should+be+non-empty" --save sign-in/auth-error-verifier`. Status is `200 OK`. The body has the heading `We couldn’t sign you in`, explains that sign-in "finished on a different address than it started on", links **Try signing in again** to `/login` and **Go to the home page** to `/`, and shows the original message under **Error details**. Then run `... get "/auth/auth-code-error?error_message=Something+else" --save sign-in/auth-error-other`: the same heading and links, the general explanation "Google sign-in didn’t finish", and `Something else` under **Error details**. Neither body contains `TODO`.
 - **Complete a real sign-in.** Not drivable. Google OAuth needs an interactive consent screen and a real Google account. Report as skipped with this precondition; a signed-in Chrome is the tier-2 prerequisite for every other feature.
 - **Proof.** Keep every saved body. The gate proof is the status plus the `location` header together — a saved 6-byte redirect body alone proves nothing.
 
@@ -52,4 +55,5 @@ Preconditions:
 - **There is no email allowlist.** `NEXT_PUBLIC_ALLOWED_EMAIL` is set in `.env.local` and documented in the README, but `grep -rn "NEXT_PUBLIC_ALLOWED_EMAIL" src` returns no matches — nothing reads it. Any Google account Supabase accepts reaches every protected page. Admin-only actions are gated separately, by the `is_mila_admin` RPC.
 - `/auth/callback` and `/auth/auth-code-error` are exempt from the redirect because the gate skips paths starting with `/auth`.
 - The callback builds its redirects from the request `origin`, and returns an **absolute** URL naming `localhost` even when the request was addressed to `127.0.0.1`. Match on the path and query, not on the whole `location` string, or the assertion breaks depending on how you addressed the server.
+- A preview deployment's address must be in Supabase's allowed redirect URLs, or Google sign-in started there finishes on the live site, which cannot read the preview's sign-in cookie and lands on the error page with "code verifier should be non-empty". Observed 2026-10-30 on a Vercel preview. The fix is the Supabase setting, not the app.
 - Signing out from one tab does not re-gate another already-loaded tab until it navigates.

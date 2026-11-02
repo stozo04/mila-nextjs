@@ -1,40 +1,31 @@
+import Link from 'next/link';
 
-import Link from 'next/link'
+type Props = { searchParams: Promise<{ error_message?: string | string[] }> };
 
+// Supabase's PKCE sign-in keeps a verifier cookie on the address where sign-in started. If
+// Google returns to a different address (a preview link not on Supabase's redirect list, or
+// another browser), the callback has no verifier and the exchange fails with this message.
+const startedElsewhere = (message: string) => /code verifier/i.test(message);
 
+export default async function AuthCodeError({ searchParams }: Props) {
+  const raw = (await searchParams).error_message;
+  const message = (Array.isArray(raw) ? raw[0] : raw)?.slice(0, 500) ?? '';
 
-export default function AuthCodeError() {
   return (
-    <div>TODO</div>
-    // <div className="flex items-center justify-center min-h-screen bg-gray-50">
-    //   <Card className="w-full max-w-md p-8 space-y-6">
-    //     <div className="space-y-2 text-center">
-    //       <h1 className="text-3xl font-bold tracking-tighter">Authentication Error</h1>
-    //       <p className="text-gray-500">
-    //         {'An error occurred during authentication'}
-    //       </p>
-    //     </div>
-
-    //     <div className="space-y-4">
-    //       <div className="p-4 bg-red-50 text-red-700 rounded-lg text-sm">
-    //         <p className="font-medium">Error Code: {'Unknown Error'}</p>
-    //       </div>
-
-    //       <div className="space-y-2">
-    //         <p className="text-sm text-gray-600">
-    //           Please try again or contact support if the problem persists.
-    //         </p>
-    //       </div>
-
-    //       <div className="flex justify-center">
-    //         <Button asChild className="w-full">
-    //           <Link href="/login">
-    //             Return to Login
-    //           </Link>
-    //         </Button>
-    //       </div>
-    //     </div>
-    //   </Card>
-    // </div>
-  )
+    <main className="container my-5" style={{ maxWidth: 560 }}>
+      <h1 className="h3">We couldn’t sign you in</h1>
+      {startedElsewhere(message) ? <>
+        <p>Your sign-in finished on a different address than it started on, so it couldn’t be completed.</p>
+        <p>This happens when sign-in starts on a preview link, or starts in one browser and finishes in another. Go back to the page you were using and sign in there again, in the same browser.</p>
+      </> : <p>Google sign-in didn’t finish. This can happen when it’s cancelled or takes too long. Please try again.</p>}
+      <div className="d-flex flex-wrap gap-2 my-4">
+        <Link href="/login" className="btn btn-primary rounded-pill px-4">Try signing in again</Link>
+        <Link href="/" className="btn btn-outline-primary rounded-pill px-4">Go to the home page</Link>
+      </div>
+      {message && <details>
+        <summary>Error details</summary>
+        <p className="small text-body-secondary mt-2 mb-0">{message}</p>
+      </details>}
+    </main>
+  );
 }

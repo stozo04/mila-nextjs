@@ -91,11 +91,15 @@ const NavMenu = () => {
       <aside className="bg-success-subtle border-bottom py-2" aria-label="Mila’s monthly preparation">
         <div className="container d-flex flex-wrap justify-content-between align-items-center gap-2">
           <span className="small fw-semibold">Steven’s admin tools</span>
-          <PrepareMonth />
+          <div className="d-flex flex-wrap gap-2">
+            <Link href="/admin/search-index" className="btn btn-outline-success rounded-pill">Build search index</Link>
+            <Link href="/admin/people" className="btn btn-outline-success rounded-pill">People</Link>
+            <PrepareMonth />
+          </div>
         </div>
       </aside>
     )}
-    <nav className="navbar navbar-expand-lg bg-body-tertiary">
+    <nav className="site-nav navbar navbar-expand-lg bg-body-tertiary">
       <div className="container-fluid d-flex justify-content-between align-items-center">
         <Link href="/">
           <Image src={milaBrand} alt="Mila Gates" className="navbar-brand" />

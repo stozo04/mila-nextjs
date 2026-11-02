@@ -1,6 +1,6 @@
 # Home landing
 
-The home page is a full-bleed, auto-advancing carousel of fourteen photos of Mila with previous and next controls. It is one of only two paths an anonymous visitor can load; everything else redirects to sign-in.
+For signed-out visitors, the home page is a full-bleed, auto-advancing carousel of fourteen photos of Mila with previous and next controls. It is one of only two paths an anonymous visitor can load; everything else redirects to sign-in. Signed-in visitors get the [search anything](./search-anything.md) atlas at the same path instead.
 
 ## Sub-features
 
@@ -9,6 +9,7 @@ The home page is a full-bleed, auto-advancing carousel of fourteen photos of Mil
 - `home-controls` advances and reverses through Previous and Next.
 - `home-autoplay` advances on its own via Bootstrap's `data-bs-ride="carousel"`.
 - `home-brand` shows the Mila brand image, which links back to `/`.
+- `home-signed-in` replaces the carousel with the search anything atlas once a visitor is signed in.
 
 ## How to get to it (user POV)
 
@@ -33,6 +34,7 @@ Preconditions:
 
 ## Gotchas
 
+- The carousel is the signed-out view only. A signed-in browser at `/` shows the atlas, so drive this feature in a signed-out tab or headlessly without `--as-admin`.
 - The images are Next.js static imports, so their URLs are content-hashed build output. Do not assert on `/images/landing-page/1.jpg`; assert on the slide count and the `active` slide.
 - The carousel autoplays. A screenshot taken seconds apart shows a different photo — that is not a regression. Assert the slide count and the active-slide invariant, never a specific image.
 - `/` and `/privacy-policy` are the **only** paths exempt from the session gate (`publicRoutes` in `src/utils/supabase/middleware.ts`). A new public page needs that list updated or it will silently redirect.

@@ -15,6 +15,7 @@
     "check:agents": "node -e \"const {spawnSync}=require('node:child_process'); const r=spawnSync(process.platform==='win32'?'python':'python3',['scripts/sync-harness-skills.py','--check'],{stdio:'inherit'}); if(r.error) console.error(r.error.message); process.exit(r.status??1)\""
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.3.2",
     "@openai/chatkit-react": "^0.0.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.48.1",
@@ -22,6 +23,7 @@
     "@tiptap/react": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
     "@vercel/analytics": "^1.4.1",
+    "@vladmandic/human": "3.3.6",
     "ai": "^4.1.28",
     "bootstrap": "^5.3.3",
     "html-react-parser": "^5.2.2",
@@ -35,13 +37,15 @@
     "react-icons": "^5.4.0",
     "sass": "^1.103.1",
     "sharp": "^0.35.5",
-    "string-strip-html": "^13.4.12"
+    "string-strip-html": "^13.4.12",
+    "three": "^0.187.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@types/node": "^20",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "@types/three": "^0.187.0",
     "eslint": "^9",
     "eslint-config-next": "^16.4.2",
     "typescript": "^5"
