@@ -21,7 +21,7 @@ A signed-in visitor who opens `/` gets a full-screen, zoomable atlas of every ph
 - `viewer-open` opens a tapped photo in a large viewer titled `Photo viewer`.
 - `viewer-paging` moves through the current matches with **Previous** and **Next**, or through every photo when nothing is searched.
 - `viewer-source` links to where the photo lives: the month's journey card, the sonogram, the baby shower or gender reveal page, or the letter that shows it. Homepage photos, months without a journey card, and letter photos no letter uses have no link.
-- `search-people` finds people by name: typing a named person, such as `Mila` or `steven`, highlights the photos they are in. Names match whole words regardless of case, several names find photos with all of them, and any other words narrow by scene, as in `Steven and Mila at the beach`. People come from [people](./people.md).
+- `search-people` finds people by name: typing a named person, such as `Mila` or `steven`, highlights the photos they are in. Names match whole words regardless of case; a name with a part in brackets, such as `PawPaw (Mike Gates)`, is also found by either part (`pawpaw`, `Mike Gates`) unless another person shares that part. Several names find photos with all of them, and any other words narrow by scene, as in `Steven and Mila at the beach`. People come from [people](./people.md).
 - `viewer-people` lists who is in a photo under it in the viewer, as `In this photo: Mila · Steven`. Choosing a name closes the viewer and highlights every photo of that person, with a status reading `N photos of <name>`.
 - `search-gate` rejects an anonymous search request with 401.
 

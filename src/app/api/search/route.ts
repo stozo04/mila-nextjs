@@ -17,16 +17,35 @@ type Scored = { score: number; median_score: number };
 
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+type Person = { id: string; name: string };
+
+// What a person can be called in a search: the whole name, and for a name like
+// "PawPaw (Mike Gates)" the part before the brackets and the part inside them too.
+// A short form shared by two people names neither of them.
+function nameForms(people: Person[]) {
+  const forms = people.flatMap(person => {
+    const name = person.name.trim();
+    const bracketed = /^(.*?)\s*\((.+)\)\s*$/u.exec(name);
+    const short = bracketed ? [bracketed[1].trim(), bracketed[2].trim()].filter(Boolean) : [];
+    return [{ term: name, person, full: true }, ...short.map(term => ({ term, person, full: false }))];
+  });
+  const owners = new Map<string, Set<string>>();
+  for (const { term, person } of forms) owners.set(term.toLowerCase(), (owners.get(term.toLowerCase()) ?? new Set()).add(person.id));
+  return forms
+    .filter(form => form.full || owners.get(form.term.toLowerCase())!.size === 1)
+    .sort((a, b) => b.term.length - a.term.length);
+}
+
 /** Pulls whole-word, any-case names out of a query: "Steven and mila at the beach" gives
  *  Steven and Mila, and the scene "at the beach". Longer names first, so "Grandma Kathy"
  *  wins over "Kathy". */
-function splitPeople(query: string, people: { id: string; name: string }[]) {
+function splitPeople(query: string, people: Person[]) {
   let rest = query;
-  const found: { id: string; name: string }[] = [];
-  for (const person of [...people].sort((a, b) => b.name.length - a.name.length)) {
-    const pattern = new RegExp(`(^|[^\\p{L}\\p{N}])${escape(person.name.trim())}(?=$|[^\\p{L}\\p{N}])`, 'iu');
+  const found: Person[] = [];
+  for (const { term, person } of nameForms(people)) {
+    const pattern = new RegExp(`(^|[^\\p{L}\\p{N}])${escape(term)}(?=$|[^\\p{L}\\p{N}])`, 'iu');
     if (!pattern.test(rest)) continue;
-    found.push(person);
+    if (!found.includes(person)) found.push(person);
     rest = rest.replace(pattern, '$1 ');
   }
   // Joining words between names ("Mila and Steven") are not part of the scene.
@@ -49,7 +68,7 @@ export async function GET(request: Request) {
   // Named people in the query filter the photos; whatever words remain describe the scene.
   const named = await supabase.rpc('people_names');
   if (named.error) return Response.json({ error: 'Search is unavailable right now. Please try again.' }, { status: 503 });
-  const { people, scene } = splitPeople(query, named.data as { id: string; name: string }[]);
+  const { people, scene } = splitPeople(query, named.data as Person[]);
   const personIds = people.map(person => person.id);
 
   let query_embedding: string | null = null;
