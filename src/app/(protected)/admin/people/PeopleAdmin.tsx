@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Modal } from 'react-bootstrap';
-import type { FaceDetail, PeopleAction, PeopleList } from '@/lib/people/types';
+import type { FaceDetail, MatchBatch, MatchRequest, PeopleAction, PeopleList } from '@/lib/people/types';
 
 const PAGE = 60;
 const NEW_PERSON = ' new'; // the Move to list's "New person…"; names are trimmed, so none starts with a space
@@ -41,6 +41,7 @@ export default function PeopleAdmin() {
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || 'Unable to load people.');
     setList(result as PeopleList);
+    return result as PeopleList;
   }, []);
 
   useEffect(() => {
@@ -95,6 +96,69 @@ export default function PeopleAdmin() {
     } catch (failure) {
       const message = failure instanceof Error ? failure.message : 'Unable to load these faces.';
       setOpen(current => current?.query === query ? { ...current, error: message } : current);
+    }
+  }
+
+  async function postMatch(body: MatchRequest) {
+    const response = await fetch('/api/people/match', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Matching stopped partway. Match again to carry on, or Undo last match.');
+    return result;
+  }
+
+  // Match with named people, one batch per request so progress shows as it goes.
+  async function matchFaces() {
+    if (busyRef.current || !list) return;
+    busyRef.current = true;
+    setBusy(true);
+    setNotice('');
+    setError('');
+    const run = crypto.randomUUID();
+    const total = list.unnamed_faces;
+    const people = new Set<string>();
+    let after: string | null = null;
+    let checked = 0;
+    let matched = 0;
+    try {
+      for (;;) {
+        setNotice(`Matching… ${Math.min(checked, total).toLocaleString()} of ${plural(total, 'face')}`);
+        const batch = await postMatch({ action: 'match', run, after }) as MatchBatch;
+        checked += batch.checked;
+        matched += batch.matched;
+        batch.people.forEach(person => people.add(person));
+        after = batch.last_id;
+        if (batch.done) break;
+      }
+      const next = await load(showHidden);
+      setChecked(new Set());
+      setNotice(`Matched ${plural(matched, 'face')} to ${plural(people.size, 'person', 'people')}; ${next.unnamed_faces.toLocaleString()} left for you.`);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'Matching stopped partway. Match again to carry on, or Undo last match.');
+      await load(showHidden).catch(() => {});
+    } finally {
+      setBusy(false);
+      busyRef.current = false;
+    }
+  }
+
+  async function undoMatch() {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setNotice('');
+    setError('');
+    try {
+      const { restored } = await postMatch({ action: 'undo' }) as { restored: number };
+      await load(showHidden);
+      setChecked(new Set());
+      setNotice(`Put back ${plural(restored, 'face')} from the last match.`);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'Unable to undo the match. Please retry.');
+    } finally {
+      setBusy(false);
+      busyRef.current = false;
     }
   }
 
@@ -169,6 +233,17 @@ export default function PeopleAdmin() {
           Faces found in {plural(list.scanned, 'photo')} of {list.photos.toLocaleString()}. Name a group to teach the site who’s who;
           typing a name you’ve already used adds the group to that person.
         </p>
+
+        {list.people.length > 0 && (list.unnamed_faces > 0 || list.can_undo) && <div className="people-card d-flex flex-wrap align-items-center gap-2 p-3 mb-3">
+          <div className="flex-grow-1">
+            <div className="fw-semibold">Learn from the people you’ve named</div>
+            <div className="small text-body-secondary">Faces that clearly match someone join them; uncertain ones stay below for you.</div>
+          </div>
+          {list.unnamed_faces > 0 && <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void matchFaces()}>
+            Match with named people ({plural(list.unnamed_faces, 'face')})
+          </button>}
+          {list.can_undo && <button type="button" className="btn btn-outline-secondary" disabled={busy} onClick={() => void undoMatch()}>Undo last match</button>}
+        </div>}
 
         <p role="status" aria-live="polite" className="fw-semibold mb-2">{notice}</p>
         {error && <p role="alert" className="text-danger">{error}</p>}

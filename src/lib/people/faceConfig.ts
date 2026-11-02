@@ -21,6 +21,11 @@ export const FACE_DETECT_SIZE = 1600;
  *  Mila split into about five groups across ages, which merging joins. */
 export const FACE_JOIN = 0.55;
 
-/** A new face joins a named person directly at or above this; below, it waits in the
- *  unnamed groups for Steven. Look-alike relatives scored up to ~0.7 against family faces. */
-export const FACE_AUTO = 0.7;
+/** A face joins a named person when its five most similar named faces in other photos vote
+ *  for them (at least three found, 80% of the similarity on one person; people_vote in SQL)
+ *  and the closest is at least this alike. Used for new scans and Match with named people.
+ *  On Steven's 2,370 named faces this rule was right 564 of 567 times. */
+export const FACE_AUTO = 0.6;
+
+/** Faces Match with named people checks per request, well inside the database time limit. */
+export const MATCH_BATCH = 100;

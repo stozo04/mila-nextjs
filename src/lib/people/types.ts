@@ -21,7 +21,11 @@ export type GroupSummary = { id: string; faces: number; thumbs: string[]; hidden
 
 // GET /api/people[?hidden=1]  (admin). Groups are the unnamed ones, biggest first; hidden
 // groups only with ?hidden=1. `scanned` and `photos` feed the index page's Faces row.
-export type PeopleList = { people: PersonSummary[]; groups: GroupSummary[]; scanned: number; photos: number };
+export type PeopleList = {
+  people: PersonSummary[]; groups: GroupSummary[]; scanned: number; photos: number;
+  unnamed_faces: number; // unnamed, unhidden faces, for Match with named people
+  can_undo: boolean; // the last match still has faces Undo can put back
+};
 
 export type FaceDetail = { id: string; thumb: string | null; photo_key: string; photo_thumb: string | null };
 
@@ -38,3 +42,10 @@ export type PeopleAction =
   | { action: 'unname'; person_id: string }; // "Remove name"
 
 // POST /api/people  PeopleAction  (admin)  ->  PeopleList, refreshed
+
+// POST /api/people/match  (admin)
+//   { action: 'match', run, after }  ->  MatchBatch; repeat with after = last_id until done.
+//     run is a fresh id per match; after is null for the first batch, which forgets the last match.
+//   { action: 'undo' }  ->  { restored, list: PeopleList }
+export type MatchRequest = { action: 'match'; run: string; after: string | null } | { action: 'undo' };
+export type MatchBatch = { checked: number; matched: number; people: string[]; last_id: string | null; done: boolean };

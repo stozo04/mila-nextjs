@@ -9,6 +9,8 @@ type Raw = {
   groups: { id: string; faces: number; thumbs: string[] | null; hidden: boolean }[];
   scanned: number;
   photos: number;
+  unnamed_faces: number;
+  can_undo: boolean;
 };
 
 const url = (path: string | null) => (path ? thumbUrl(path) : null);
@@ -22,6 +24,8 @@ export async function readPeople(supabase: AdminClient, includeHidden: boolean) 
     groups: raw.groups.map(group => ({ ...group, thumbs: (group.thumbs ?? []).map(path => thumbUrl(path)) })),
     scanned: raw.scanned,
     photos: raw.photos,
+    unnamed_faces: raw.unnamed_faces,
+    can_undo: raw.can_undo,
   } satisfies PeopleList;
 }
 
