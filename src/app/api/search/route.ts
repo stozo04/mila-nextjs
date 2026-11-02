@@ -48,6 +48,14 @@ function splitPeople(query: string, people: Person[]) {
     if (!found.includes(person)) found.push(person);
     rest = rest.replace(pattern, '$1 ');
   }
+  // Then part of a name ("pawpa" for PawPaw): a leftover word of four letters or more that
+  // only one person's name contains. Shorter words ("and" in Andre) are too often scene words.
+  rest = rest.replace(/[\p{L}\p{N}]{4,}/gu, word => {
+    const owners = people.filter(person => person.name.toLowerCase().includes(word.toLowerCase()));
+    if (owners.length !== 1) return word;
+    if (!found.includes(owners[0])) found.push(owners[0]);
+    return ' ';
+  });
   // Joining words between names ("Mila and Steven") are not part of the scene.
   const scene = found.length ? rest.replace(/(^|\s)(and|with|&|plus)(?=\s|$)/giu, ' ').replace(/[\s,]+/g, ' ').trim() : rest.trim();
   return { people: found, scene };
