@@ -472,6 +472,9 @@ new Function('require', 'exports', 'fetch', componentCode)(name => {
   if (name === 'react') return hookRuntime;
   if (name === '@/lib/supabase') return { supabase: storageClient };
   if (name === '@/components/BabyShower/Gallery') return { default: galleryStub };
+  // Search indexing and face scanning run in the browser after an upload; not under test here.
+  if (name === '@/lib/search/browserIndexer') return { canIndex: async () => true, indexPhoto: async () => {} };
+  if (name === '@/lib/people/browserFaces') return { scanFaces: async () => {} };
   throw new Error(`Unexpected import: ${name}`);
 }, componentExports, async (url, options) => {
   assert.equal(url, '/api/blog/three-years-three-months/images');
@@ -528,7 +531,7 @@ for (const current of [2, 3]) {
   assert.equal(uploads.length, current + 3);
 }
 pendingUploads.shift()(); await settle(); tree = flatten(render());
-assert.equal(uploadStatus().props.children, '3 uploaded, 0 failed.');
+assert.equal(uploadStatus().props.children, '3 uploaded, 0 failed. 3 indexed for search.');
 assert.equal(tree.find(node => node.type === 'input').props.disabled, false);
 assert.equal(tree.find(node => node.type === galleryStub).key, 'three-years-three-months-3');
 failUploadAt = uploads.length + 2;
@@ -587,6 +590,12 @@ const galleryExports = {};
 const galleryCode = ts.transpileModule(readFileSync(new URL('../src/components/BabyShower/Gallery.tsx', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
+// The real media helpers, so the exact public-URL -> /api/media mapping is what gets asserted.
+const mediaModule = {};
+new Function('exports', ts.transpileModule(readFileSync(new URL('../src/lib/media.ts', import.meta.url), 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText)(mediaModule);
+const expectedMediaUrl = '/api/media/birthday/three-years-three-months/family%20photo.JPG';
 const galleryClient = { storage: { from: bucket => {
   assert.equal(bucket, 'mila_storage_bucket');
   return {
@@ -600,6 +609,7 @@ new Function('require', 'exports', galleryCode)(name => {
   if (name === 'next/image') return { default: photoImage };
   if (name === 'react-bootstrap') return { Modal: photoModal };
   if (name === '@/lib/supabase') return { supabase: galleryClient };
+  if (name === '@/lib/media') return mediaModule;
   throw new Error(`Unexpected gallery import: ${name}`);
 }, galleryExports);
 const renderGallery = props => { hookIndex = 0; return flatten(galleryExports.default(props)); };
@@ -621,7 +631,7 @@ for (const [props, label] of [
   photos.find(node => node.type === 'button' && node.props['aria-label'] === 'View photo family photo.JPG').props.onClick();
   photos = renderGallery(props);
   assert.equal(photos.some(node => node.type === photoModal), !!label);
-  assert.equal(photos.find(node => node.type === photoImage && node.props.alt === 'Preview').props.src, expectedImageUrl);
+  assert.equal(photos.find(node => node.type === photoImage && node.props.alt === 'Preview').props.src, expectedMediaUrl);
   assert.equal(photos.some(node => node.type === photoModal.Footer), !!label);
   if (label) {
     photos.find(node => node.type === photoModal).props.onHide();
@@ -658,6 +668,7 @@ new Function('require', 'exports', 'fetch', blogCode)(name => {
   if (name === 'next/image' || name === '@/app/loading') return { default: () => null };
   if (name === 'next/dynamic') return { default: () => draftEditorStub };
   if (name === '@/lib/letterHtml') return letterHtml;
+  if (name === '@/lib/media') return mediaModule;
   throw new Error(`Unexpected blog import: ${name}`);
 }, blogExports, async (url, options) => {
   assert.equal(url, '/api/blog/three-years-three-months/publish');
@@ -833,6 +844,7 @@ new Function('require', 'exports', blogListCode)(name => {
   if (name === 'react') return { ...hookRuntime, useEffect(effect, deps) { if (runBlogListEffects) hookRuntime.useEffect(() => { queueMicrotask(effect); }, deps); }, Suspense: () => null };
   if (name === '@supabase/ssr') return { createBrowserClient: () => blogListClient };
   if (['next/link', 'next/image', '@/app/loading', '@/components/Blog/CreateBlogModal'].includes(name)) return { default: () => null };
+  if (name === '@/lib/media') return mediaModule;
   throw new Error(`Unexpected blog list import: ${name}`);
 }, blogListExports);
 const publishedCard = { id: 1, title: 'Published letter', slug: 'published', date: '2026-08-30', is_draft: false };

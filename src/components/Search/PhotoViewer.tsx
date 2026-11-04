@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Modal } from 'react-bootstrap';
 import { supabase } from '@/lib/supabase';
-import { photoSource, photoUrl, type SourceLinks } from '@/lib/search/collections';
+import { isSitePhoto, photoSource, photoUrl, type SourceLinks } from '@/lib/search/collections';
 
 export type ViewerPhoto = { key: string; width: number | null; height: number | null };
 
@@ -42,7 +42,7 @@ export default function PhotoViewer({ photos, index, links, onIndex, onClose, on
       <Modal.Title id="photo-viewer-title" className="h5">Photo viewer</Modal.Title>
     </Modal.Header>
     <Modal.Body className="p-0 text-center glass-viewer-photo">
-      <Image key={photo.key} src={photoUrl(photo.key)} alt="Mila Gates" width={photo.width ?? 1200} height={photo.height ?? 900}
+      <Image key={photo.key} src={photoUrl(photo.key)} unoptimized={!isSitePhoto(photo.key)} alt="Mila Gates" width={photo.width ?? 1200} height={photo.height ?? 900}
         sizes="(max-width: 1200px) 100vw, 1140px"
         style={{ width: '100%', height: 'auto', maxHeight: '72vh', objectFit: 'contain' }} />
     </Modal.Body>

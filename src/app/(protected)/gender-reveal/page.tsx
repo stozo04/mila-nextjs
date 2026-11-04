@@ -5,9 +5,10 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import Loading from '@/app/loading';
 import { supabase } from '@/lib/supabase';
 import { FileObject } from '@supabase/storage-js';
+import { mediaUrl } from '@/lib/media';
 
 
-const CDNURL = "https://pawkklvezvrmtpqbztwb.supabase.co/storage/v1/object/public/mila_storage_bucket/gender-reveal/";
+const photoUrl = (name: string) => mediaUrl(`gender-reveal/${name}`);
 
 const GenderRevealPage = () => {
   const [images, setImages] = useState<FileObject[]>([]);
@@ -91,13 +92,14 @@ const GenderRevealPage = () => {
             <div key={image.name} className="col">
               <div className="card h-100" style={{ cursor: 'pointer' }}>
                 <Image
-                  src={CDNURL + image.name}
+                  src={photoUrl(image.name)}
+                  unoptimized
                   alt={`Gender Reveal - ${image.name}`}
                   width={400}
                   height={300}
                   className="card-img-top"
                   style={{ objectFit: "cover" }}
-                  onClick={() => setSelectedImage(CDNURL + image.name)}
+                  onClick={() => setSelectedImage(photoUrl(image.name))}
                 />
               </div>
             </div>
@@ -157,6 +159,7 @@ const GenderRevealPage = () => {
                                 ></button>
                                 <Image
                                     src={selectedImage}
+                                    unoptimized
                                     alt="Gender Reveal Preview"
                                     width={800}
                                     height={600}

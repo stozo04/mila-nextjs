@@ -1,3 +1,5 @@
+import { mediaUrl } from '@/lib/media';
+
 // What search anything covers, shared by the atlas, the search API, and the index page.
 // Storage photos are keyed by object name; images built into the site by their path.
 
@@ -25,10 +27,9 @@ export const SITE_PHOTOS: { key: string; collection: PhotoCollection }[] = [
 
 export const isSitePhoto = (key: string) => key.startsWith('/');
 
+// Storage photos go through the signed-in media route: the bucket is private.
 export function photoUrl(key: string) {
-  if (isSitePhoto(key)) return key;
-  const path = key.split('/').map(encodeURIComponent).join('/');
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/mila_storage_bucket/${path}`;
+  return isSitePhoto(key) ? key : mediaUrl(key);
 }
 
 export const thumbPathFor = (key: string) => `search/thumbs/${isSitePhoto(key) ? `site${key}` : key}.webp`;
