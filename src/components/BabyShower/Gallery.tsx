@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { FileObject } from "@supabase/storage-js";
 import { Modal } from 'react-bootstrap';
 import type { Blog } from '@/types/blog';
+import { mediaUrl, toMediaUrl } from '@/lib/media';
 
 type GalleryProps = {
     folder: string; // e.g., 'houston' or 'dallas'
@@ -24,7 +25,7 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3, letterImages, rend
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState<boolean>(true);
     const [error, setError] = useState('');
-    const photoUrl = (filename: string) => supabase.storage.from('mila_storage_bucket').getPublicUrl(`${folder}/${filename}`).data.publicUrl;
+    const photoUrl = (filename: string) => mediaUrl(`${folder}/${filename}`);
 
     const fetchImages = async () => {
         try {
@@ -89,7 +90,7 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3, letterImages, rend
             <div className="row row-cols-1 row-cols-md-3 g-4">
                 {images.map((image) => {
                     const url = photoUrl(image.name);
-                    const roles = [letterImages?.featured_image === url && 'Featured', letterImages?.detail_image === url && 'Detail'].filter(Boolean).join(' · ');
+                    const roles = [toMediaUrl(letterImages?.featured_image) === url && 'Featured', toMediaUrl(letterImages?.detail_image) === url && 'Detail'].filter(Boolean).join(' · ');
                     return (
                         <div key={image.name} className="col">
                             <div className="card h-100" style={roles ? { boxShadow: '0 0 0 2px #d48ca8, 0 0 16px #d48ca866' } : undefined}>
@@ -101,6 +102,7 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3, letterImages, rend
                                     }>
                                         <Image
                                             src={url}
+                                            unoptimized
                                             alt={`${image.name}`}
                                             width={400}
                                             height={300}
@@ -139,7 +141,7 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3, letterImages, rend
                     <Modal.Header closeButton><Modal.Title>Photo preview</Modal.Title></Modal.Header>
                     <Modal.Body className="p-0">
                         <Image
-                            src={photoUrl(selectedImage)}
+                            src={photoUrl(selectedImage)} unoptimized
                             alt="Preview"
                             width={800}
                             height={600}
@@ -185,7 +187,7 @@ const Gallery: React.FC<GalleryProps> = ({ folder, limit = 3, letterImages, rend
                                     onMouseOut={event => event.currentTarget.style.opacity = '0.8'}
                                 />
                                 <Image
-                                    src={photoUrl(selectedImage)} alt="Preview" width={800} height={600}
+                                    src={photoUrl(selectedImage)} unoptimized alt="Preview" width={800} height={600}
                                     className="img-fluid rounded"
                                     style={{ width: '100%', height: 'auto', objectFit: 'contain', maxHeight: '80vh' }}
                                 />

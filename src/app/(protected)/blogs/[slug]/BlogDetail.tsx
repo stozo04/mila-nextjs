@@ -9,6 +9,7 @@ import Loading from '@/app/loading';
 import { normalizeYoutubeUrl } from "@/lib/youtube";
 import { Blog } from "@/types/blog";
 import { hasForeignMarkup } from "@/lib/letterHtml";
+import { toMediaUrl } from "@/lib/media";
 
 // Only Steven ever opens the editor, so readers never download it.
 const DraftLetterEditor = dynamic(() => import("@/components/Blog/DraftLetterEditor"), { ssr: false });
@@ -277,7 +278,8 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
             {blog.detail_image && (
               <div className="col-md-6 col-sm-12">
                 <Image
-                  src={blog.detail_image}
+                  src={toMediaUrl(blog.detail_image)}
+                  unoptimized
                   alt={blog.title}
                   width={400}
                   height={300}
@@ -288,7 +290,7 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
                     cursor: "pointer",
 
                   }}
-                  onClick={() => setSelectedImage(blog.detail_image)}
+                  onClick={() => setSelectedImage(toMediaUrl(blog.detail_image))}
                 />
               </div>
             )}
@@ -318,7 +320,8 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
                 {blog.additional_images.map((imageUrl, index) => (
                   <div key={index} className={blog.detail_image || videoEmbedUrl ? "col-md-6 col-sm-12" : "col-md-4 col-sm-6"}>
                     <Image
-                      src={imageUrl}
+                      src={toMediaUrl(imageUrl)}
+                      unoptimized
                       alt={`${blog.title} - Photo ${index + 1}`}
                       width={400}
                       height={300}
@@ -327,7 +330,7 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
                         objectFit: "cover", 
                         cursor: "pointer",
                       }}
-                      onClick={() => setSelectedImage(imageUrl)}
+                      onClick={() => setSelectedImage(toMediaUrl(imageUrl))}
                     />
                   </div>
                 ))}
@@ -375,6 +378,7 @@ const BlogDetailPage = ({ slug }: { slug: string }) => {
                 />
                 <Image
                   src={selectedImage}
+                  unoptimized
                   alt="Preview"
                   width={800}
                   height={600}

@@ -48,5 +48,5 @@ Preconditions:
 - Uploads never overwrite: each file gets a fresh `crypto.randomUUID()` name and `upsert: false`. So a "duplicate" photo is a second object, not a replaced one.
 - Admin state comes from the `is_mila_admin` RPC after the session resolves, so the uploader and the role controls appear a beat after the rest of the page. Let the page settle before reporting them missing.
 - The role controls are disabled until the paired letter's current images load from `/api/blog/<slug>/images`. A card whose month has no letter shows an error instead: "No matching blog letter exists for this month." That is the expected message, not a failure of the card.
-- Assigning a role stores Storage's **public** URL. The bucket is public, so those images are readable without a session — the page is private, the photo URL is not.
+- Assigning a role stores the object's public-format URL as an identifier. The bucket is private, so every render maps that URL to `/api/media/<path>` (`toMediaUrl`) and the image is unreadable without a session; the stored URL itself no longer resolves.
 - The gallery is keyed by `<slug>-<revision>`, so a successful upload remounts it. Screenshots taken across an upload show a different component instance.

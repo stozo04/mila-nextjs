@@ -7,6 +7,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { Blog } from "@/types/blog";
 import Loading from '@/app/loading';
 import CreateBlogModal from "@/components/Blog/CreateBlogModal";
+import { toMediaUrl } from "@/lib/media";
 
 const BlogsPage = () => {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -170,7 +171,8 @@ const BlogsPage = () => {
                     <p className="small mt-2 mb-0">Only you can see this letter. Open it and publish when it’s ready.</p>
                   </div>}
                   {blog.featured_image && <Image
-                    src={blog.featured_image}
+                    src={toMediaUrl(blog.featured_image)}
+                    unoptimized
                     alt={blog.title}
                     width={400}
                     height={250}
