@@ -1,0 +1,38 @@
+# Dependabot configuration.
+#
+# Without this file GitHub only raises *security* updates (straight off security
+# alerts). That is what produced the nine-PR backlog of November 2026: nothing
+# was scheduled, nothing was grouped, and nothing merged them.
+#
+# Grouping matters more than it looks: every npm update rewrites
+# package-lock.json, so ungrouped PRs all collide with each other and go stale
+# the moment one of them merges.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Chicago
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for all dev-only minor/patch bumps (eslint, typescript-eslint,
+      # playwright, types) — these cannot reach production at runtime.
+      dev-dependencies:
+        dependency-type: development
+        update-types: ["minor", "patch"]
+      # One PR for production patch bumps. Minors and majors stay separate so
+      # they get read individually.
+      production-patches:
+        dependency-type: production
+        update-types: ["patch"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Chicago
