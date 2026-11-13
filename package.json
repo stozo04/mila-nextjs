@@ -19,7 +19,7 @@
     "@openai/chatkit-react": "^0.0.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.48.1",
-    "@tiptap/pm": "^3.31.3",
+    "@tiptap/pm": "^3.33.0",
     "@tiptap/react": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
     "@vercel/analytics": "^1.4.1",
