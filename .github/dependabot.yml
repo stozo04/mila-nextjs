@@ -17,6 +17,9 @@ updates:
       time: "09:00"
       timezone: America/Chicago
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       # The tiptap packages pin their peers at an EXACT version
       # (@tiptap/core peers @tiptap/pm "3.33.1"), so one of them moving alone
