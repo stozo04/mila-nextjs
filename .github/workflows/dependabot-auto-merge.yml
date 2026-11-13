@@ -6,7 +6,11 @@
 #
 # Deliberately NOT auto-merged:
 #   * major version bumps — see openai 5.x -> 7.x in PR #29
-#   * any openai bump — src/app/api/chat-stream/route.ts registers stream
+#   * any openai bump (openai, @openai/chatkit-react) — these are excluded
+#     from dependabot.yml's production-patches group so they always arrive as
+#     their own PR; `dependency-names` lists every dependency in a PR, so an
+#     openai patch inside a grouped PR would hold the whole group.
+#     src/app/api/chat-stream/route.ts registers stream
 #     events by string name ("response.output_text.delta") with (e: any)
 #     handlers, so tsc cannot catch a renamed or reshaped event, and
 #     docs/PROJECT_INSTRUCTIONS.md forbids calling /api/chat-stream to verify

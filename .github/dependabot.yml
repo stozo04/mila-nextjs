@@ -28,6 +28,14 @@ updates:
       production-patches:
         dependency-type: production
         update-types: ["patch"]
+        # Keep the openai packages OUT of the group. The auto-merge workflow
+        # holds any PR naming `openai` for a human, and `dependency-names`
+        # covers every dependency in the PR — so if an openai patch rode along
+        # inside this group, it would hold the whole group and the unrelated
+        # patches in it would never land on their own.
+        exclude-patterns:
+          - "openai"
+          - "@openai/*"
 
   - package-ecosystem: github-actions
     directory: "/"
