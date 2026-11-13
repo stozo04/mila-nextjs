@@ -18,6 +18,16 @@ updates:
       timezone: America/Chicago
     open-pull-requests-limit: 5
     groups:
+      # The tiptap packages pin their peers at an EXACT version
+      # (@tiptap/core peers @tiptap/pm "3.33.1"), so one of them moving alone
+      # can never satisfy the peer graph — `npm install` fails with ERESOLVE.
+      # Dependabot's own lockfile edit can still pass `npm ci`, so this has to
+      # be prevented here rather than caught by CI. Listed first so it wins
+      # over the groups below for these packages.
+      tiptap:
+        patterns:
+          - "@tiptap/*"
+
       # One PR for all dev-only minor/patch bumps (eslint, typescript-eslint,
       # playwright, types) — these cannot reach production at runtime.
       dev-dependencies:
