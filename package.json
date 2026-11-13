@@ -40,13 +40,13 @@
     "three": "^0.187.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "^1.65.0",
     "@types/node": "^20",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@types/three": "^0.187.0",
     "eslint": "^9",
-    "eslint-config-next": "^16.4.2",
+    "eslint-config-next": "^16.4.6",
     "typescript": "^5"
   }
 }
