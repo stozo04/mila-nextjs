@@ -1,0 +1,53 @@
+# Auto-merge low-risk Dependabot PRs once "verify" is green.
+#
+# This is GitHub's documented pattern (dependabot/fetch-metadata + `gh pr merge
+# --auto`), not hand-rolled automation. `--auto` queues the merge and GitHub
+# performs it only after required checks pass, so a red "verify" still blocks.
+#
+# Deliberately NOT auto-merged:
+#   * major version bumps — see openai 5.x -> 7.x in PR #29
+#   * any openai bump (openai, @openai/chatkit-react) — these are excluded
+#     from dependabot.yml's production-patches group so they always arrive as
+#     their own PR; `dependency-names` lists every dependency in a PR, so an
+#     openai patch inside a grouped PR would hold the whole group.
+#     src/app/api/chat-stream/route.ts registers stream
+#     events by string name ("response.output_text.delta") with (e: any)
+#     handlers, so tsc cannot catch a renamed or reshaped event, and
+#     docs/PROJECT_INSTRUCTIONS.md forbids calling /api/chat-stream to verify
+#     it because each call costs money. Green CI is not evidence that chat
+#     still streams; a human reads those.
+name: Dependabot auto-merge
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge
+        if: >
+          steps.meta.outputs.update-type != 'version-update:semver-major'
+          && !contains(steps.meta.outputs.dependency-names, 'openai')
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Explain why this one was left for a human
+        if: >
+          steps.meta.outputs.update-type == 'version-update:semver-major'
+          || contains(steps.meta.outputs.dependency-names, 'openai')
+        run: |
+          echo "Left for manual review: ${{ steps.meta.outputs.dependency-names }}" \
+               "(${{ steps.meta.outputs.update-type }})" >> "$GITHUB_STEP_SUMMARY"
