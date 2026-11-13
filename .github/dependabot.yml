@@ -49,6 +49,10 @@ updates:
         exclude-patterns:
           - "openai"
           - "@openai/*"
+          # Same reason: the auto-merge workflow holds any @supabase bump for a
+          # human, and dependency-names covers every dependency in a PR, so a
+          # supabase patch riding inside this group would hold the whole group.
+          - "@supabase/*"
 
   - package-ecosystem: github-actions
     directory: "/"

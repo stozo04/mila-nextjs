@@ -4,18 +4,27 @@
 # --auto`), not hand-rolled automation. `--auto` queues the merge and GitHub
 # performs it only after required checks pass, so a red "verify" still blocks.
 #
-# Deliberately NOT auto-merged:
-#   * major version bumps — see openai 5.x -> 7.x in PR #29
-#   * any openai bump (openai, @openai/chatkit-react) — these are excluded
-#     from dependabot.yml's production-patches group so they always arrive as
-#     their own PR; `dependency-names` lists every dependency in a PR, so an
-#     openai patch inside a grouped PR would hold the whole group.
-#     src/app/api/chat-stream/route.ts registers stream
+# A PR is held for a human when ANY dependency in it is:
+#   * a major version bump;
+#   * a pre-1.0 MINOR bump. Below 1.0 semver allows anything to change, so the
+#     minor position is effectively the major one. @supabase/ssr 0.5.2 ->
+#     0.12.7 auto-merged under the old major-only rule and crossed seven
+#     releases of cookie-handling changes. Pre-1.0 PATCH bumps are still
+#     auto-merged, so grouped patch PRs keep flowing;
+#   * an openai package. src/app/api/chat-stream/route.ts registers stream
 #     events by string name ("response.output_text.delta") with (e: any)
 #     handlers, so tsc cannot catch a renamed or reshaped event, and
 #     docs/PROJECT_INSTRUCTIONS.md forbids calling /api/chat-stream to verify
-#     it because each call costs money. Green CI is not evidence that chat
-#     still streams; a human reads those.
+#     it because each call costs money;
+#   * a @supabase package. It is the session and cookie layer, imported by
+#     src/proxy.ts, src/utils/supabase/* and every (protected) route. A build
+#     passing is not evidence that sign-in still works.
+#
+# The name-based holds (openai, @supabase) apply at any version, so those
+# packages are excluded from dependabot.yml's groups — `dependency-names`
+# covers every dependency in a PR, so one of them riding inside a group would
+# hold the whole group. A pre-1.0 minor can still hold a group it lands in;
+# the step summary names the dependency responsible so it is obvious why.
 name: Dependabot auto-merge
 
 on: pull_request
@@ -35,19 +44,40 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Decide whether this PR may auto-merge
+        id: gate
+        env:
+          DEPS_JSON: ${{ steps.meta.outputs.updated-dependencies-json }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DEPS_JSON:-}" ] || [ "$DEPS_JSON" = "[]" ]; then
+            # Fail closed: no metadata means no evidence it is safe.
+            echo "held=Dependabot metadata unavailable" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          held=$(printf '%s' "$DEPS_JSON" | jq -r '
+            [ .[]
+              | . as $d
+              | ( if   ($d.updateType == "version-update:semver-major")  then "major bump"
+                  elif (($d.prevVersion // "") | startswith("0."))
+                       and ($d.updateType == "version-update:semver-minor")
+                                                                         then "pre-1.0 minor bump, breaking by convention"
+                  elif ($d.dependencyName | test("^openai$|^@openai/"))  then "openai package, streaming not verifiable by CI"
+                  elif ($d.dependencyName | test("^@supabase/"))         then "supabase package, auth not verifiable by CI"
+                  else empty end ) as $why
+              | "\($d.dependencyName) \($d.prevVersion // "?") -> \($d.newVersion // "?") (\($why))"
+            ] | join("; ")
+          ')
+          echo "held=$held" >> "$GITHUB_OUTPUT"
+
       - name: Enable auto-merge
-        if: >
-          steps.meta.outputs.update-type != 'version-update:semver-major'
-          && !contains(steps.meta.outputs.dependency-names, 'openai')
+        if: steps.gate.outputs.held == ''
         run: gh pr merge --auto --merge "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Explain why this one was left for a human
-        if: >
-          steps.meta.outputs.update-type == 'version-update:semver-major'
-          || contains(steps.meta.outputs.dependency-names, 'openai')
+        if: steps.gate.outputs.held != ''
         run: |
-          echo "Left for manual review: ${{ steps.meta.outputs.dependency-names }}" \
-               "(${{ steps.meta.outputs.update-type }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "Left for manual review: ${{ steps.gate.outputs.held }}" >> "$GITHUB_STEP_SUMMARY"
