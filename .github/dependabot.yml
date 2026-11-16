@@ -29,7 +29,25 @@ updates:
       # over the groups below for these packages.
       tiptap:
         patterns:
+          # Both spellings on purpose. GitHub's reference says only that
+          # patterns "support using `*` as a wild card to define matches with
+          # dependency names", without saying whether `*` crosses the `/` in a
+          # scoped name. "@tiptap/*" alone did not group the 3.33.1 -> 3.34.0
+          # bumps (PRs #63, #65, #67 each arrived separately), so match both
+          # ways rather than rely on which one is right.
           - "@tiptap/*"
+          - "@tiptap/**"
+
+      # Groups default to `applies-to: version-updates`, so a SECURITY update
+      # ignores every group above and arrives as one PR per direct dependency.
+      # For tiptap that reproduces the exact breakage this group exists to
+      # prevent, so the group is declared a second time for security updates.
+      # (Group names must be unique, hence the separate entry.)
+      tiptap-security:
+        applies-to: security-updates
+        patterns:
+          - "@tiptap/*"
+          - "@tiptap/**"
 
       # One PR for all dev-only minor/patch bumps (eslint, typescript-eslint,
       # playwright, types) — these cannot reach production at runtime.
