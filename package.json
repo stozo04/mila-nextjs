@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.2",
-    "@openai/chatkit-react": "^0.0.0",
+    "@openai/chatkit-react": "^1.6.1",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.48.1",
     "@tiptap/pm": "^3.34.0",
